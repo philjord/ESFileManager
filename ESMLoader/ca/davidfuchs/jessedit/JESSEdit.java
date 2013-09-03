@@ -4,9 +4,6 @@ import ca.davidfuchs.jessedit.ess.ESSFile;
 import ca.davidfuchs.jessedit.ess.ESSReader;
 import ca.davidfuchs.jessedit.ess.ESSUtils;
 import ca.davidfuchs.jessedit.ess.StructRefId;
-import org.apache.commons.cli.*;
- 
- 
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,92 +13,85 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class JESSEdit {
-     
+public class JESSEdit
+{
 
-    public static void main(String args[]) throws Exception {
-        Options options = new Options();
-        options.addOption("f", "file", true, "The ESS file to load.");
+	public static void main(String args[]) throws Exception
+	{
+		//TODO: make somethign reasonable here?
+	}
 
-        try {
-            CommandLineParser parser = new BasicParser();
-            CommandLine commandLine = parser.parse(options, args, true);
+	private static void dumpESSFile(String fileName) throws IOException
+	{
+		try
+		{
+			InputStream inputStream = new FileInputStream(fileName);
 
-            if (commandLine.hasOption("file")) {
-                dumpESSFile(commandLine.getOptionValue("file"));
-            } else {
-                printHelp(options);
-            }
-        } catch (ParseException parseException) {
-            printHelp(options);
-        }
-    }
+			System.out.println("Parsing ESS file: {}." + fileName);
 
-    private static void printHelp(Options options) {
-        HelpFormatter helpFormatter = new HelpFormatter();
-        helpFormatter.printHelp("JESSEdit", options);
-    }
+			ESSFile essFile = ESSReader.readESSFile(inputStream);
 
-    private static void dumpESSFile(String fileName) throws IOException {
-        try {
-            InputStream inputStream = new FileInputStream(fileName);
+			for (int index = 0; index < 10; index++)
+			{
+				StructRefId refId = essFile.getChangeForms().get(index).getRefId();
 
-            logger.info("Parsing ESS file: {}.", fileName);
+				for (StructRefId id : essFile.getFormIdArray())
+				{
+					if (refId.equals(id))
+					{
+						System.out.println(String.format("%d: %s -> %s", index, refId.toString(), id.toString()));
+						break;
+					}
+				}
+			}
 
-            ESSFile essFile = ESSReader.readESSFile(inputStream);
+			System.out.println(essFile.getHeader().toString());
+		}
+		catch (FileNotFoundException fnfex)
+		{
+			System.out.println("ESS file not found: {}" + fileName);
+		}
+	}
 
-            for (int index = 0; index < 10; index++) {
-                StructRefId refId = essFile.getChangeForms().get(index).getRefId();
+	private static void showScreenshot(final ESSFile essFile)
+	{
+		SwingUtilities.invokeLater(new Runnable()
+		{
+			public void run()
+			{
+				JFrame.setDefaultLookAndFeelDecorated(true);
 
-                for (StructRefId id : essFile.getFormIdArray()) {
-                    if (refId.equals(id)) {
-                        logger.info(String.format("%d: %s -> %s", index, refId.toString(), id.toString()));
-                        break;
-                    }
-                }
-            }
+				JFrame jFrame = new JFrame();
+				jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+				ImagePanel imagePanel = new ImagePanel(ESSUtils.getScreenShot(essFile));
+				jFrame.getContentPane().add(imagePanel);
+				jFrame.getContentPane().setPreferredSize(imagePanel.getSize());
+				jFrame.pack();
 
-            logger.info(essFile.getHeader().toString());
-        } catch (FileNotFoundException fnfex) {
-            logger.error("ESS file not found: {}", fileName);
-        }
-    }
+				Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+				jFrame.setLocation(dim.width / 2 - jFrame.getSize().width / 2, dim.height / 2 - jFrame.getSize().height / 2);
 
-    private static void showScreenshot(final ESSFile essFile) {
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                JFrame.setDefaultLookAndFeelDecorated(true);
+				jFrame.setVisible(true);
+			}
+		});
+	}
 
-                
+	private static class ImagePanel extends JPanel
+	{
+		private BufferedImage bufferedImage;
 
-                JFrame jFrame = new JFrame();
-                jFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-                ImagePanel imagePanel = new ImagePanel(ESSUtils.getScreenShot(essFile));
-                jFrame.getContentPane().add(imagePanel);
-                jFrame.getContentPane().setPreferredSize(imagePanel.getSize());
-                jFrame.pack();
+		public ImagePanel(BufferedImage bufferedImage)
+		{
+			this.bufferedImage = bufferedImage;
 
-                Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
-                jFrame.setLocation(dim.width / 2 - jFrame.getSize().width / 2, dim.height / 2 - jFrame.getSize().height / 2);
+			setSize(bufferedImage.getWidth() + 16, bufferedImage.getHeight() + 16);
+		}
 
-                jFrame.setVisible(true);
-            }
-        });
-    }
-
-    private static class ImagePanel extends JPanel {
-        private BufferedImage bufferedImage;
-
-        public ImagePanel(BufferedImage bufferedImage) {
-            this.bufferedImage = bufferedImage;
-
-            setSize(bufferedImage.getWidth() + 16, bufferedImage.getHeight() + 16);
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            g.drawImage(bufferedImage, 8, 8, null);
-        }
-    }
+		@Override
+		protected void paintComponent(Graphics g)
+		{
+			super.paintComponent(g);
+			g.drawImage(bufferedImage, 8, 8, null);
+		}
+	}
 }

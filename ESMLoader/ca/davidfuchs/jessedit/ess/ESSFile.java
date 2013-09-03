@@ -9,12 +9,12 @@ public class ESSFile implements Serializable {
     private StructHeader header = new StructHeader();
     private StructPluginInfo pluginInfo = new StructPluginInfo();
     private StructFileLocationTable fileLocationTable = new StructFileLocationTable();
-    private List<StructGlobalData> globalDataTable1 = new ArrayList<>();
-    private List<StructGlobalData> globalDataTable2 = new ArrayList<>();
-    private List<StructGlobalData> globalDataTable3 = new ArrayList<>();
-    private List<StructChangeForms> changeForms = new ArrayList<>();
-    private List<StructFormId> formIdArray = new ArrayList<>();
-    private List<StructFormId> visitedWorldspaceArray = new ArrayList<>();
+    private List<StructGlobalData> globalDataTable1 = new ArrayList<StructGlobalData>();
+    private List<StructGlobalData> globalDataTable2 = new ArrayList<StructGlobalData>();
+    private List<StructGlobalData> globalDataTable3 = new ArrayList<StructGlobalData>();
+    private List<StructChangeForms> changeForms = new ArrayList<StructChangeForms>();
+    private List<StructFormId> formIdArray = new ArrayList<StructFormId>();
+    private List<StructFormId> visitedWorldspaceArray = new ArrayList<StructFormId>();
     private StructUnknown3Table unknown3Table = new StructUnknown3Table();
 
     public StructBasicData getBasicData() {

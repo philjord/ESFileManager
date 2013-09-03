@@ -1,142 +1,170 @@
 package ca.davidfuchs.jessedit.ess;
 
-import org.joda.time.DateTime;
+public class StructHeader
+{
+	private long version;
 
-public class StructHeader {
-    private long version;
-    private long saveNumber;
-    private String playerName;
-    private long playerLevel;
-    private String playerLocation;
-    private String gameDate;
-    private String playerRaceEditorId;
-    private int playerSex;
-    private float playerCurExp;
-    private float playerLvlUpExp;
-    private DateTime fileTime;
-    private long shotWidth;
-    private long shotHeight;
+	private long saveNumber;
 
-    public long getVersion() {
-        return version;
-    }
+	private String playerName;
 
-    void setVersion(long version) {
-        this.version = version;
-    }
+	private long playerLevel;
 
-    public long getSaveNumber() {
-        return saveNumber;
-    }
+	private String playerLocation;
 
-    void setSaveNumber(long saveNumber) {
-        this.saveNumber = saveNumber;
-    }
+	private String gameDate;
 
-    public String getPlayerName() {
-        return playerName;
-    }
+	private String playerRaceEditorId;
 
-    void setPlayerName(String playerName) {
-        this.playerName = playerName;
-    }
+	private int playerSex;
 
-    public long getPlayerLevel() {
-        return playerLevel;
-    }
+	private float playerCurExp;
 
-    void setPlayerLevel(long playerLevel) {
-        this.playerLevel = playerLevel;
-    }
+	private float playerLvlUpExp;
 
-    public String getPlayerLocation() {
-        return playerLocation;
-    }
+	private DateTime fileTime;
 
-    void setPlayerLocation(String playerLocation) {
-        this.playerLocation = playerLocation;
-    }
+	private long shotWidth;
 
-    public String getGameDate() {
-        return gameDate;
-    }
+	private long shotHeight;
 
-    void setGameDate(String gameDate) {
-        this.gameDate = gameDate;
-    }
+	public long getVersion()
+	{
+		return version;
+	}
 
-    public String getPlayerRaceEditorId() {
-        return playerRaceEditorId;
-    }
+	void setVersion(long version)
+	{
+		this.version = version;
+	}
 
-    void setPlayerRaceEditorId(String playerRaceEditorId) {
-        this.playerRaceEditorId = playerRaceEditorId;
-    }
+	public long getSaveNumber()
+	{
+		return saveNumber;
+	}
 
-    public int getPlayerSex() {
-        return playerSex;
-    }
+	void setSaveNumber(long saveNumber)
+	{
+		this.saveNumber = saveNumber;
+	}
 
-    void setPlayerSex(int playerSex) {
-        this.playerSex = playerSex;
-    }
+	public String getPlayerName()
+	{
+		return playerName;
+	}
 
-    public float getPlayerCurExp() {
-        return playerCurExp;
-    }
+	void setPlayerName(String playerName)
+	{
+		this.playerName = playerName;
+	}
 
-    void setPlayerCurExp(float playerCurExp) {
-        this.playerCurExp = playerCurExp;
-    }
+	public long getPlayerLevel()
+	{
+		return playerLevel;
+	}
 
-    public float getPlayerLvlUpExp() {
-        return playerLvlUpExp;
-    }
+	void setPlayerLevel(long playerLevel)
+	{
+		this.playerLevel = playerLevel;
+	}
 
-    void setPlayerLvlUpExp(float playerLvlUpExp) {
-        this.playerLvlUpExp = playerLvlUpExp;
-    }
+	public String getPlayerLocation()
+	{
+		return playerLocation;
+	}
 
-    public DateTime getFileTime() {
-        return fileTime;
-    }
+	void setPlayerLocation(String playerLocation)
+	{
+		this.playerLocation = playerLocation;
+	}
 
-    void setFileTime(DateTime fileTime) {
-        this.fileTime = fileTime;
-    }
+	public String getGameDate()
+	{
+		return gameDate;
+	}
 
-    public long getShotWidth() {
-        return shotWidth;
-    }
+	void setGameDate(String gameDate)
+	{
+		this.gameDate = gameDate;
+	}
 
-    void setShotWidth(long shotWidth) {
-        this.shotWidth = shotWidth;
-    }
+	public String getPlayerRaceEditorId()
+	{
+		return playerRaceEditorId;
+	}
 
-    public long getShotHeight() {
-        return shotHeight;
-    }
+	void setPlayerRaceEditorId(String playerRaceEditorId)
+	{
+		this.playerRaceEditorId = playerRaceEditorId;
+	}
 
-    void setShotHeight(long shotHeight) {
-        this.shotHeight = shotHeight;
-    }
+	public int getPlayerSex()
+	{
+		return playerSex;
+	}
 
-    @Override
-    public String toString() {
-        return "StructHeader{" +
-                "version=" + version +
-                ", saveNumber=" + saveNumber +
-                ", playerName='" + playerName + '\'' +
-                ", playerLevel=" + playerLevel +
-                ", playerLocation='" + playerLocation + '\'' +
-                ", gameDate='" + gameDate + '\'' +
-                ", playerRaceEditorId='" + playerRaceEditorId + '\'' +
-                ", playerSex=" + playerSex +
-                ", playerCurExp=" + playerCurExp +
-                ", playerLvlUpExp=" + playerLvlUpExp +
-                ", fileTime=" + fileTime +
-                ", shotWidth=" + shotWidth +
-                ", shotHeight=" + shotHeight +
-                '}';
-    }
+	void setPlayerSex(int playerSex)
+	{
+		this.playerSex = playerSex;
+	}
+
+	public float getPlayerCurExp()
+	{
+		return playerCurExp;
+	}
+
+	void setPlayerCurExp(float playerCurExp)
+	{
+		this.playerCurExp = playerCurExp;
+	}
+
+	public float getPlayerLvlUpExp()
+	{
+		return playerLvlUpExp;
+	}
+
+	void setPlayerLvlUpExp(float playerLvlUpExp)
+	{
+		this.playerLvlUpExp = playerLvlUpExp;
+	}
+
+	public DateTime getFileTime()
+	{
+		return fileTime;
+	}
+
+	void setFileTime(DateTime fileTime)
+	{
+		this.fileTime = fileTime;
+	}
+
+	public long getShotWidth()
+	{
+		return shotWidth;
+	}
+
+	void setShotWidth(long shotWidth)
+	{
+		this.shotWidth = shotWidth;
+	}
+
+	public long getShotHeight()
+	{
+		return shotHeight;
+	}
+
+	void setShotHeight(long shotHeight)
+	{
+		this.shotHeight = shotHeight;
+	}
+
+	@Override
+	public String toString()
+	{
+		return "StructHeader{" + "version=" + version + ", saveNumber=" + saveNumber + ", playerName='" + playerName + '\''
+				+ ", playerLevel=" + playerLevel + ", playerLocation='" + playerLocation + '\'' + ", gameDate='" + gameDate + '\''
+				+ ", playerRaceEditorId='" + playerRaceEditorId + '\'' + ", playerSex=" + playerSex + ", playerCurExp=" + playerCurExp
+				+ ", playerLvlUpExp=" + playerLvlUpExp + ", fileTime=" + fileTime + ", shotWidth=" + shotWidth + ", shotHeight="
+				+ shotHeight + '}';
+	}
 }

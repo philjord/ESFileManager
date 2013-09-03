@@ -6,5 +6,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/jnif"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ElderScrollsUtils"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="output" path=""/>
+	<classpathentry kind="lib" path="/external_jars/external jars/jess/guava-14.0.1.jar"/>
+	<classpathentry kind="output" path="output"/>
 </classpath>
