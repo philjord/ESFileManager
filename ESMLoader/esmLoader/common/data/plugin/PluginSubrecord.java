@@ -3,7 +3,7 @@ package esmLoader.common.data.plugin;
 import java.util.HashMap;
 import java.util.Map;
 
-import utils.ESMByteConvert;
+import tools.io.ESMByteConvert;
 
 public class PluginSubrecord
 {

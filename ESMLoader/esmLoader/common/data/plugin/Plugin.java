@@ -9,8 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import utils.ESMByteConvert;
-
+import tools.io.ESMByteConvert;
 import esmLoader.common.PluginException;
 
 public class Plugin implements PluginInterface

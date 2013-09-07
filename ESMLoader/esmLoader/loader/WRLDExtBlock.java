@@ -6,8 +6,7 @@ import java.io.RandomAccessFile;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import utils.ESMByteConvert;
-
+import tools.io.ESMByteConvert;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.PluginGroup;
 

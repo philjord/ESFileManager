@@ -7,8 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import utils.ESMByteConvert;
-
+import tools.io.ESMByteConvert;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.PluginGroup;
 import esmLoader.common.data.plugin.PluginRecord;

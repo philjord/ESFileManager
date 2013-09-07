@@ -5,8 +5,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 
-import utils.ESMByteConvert;
-
+import tools.io.ESMByteConvert;
 import esmLoader.common.PluginException;
 
 public class PluginHeader

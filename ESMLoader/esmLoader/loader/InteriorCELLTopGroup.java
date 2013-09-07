@@ -5,8 +5,7 @@ import java.io.RandomAccessFile;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import utils.ESMByteConvert;
-
+import tools.io.ESMByteConvert;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.PluginGroup;
 

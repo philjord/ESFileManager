@@ -12,8 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
-import utils.ESMByteConvert;
-
+import tools.io.ESMByteConvert;
 import esmLoader.common.PluginException;
 import esmLoader.loader.CELLPointer;
 import esmLoader.loader.InteriorCELLTopGroup;

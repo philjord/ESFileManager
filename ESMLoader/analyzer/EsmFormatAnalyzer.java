@@ -115,15 +115,27 @@ public class EsmFormatAnalyzer
 				{
 					PluginRecord pr2 = master.getInteriorCELL(cp.formId);
 					applyRecord(pr2, true, false);
-
-					PluginGroup pg = master.getInteriorCELLChildren(cp.formId);
-					if (pg != null)
+					 
+					PluginGroup cellChildren = master.getInteriorCELLChildren(cp.formId);
+					if (cellChildren != null)
 					{
-						for (PluginRecord pr : pg.getRecordList())
+						for (PluginRecord pgs : cellChildren.getRecordList())
 						{
-							applyRecord(pr, true, false);
+							// children are in groups of temp and persist (and dist)
+							for (PluginRecord pgr : ((PluginGroup) pgs).getRecordList())
+							{
+								applyRecord(pgr, true, false);
+								if (pgr instanceof PluginGroup)
+								{
+									for (PluginRecord pr : ((PluginGroup) pgr).getRecordList())
+									{
+										applyRecord(pr, true, false);
+									}
+								}
+							}
 						}
 					}
+
 					if (c % 1000 == 0)
 						System.out.println("analyzed " + c);
 
@@ -141,13 +153,23 @@ public class EsmFormatAnalyzer
 					PluginRecord pr2 = master.getWRLDExtBlockCELL(cp.formId);
 					applyRecord(pr2, false, true);
 
-					PluginGroup pg = master.getWRLDExtBlockCELLChildren(cp.formId);
-					if (pg != null)
+					PluginGroup cellChildren = master.getWRLDExtBlockCELLChildren(cp.formId);
+					if (cellChildren != null)
 					{
-						for (PluginRecord pr : pg.getRecordList())
+						for (PluginRecord pgs : cellChildren.getRecordList())
 						{
-							applyRecord(pr, false, true);
-
+							// children are in groups of temp and persist (and dist)
+							for (PluginRecord pgr : ((PluginGroup) pgs).getRecordList())
+							{
+								applyRecord(pgr, true, false);
+								if (pgr instanceof PluginGroup)
+								{
+									for (PluginRecord pr : ((PluginGroup) pgr).getRecordList())
+									{
+										applyRecord(pr, false, true);
+									}
+								}
+							}
 						}
 					}
 					if (c % 1000 == 0)
@@ -365,6 +387,14 @@ public class EsmFormatAnalyzer
 		return sortedMap;
 	}
 
+	/**
+	 * Note flase, false is for non cell records (type data)
+	 * @param pr
+	 * @param interior
+	 * @param exterior
+	 * @throws DataFormatException
+	 * @throws PluginException
+	 */
 	public static void applyRecord(PluginRecord pr, boolean interior, boolean exterior) throws DataFormatException, PluginException
 	{
 		if (recordsDone.contains(pr.getFormID()))
