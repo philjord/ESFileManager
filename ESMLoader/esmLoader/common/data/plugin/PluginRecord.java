@@ -226,6 +226,7 @@ public class PluginRecord
 					if (subrecordType.equals("XXXX"))
 					{
 						overrideLength = ESMByteConvert.extractInt(rd, offset + 6);
+						offset += 6 + 4;
 						continue;
 					}
 					if (subrecordLength == 0)
