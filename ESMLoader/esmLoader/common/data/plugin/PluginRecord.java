@@ -206,39 +206,40 @@ public class PluginRecord
 
 	public List<PluginSubrecord> getSubrecords()
 	{
-		if (subrecordList != null)
+		// must fill it up before anyone can get it asynch!
+		synchronized (this)
 		{
-			return subrecordList;
-		}
-		else
-		{
-			subrecordList = new ArrayList<PluginSubrecord>();
-			int offset = 0;
-			int overrideLength = 0;
-
-			byte[] rd = getRecordData();
-			if (rd != null)
+			if (subrecordList == null)
 			{
-				while (offset < rd.length)
-				{
-					String subrecordType = new String(rd, offset, 4);
-					int subrecordLength = rd[offset + 4] & 0xff | (rd[offset + 5] & 0xff) << 8;
-					if (subrecordType.equals("XXXX"))
-					{
-						overrideLength = ESMByteConvert.extractInt(rd, offset + 6);
-						offset += 6 + 4;
-						continue;
-					}
-					if (subrecordLength == 0)
-					{
-						subrecordLength = overrideLength;
-						overrideLength = 0;
-					}
-					byte subrecordData[] = new byte[subrecordLength];
-					System.arraycopy(rd, offset + 6, subrecordData, 0, subrecordLength);
-					subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
 
-					offset += 6 + subrecordLength;
+				subrecordList = new ArrayList<PluginSubrecord>();
+				int offset = 0;
+				int overrideLength = 0;
+
+				byte[] rd = getRecordData();
+				if (rd != null)
+				{
+					while (offset < rd.length)
+					{
+						String subrecordType = new String(rd, offset, 4);
+						int subrecordLength = rd[offset + 4] & 0xff | (rd[offset + 5] & 0xff) << 8;
+						if (subrecordType.equals("XXXX"))
+						{
+							overrideLength = ESMByteConvert.extractInt(rd, offset + 6);
+							offset += 6 + 4;
+							continue;
+						}
+						if (subrecordLength == 0)
+						{
+							subrecordLength = overrideLength;
+							overrideLength = 0;
+						}
+						byte subrecordData[] = new byte[subrecordLength];
+						System.arraycopy(rd, offset + 6, subrecordData, 0, subrecordLength);
+						subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
+
+						offset += 6 + subrecordLength;
+					}
 				}
 			}
 			return subrecordList;
