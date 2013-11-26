@@ -424,7 +424,7 @@ public class ESMManager implements IMaster, IRecordStore
 	 
 	 * @param formInNewCellId
 	 */
-	public int getCellFormIdForPersistenetFormID(int formId)
+	public int getCellIdOfPersistentTarget(int formId)
 	{
 		//I need to pre load ALL persistent children for all CELLS and keep them
 		List<WRLDTopGroup> WRLDTopGroups = esmManager.getWRLDTopGroups();
@@ -449,7 +449,7 @@ public class ESMManager implements IMaster, IRecordStore
 							{
 								if (pr.getFormID() == formId)
 								{
-									return WRLDTopGroup.getFormID();
+									return wrld.getFormID();
 								}
 							}
 						}
