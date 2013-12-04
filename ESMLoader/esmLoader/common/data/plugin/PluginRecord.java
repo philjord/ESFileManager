@@ -235,7 +235,11 @@ public class PluginRecord
 							overrideLength = 0;
 						}
 						byte subrecordData[] = new byte[subrecordLength];
-						System.arraycopy(rd, offset + 6, subrecordData, 0, subrecordLength);
+						
+						// bad decompress can happen (LAND record in falloutNV)
+						if (offset + 6 + subrecordLength <= rd.length)
+							System.arraycopy(rd, offset + 6, subrecordData, 0, subrecordLength);
+						
 						subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
 
 						offset += 6 + subrecordLength;

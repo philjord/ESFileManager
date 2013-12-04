@@ -120,7 +120,14 @@ public class PluginGroup extends PluginRecord
 				record = new PluginRecord(prefix);
 			}
 
-			record.load(fileName, in, length);
+			try
+			{
+				record.load(fileName, in, length);
+			}
+			catch (Exception e)
+			{
+				System.out.println("Bad PluginGroup.load of reocrd " + type + " : " + e.getMessage());
+			}
 			recordList.add(record);
 
 			// remove this iteration from the total
