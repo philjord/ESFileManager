@@ -37,7 +37,7 @@ public class SubrecordStats
 		hasOrderOf.add(orderNo);
 
 		count++;
-		byte[] bs = sub.getSubrecordData();
+		byte[] bs = sub.getData();
 		if (minLength > bs.length)
 		{
 			minLength = bs.length;

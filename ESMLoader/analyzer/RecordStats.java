@@ -34,7 +34,7 @@ public class RecordStats
 			Subrecord sub = subs.get(i);
 
 			// heaps of madness in some records
-			if (sub.getSubrecordType().endsWith("0TX") || sub.getSubrecordType().endsWith("IAD"))
+			if (sub.getType().endsWith("0TX") || sub.getType().endsWith("IAD"))
 				continue;
 
 			subrecordStatsList.applySub(sub, rec.getRecordType(), i);

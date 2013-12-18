@@ -128,9 +128,9 @@ public class Record
 		for (int i = 0; i < subrecordList.size(); i++)
 		{
 			Subrecord sub = subrecordList.get(i);
-			if (sub.getSubrecordType().equals(newSubrecord.getSubrecordType()))
+			if (sub.getType().equals(newSubrecord.getType()))
 			{
-				sub.setSubrecordData(newSubrecord.getSubrecordData());
+				sub.setSubrecordData(newSubrecord.getData());
 			}
 		}
 		updated = true;

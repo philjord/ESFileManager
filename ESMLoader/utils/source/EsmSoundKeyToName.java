@@ -22,36 +22,36 @@ public class EsmSoundKeyToName implements SoundKeyToName
 				String value = "";
 				for (Subrecord sub : rec.getSubrecords())
 				{
-					byte[] bytes = sub.getSubrecordData();
-					if (sub.getSubrecordType().equals("EDID"))
+					byte[] bytes = sub.getData();
+					if (sub.getType().equals("EDID"))
 					{
 						key = new String(bytes, 0, bytes.length - 1);
 					}
-					else if (sub.getSubrecordType().equals("FNAM"))// If not exact name presumably a random sound is selected, dictated by SNDX data
+					else if (sub.getType().equals("FNAM"))// If not exact name presumably a random sound is selected, dictated by SNDX data
 					{
 						value = new String(bytes, 0, bytes.length - 1);
 					}
-					else if (sub.getSubrecordType().equals("SNDX"))//12 bytes
+					else if (sub.getType().equals("SNDX"))//12 bytes
 					{
 						// do nothing, sexy sound info see SNDX in esmj3dfo3 subrecords
 					}
-					else if (sub.getSubrecordType().equals("SNDD"))//36 bytes
+					else if (sub.getType().equals("SNDD"))//36 bytes
 					{
 						// no idea
 					}
-					else if (sub.getSubrecordType().equals("OBND"))//12 bytes
+					else if (sub.getType().equals("OBND"))//12 bytes
 					{
 						// bounds info
 					}
-					else if (sub.getSubrecordType().equals("ANAM"))//10 bytes
+					else if (sub.getType().equals("ANAM"))//10 bytes
 					{
 
 					}
-					else if (sub.getSubrecordType().equals("GNAM"))// 2 bytes
+					else if (sub.getType().equals("GNAM"))// 2 bytes
 					{
 
 					}
-					else if (sub.getSubrecordType().equals("HNAM"))// 4 bytes
+					else if (sub.getType().equals("HNAM"))// 4 bytes
 					{
 
 					}

@@ -20,12 +20,12 @@ public class Subrecord
 		return recordType;
 	}
 
-	public String getSubrecordType()
+	public String getType()
 	{
 		return subrecordType;
 	}
 
-	public byte[] getSubrecordData()
+	public byte[] getData()
 	{
 		return subrecordData;
 	}
