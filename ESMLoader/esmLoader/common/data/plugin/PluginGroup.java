@@ -126,7 +126,7 @@ public class PluginGroup extends PluginRecord
 			}
 			catch (Exception e)
 			{
-				System.out.println("Bad PluginGroup.load of reocrd " + type + " : " + e.getMessage());
+				System.out.println("Bad PluginGroup.load of reocrd " + type + " : " + e + " " + e.getStackTrace()[0]);
 			}
 			recordList.add(record);
 
