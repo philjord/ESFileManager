@@ -12,7 +12,6 @@ import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
 import tools.WeakValueHashMap;
-import utils.ESConfig;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
 import esmLoader.common.data.plugin.IMaster;
@@ -328,24 +327,14 @@ public class ESMManager implements IMaster, IRecordStore
 
 	public synchronized static void loadMaster(String fileName)
 	{
-
-		if (fileName.toLowerCase().contains("skyrim"))
-		{
-			ESConfig.HAVOK_TO_METERS_SCALE = ESConfig.SKYRIM_HAVOK_TO_METERS_SCALE;
-		}
-		else
-		{
-			ESConfig.HAVOK_TO_METERS_SCALE = ESConfig.PRE_SKYRIM_HAVOK_TO_METERS_SCALE;
-		}
-
 		File m = new File(fileName);
 
 		try
 		{
-			Master master = new Master(m); 
-			esmManager = new ESMManager(); 
-			master.load(); 
-			esmManager.addMaster(master); 
+			Master master = new Master(m);
+			esmManager = new ESMManager();
+			master.load();
+			esmManager.addMaster(master);
 		}
 		catch (PluginException e1)
 		{
