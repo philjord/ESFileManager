@@ -245,6 +245,7 @@ public class PluginRecord
 						offset += 6 + subrecordLength;
 					}
 				}
+				//TODO: can I discard the raw data now? 
 			}
 			return subrecordList;
 		}
