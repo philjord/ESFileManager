@@ -209,7 +209,7 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 			}
 			else
 			{
-				if (record.getRecordData().length != 0)
+				if (record.getSubrecords().size() > 0)
 				{
 					recordNode.add(new DefaultMutableTreeNode(null));
 				}

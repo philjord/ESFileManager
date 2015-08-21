@@ -245,7 +245,8 @@ public class PluginRecord
 						offset += 6 + subrecordLength;
 					}
 				}
-				//TODO: can I discard the raw data now? 
+				//TODO: can I discard the raw data now? does this improve memory usage at all? 
+				recordData=null;
 			}
 			return subrecordList;
 		}
