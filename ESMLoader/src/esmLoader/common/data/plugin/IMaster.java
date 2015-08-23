@@ -43,4 +43,8 @@ public interface IMaster
 
 	public Set<Integer> getWRLDExtBlockCELLFormIds();
 
+	public String getName();
+
+	public float getVersion();
+
 }

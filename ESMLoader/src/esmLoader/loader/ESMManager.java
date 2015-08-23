@@ -11,17 +11,15 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
-import tools.WeakValueHashMap;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
-import esmLoader.common.data.plugin.IMaster;
 import esmLoader.common.data.plugin.Master;
 import esmLoader.common.data.plugin.PluginGroup;
 import esmLoader.common.data.plugin.PluginRecord;
-import esmLoader.common.data.record.IRecordStore;
 import esmLoader.common.data.record.Record;
+import tools.WeakValueHashMap;
 
-public class ESMManager implements IMaster, IRecordStore
+public class ESMManager implements IESMManager
 {
 	private ArrayList<Master> masters = new ArrayList<Master>();
 
@@ -311,7 +309,7 @@ public class ESMManager implements IMaster, IRecordStore
 	}
 
 	//Convinence staic singleton system below 
-	private static ESMManager esmManager = null;
+	private static IESMManager esmManager = null;
 
 	/**
 	 * Note synchronized because the new statement and the load statement are two different calls.
@@ -381,7 +379,7 @@ public class ESMManager implements IMaster, IRecordStore
 	}
 
 	//TODO this static esm file handing out system is garbage isn't it?
-	public static ESMManager getESMManager(String fileName)
+	public static IESMManager getESMManager(String fileName)
 	{
 		ensureMasterLoaded(fileName);
 		return esmManager;

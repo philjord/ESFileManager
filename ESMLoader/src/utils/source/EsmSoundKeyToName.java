@@ -4,13 +4,13 @@ import java.util.HashMap;
 
 import esmLoader.common.data.record.Record;
 import esmLoader.common.data.record.Subrecord;
-import esmLoader.loader.ESMManager;
+import esmLoader.loader.IESMManager;
 
 public class EsmSoundKeyToName implements SoundKeyToName
 {
 	public static HashMap<String, String> soundNameToFile = new HashMap<String, String>();
 
-	public EsmSoundKeyToName(ESMManager esmManager)
+	public EsmSoundKeyToName(IESMManager esmManager)
 	{
 		//TODO: I very much to to traverse only the SOUN GRUP records here
 		for (Integer formId : esmManager.getTypeToFormIdMap().get("SOUN"))

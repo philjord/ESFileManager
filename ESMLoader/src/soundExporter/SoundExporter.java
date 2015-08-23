@@ -12,6 +12,7 @@ import esmLoader.EsmFileLocations;
 import esmLoader.common.data.record.Record;
 import esmLoader.common.data.record.Subrecord;
 import esmLoader.loader.ESMManager;
+import esmLoader.loader.IESMManager;
 
 public class SoundExporter
 {
@@ -33,7 +34,7 @@ public class SoundExporter
 		try
 		{
 			Thread.currentThread().setPriority(4);
-			ESMManager esmManager = ESMManager.getESMManager(esmFile);
+			IESMManager esmManager = ESMManager.getESMManager(esmFile);
 			Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
 			System.out.println("Done in " + (System.currentTimeMillis() - start) + " analyzing...");
 
@@ -50,7 +51,7 @@ public class SoundExporter
 		System.out.println("Done");
 	}
 
-	private static void exportSounds(ESMManager esmManager, BufferedWriter outputFile) throws IOException
+	private static void exportSounds(IESMManager esmManager, BufferedWriter outputFile) throws IOException
 	{
 		int idx = 0;
 		for (Integer formId : esmManager.getTypeToFormIdMap().get("SOUN"))

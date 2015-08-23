@@ -465,4 +465,16 @@ public class Master implements IMaster
 		}
 	}
 
+	@Override
+	public String getName()
+	{
+		return masterFile.getName();
+	}
+
+	@Override
+	public float getVersion()
+	{
+		return masterHeader.getVersion();
+	}
+
 }

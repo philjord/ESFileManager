@@ -23,6 +23,7 @@ import esmLoader.common.data.plugin.PluginRecord;
 import esmLoader.common.data.record.Record;
 import esmLoader.loader.CELLPointer;
 import esmLoader.loader.ESMManager;
+import esmLoader.loader.IESMManager;
 import esmLoader.loader.InteriorCELLTopGroup;
 import esmLoader.loader.WRLDTopGroup;
 
@@ -65,7 +66,7 @@ public class EsmFormatAnalyzer
 		try
 		{
 			Thread.currentThread().setPriority(4);
-			ESMManager esmManager = ESMManager.getESMManager(generalEsmFile);
+			IESMManager esmManager = ESMManager.getESMManager(generalEsmFile);
 			Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
 			System.out.println("Done in " + (System.currentTimeMillis() - start) + " analyzing...");
 
@@ -88,14 +89,14 @@ public class EsmFormatAnalyzer
 
 	}
 
-	public static void analyze(ESMManager master) throws DataFormatException, IOException, PluginException
+	public static void analyze(IESMManager esmManager) throws DataFormatException, IOException, PluginException
 	{
 
-		int c = master.getAllFormIds().size();
+		int c = esmManager.getAllFormIds().size();
 		System.out.println("master getAllFormIds count = " + c);
-		for (Integer formId : master.getAllFormIds())
+		for (Integer formId : esmManager.getAllFormIds())
 		{
-			Record rec = master.getRecord(formId);
+			Record rec = esmManager.getRecord(formId);
 			recordStatsList.applyRecord(rec, false, false, allSubrecordStatsList);
 
 			maxFormId = formId > maxFormId ? formId : maxFormId;
@@ -107,16 +108,16 @@ public class EsmFormatAnalyzer
 		}
 		if (ANALYZE_CELLS)
 		{
-			for (InteriorCELLTopGroup interiorCELLTopGroup : master.getInteriorCELLTopGroups())
+			for (InteriorCELLTopGroup interiorCELLTopGroup : esmManager.getInteriorCELLTopGroups())
 			{
 				c = interiorCELLTopGroup.interiorCELLByFormId.values().size();
 				System.out.println("interiorCELLTopGroup.interiorCELLByFormId.values() count = " + c);
 				for (CELLPointer cp : interiorCELLTopGroup.interiorCELLByFormId.values())
 				{
-					PluginRecord pr2 = master.getInteriorCELL(cp.formId);
+					PluginRecord pr2 = esmManager.getInteriorCELL(cp.formId);
 					applyRecord(pr2, true, false);
 					 
-					PluginGroup cellChildren = master.getInteriorCELLChildren(cp.formId);
+					PluginGroup cellChildren = esmManager.getInteriorCELLChildren(cp.formId);
 					if (cellChildren != null)
 					{
 						for (PluginRecord pgs : cellChildren.getRecordList())
@@ -144,16 +145,16 @@ public class EsmFormatAnalyzer
 
 			}
 
-			for (WRLDTopGroup wRLDTopGroup : master.getWRLDTopGroups())
+			for (WRLDTopGroup wRLDTopGroup : esmManager.getWRLDTopGroups())
 			{
 				c = wRLDTopGroup.WRLDExtBlockCELLByFormId.values().size();
 				System.out.println("wRLDTopGroup.WRLDExtBlockCELLByFormId.values() count = " + c);
 				for (CELLPointer cp : wRLDTopGroup.WRLDExtBlockCELLByFormId.values())
 				{
-					PluginRecord pr2 = master.getWRLDExtBlockCELL(cp.formId);
+					PluginRecord pr2 = esmManager.getWRLDExtBlockCELL(cp.formId);
 					applyRecord(pr2, false, true);
 
-					PluginGroup cellChildren = master.getWRLDExtBlockCELLChildren(cp.formId);
+					PluginGroup cellChildren = esmManager.getWRLDExtBlockCELLChildren(cp.formId);
 					if (cellChildren != null)
 					{
 						for (PluginRecord pgs : cellChildren.getRecordList())
@@ -180,12 +181,12 @@ public class EsmFormatAnalyzer
 
 			}
 		}
-		printoutStats(master);
+		printoutStats(esmManager);
 	}
 
-	private static void printoutStats(ESMManager master)
+	private static void printoutStats(IESMManager esmManager)
 	{
-		root = new DefaultMutableTreeNode(master.getName());
+		root = new DefaultMutableTreeNode(esmManager.getName());
 		tree = new JTree(root);
 		System.out.println("Stats " + recordStatsList.size());
 		Map<String, RecordStats> sortedRecsMap = getSortedRecsMap();
