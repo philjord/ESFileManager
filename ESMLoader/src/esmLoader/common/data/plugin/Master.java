@@ -49,19 +49,9 @@ public class Master implements IMaster
 
 	private WRLDTopGroup wRLDTopGroup;
 
-	private int masterID = 0;
-
-	public WRLDTopGroup getWRLDTopGroup()
-	{
-		return wRLDTopGroup;
-	}
-
-	public InteriorCELLTopGroup getInteriorCELLTopGroup()
-	{
-		return interiorCELLTopGroup;
-	}
-
 	private InteriorCELLTopGroup interiorCELLTopGroup;
+
+	private int masterID = 0;
 
 	/**
 	 * Master id must represent the load order of this master file, this is used as an offset to all formids 
@@ -73,11 +63,6 @@ public class Master implements IMaster
 	{
 		this.masterFile = masterFile;
 		masterHeader = new PluginHeader(masterFile.getName());
-	}
-
-	public PluginHeader getMasterHeader()
-	{
-		return masterHeader;
 	}
 
 	public int getMinFormId()
@@ -148,6 +133,16 @@ public class Master implements IMaster
 		childrenGroup.load(masterFile.getName(), in, length);
 
 		return childrenGroup;
+	}
+
+	public WRLDTopGroup getWRLDTopGroup()
+	{
+		return wRLDTopGroup;
+	}
+
+	public InteriorCELLTopGroup getInteriorCELLTopGroup()
+	{
+		return interiorCELLTopGroup;
 	}
 
 	@Override

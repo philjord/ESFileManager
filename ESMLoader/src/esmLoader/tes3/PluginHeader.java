@@ -2,10 +2,9 @@ package esmLoader.tes3;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.zip.DataFormatException;
 
-import esmLoader.common.PluginException;
 import tools.io.ESMByteConvert;
+import esmLoader.common.PluginException;
 
 public class PluginHeader extends PluginRecord
 {
@@ -19,7 +18,7 @@ public class PluginHeader extends PluginRecord
 	private String creator = "";
 
 	private String summary = "";
-	
+
 	private int numRecords = 0;
 
 	public PluginHeader()
@@ -27,11 +26,11 @@ public class PluginHeader extends PluginRecord
 		super();
 	}
 
-	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException, DataFormatException
+	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
 	{
 		super.load(fileName, in);
-		pluginFileName=fileName;
-		for (PluginSubrecord sub : getSubrecords())
+		pluginFileName = fileName;
+		for (esmLoader.common.data.plugin.PluginSubrecord sub : getSubrecords())
 		{
 			if (sub.getSubrecordType().equals("HEDR"))
 			{

@@ -97,13 +97,21 @@ public class PluginHeader
 		if (count != headerByteCount)
 			throw new PluginException(pluginFileName + ": File is not a TES4 file");
 		String type = new String(prefix, 0, 4);
-		if (!type.equals("TES4"))
-			throw new PluginException(pluginFileName + ": File is not a TES4 file");
+
+		if (!type.equals("TES4") && !type.equals("TES3"))
+			throw new PluginException(pluginFileName + ": File is not a TES4 file (" + type + ")");
+
 		if ((prefix[8] & 1) != 0)
 			master = true;
 		else
 			master = false;
 		int headerLength = ESMByteConvert.extractInt(prefix, 4);
+
+		if (type.equals("TES3"))
+		{
+			readTes3(in, headerLength);
+			return;
+		}
 
 		byte buffer[] = new byte[1024];
 		do
@@ -170,5 +178,78 @@ public class PluginHeader
 			throw new PluginException(pluginFileName + ": Header is incomplete");
 		else
 			return;
+	}
+
+	// need a new format for records and sub records as the intro data is slightly different
+	
+	//http://www.uesp.net/morrow/tech/mw_esm.txt
+	//http://www.uesp.net/wiki/Tes4Mod:Mod_File_Format
+	private void readTes3(RandomAccessFile in, int headerLength) throws PluginException, IOException
+	{
+		byte buffer[] = new byte[1024];
+		do
+		{
+			if (headerLength < 16)
+				break;
+
+			byte[] recordHeader = new byte[16];
+			int count = in.read(recordHeader);
+
+			if (count != 16)
+				throw new PluginException(pluginFileName + ": Header subrecord prefix truncated");
+
+			int length = ESMByteConvert.extractShort(recordHeader, 4);
+
+			if (length > headerLength)
+				throw new PluginException(pluginFileName + ": Subrecord length exceeds header length");
+			if (length > buffer.length)
+				buffer = new byte[length];
+
+			count = in.read(buffer, 0, length);
+			if (count != length)
+				throw new PluginException(pluginFileName + ": Header subrecord data truncated");
+			headerLength -= count;
+
+			String type = new String(recordHeader, 0, 4);
+
+			if (type.equals("HEDR"))
+			{
+				if (length < 8)
+					throw new PluginException(pluginFileName + ": HEDR subrecord is too small");
+
+				pluginVersion = Float.intBitsToFloat(ESMByteConvert.extractInt(buffer, 0));
+				recordCount = ESMByteConvert.extractInt(buffer, 4);
+			}
+			else if (type.equals("CNAM"))
+			{
+				if (length > 1)
+					creator = new String(buffer, 0, length - 1);
+			}
+			else if (type.equals("SNAM"))
+			{
+				if (length > 1)
+					summary = new String(buffer, 0, length - 1);
+			}
+			else if (type.equals("OFST"))
+			{
+				// what is this one?				 
+			}
+			else if (type.equals("DELE"))
+			{
+				// what is this one?
+			}
+			else if (type.equals("MAST") && length > 1)
+			{
+				masterList.add(new String(buffer, 0, length - 1));
+				//System.out.println("MAST " + new String(buffer, 0, length - 1));
+			}
+		}
+		while (true);
+
+		if (headerLength != 0)
+			throw new PluginException(pluginFileName + ": Header is incomplete");
+		else
+			return;
+
 	}
 }

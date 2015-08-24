@@ -7,10 +7,16 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import esmLoader.common.PluginException;
+import esmLoader.loader.InteriorCELLTopGroup;
 import esmLoader.loader.WRLDChildren;
+import esmLoader.loader.WRLDTopGroup;
 
 public interface IMaster
 {
+	public WRLDTopGroup getWRLDTopGroup();
+
+	public InteriorCELLTopGroup getInteriorCELLTopGroup();
+
 	public PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException;
 
 	public WRLDChildren getWRLDChildren(int formID);
@@ -46,5 +52,9 @@ public interface IMaster
 	public String getName();
 
 	public float getVersion();
+
+	public int getMinFormId();
+
+	public int getMaxFormId();
 
 }

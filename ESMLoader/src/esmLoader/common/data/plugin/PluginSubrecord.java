@@ -7,17 +7,28 @@ import tools.io.ESMByteConvert;
 
 public class PluginSubrecord
 {
-	private String recordType;
+	protected String recordType;
 
-	private String subrecordType;
+	protected String subrecordType;
 
-	private byte subrecordData[];
+	protected byte subrecordData[];
+
+	//for tes3 version
+	protected PluginSubrecord()
+	{
+
+	}
 
 	public PluginSubrecord(String recordType, String subrecordType, byte subrecordData[])
 	{
 		this.recordType = recordType;
 		this.subrecordType = subrecordType;
 		this.subrecordData = subrecordData;
+	}
+
+	public String getRecordType()
+	{
+		return recordType;
 	}
 
 	public String getSubrecordType()

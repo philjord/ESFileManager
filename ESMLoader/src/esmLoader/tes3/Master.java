@@ -4,14 +4,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.DataFormatException;
 
-import javax.swing.JFrame;
-
-import display.PluginDisplayDialog;
 import esmLoader.EsmFileLocations;
 import esmLoader.common.PluginException;
-import esmLoader.common.data.plugin.Plugin;
+import esmLoader.common.data.plugin.FormInfo;
+import esmLoader.common.data.plugin.IMaster;
+import esmLoader.common.data.plugin.PluginGroup;
+import esmLoader.common.data.plugin.PluginSubrecord;
+import esmLoader.loader.InteriorCELLTopGroup;
+import esmLoader.loader.WRLDChildren;
+import esmLoader.loader.WRLDTopGroup;
 
 /**
  * This is a copy of the master file in data package, however it holds onto a
@@ -21,17 +27,14 @@ import esmLoader.common.data.plugin.Plugin;
  * @author Administrator
  *
  */
-public class Master
+public class Master implements IMaster
 {
-	private static int headerByteCount = -1;
-
 	private File masterFile;
 
 	private RandomAccessFile in;
 
 	private PluginHeader masterHeader;
 
-	private int masterID = 0;
 	private ArrayList<PluginRecord> records = new ArrayList<PluginRecord>();
 
 	public Master(File masterFile)
@@ -40,9 +43,28 @@ public class Master
 		masterHeader = new PluginHeader();
 	}
 
-	public PluginHeader getMasterHeader()
+	@Override
+	public String getName()
 	{
-		return masterHeader;
+		return masterHeader.getPluginFileName();
+	}
+
+	@Override
+	public float getVersion()
+	{
+		return masterHeader.getPluginVersion();
+	}
+
+	@Override
+	public int getMinFormId()
+	{
+		return -1;
+	}
+
+	@Override
+	public int getMaxFormId()
+	{
+		return -1;
 	}
 
 	public ArrayList<PluginRecord> getRecords()
@@ -71,7 +93,7 @@ public class Master
 	public static void main(String[] args)
 	{
 		String generalEsmFile = EsmFileLocations.getGeneralEsmFile();
-		
+
 		System.out.println("loading file " + generalEsmFile);
 
 		File pluginFile = new File(generalEsmFile);
@@ -80,12 +102,12 @@ public class Master
 		{
 			plugin.load();
 
-			for(PluginRecord r: plugin.getRecords())
+			for (PluginRecord r : plugin.getRecords())
 			{
-				System.out.println(""+r);
-				for(PluginSubrecord sr: r.getSubrecords())
+				System.out.println("" + r);
+				for (PluginSubrecord sr : r.getSubrecords())
 				{
-					System.out.println("\t"+sr);
+					System.out.println("\t" + sr);
 				}
 			}
 			System.out.println("done");
@@ -102,6 +124,133 @@ public class Master
 		{
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public WRLDTopGroup getWRLDTopGroup()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public InteriorCELLTopGroup getInteriorCELLTopGroup()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public WRLDChildren getWRLDChildren(int formID)
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException,
+			PluginException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public PluginRecord getPluginRecord(int formID) throws PluginException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Map<Integer, FormInfo> getFormMap()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Map<String, Integer> getEdidToFormIdMap()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Map<String, List<Integer>> getTypeToFormIdMap()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Integer> getAllFormIds()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<String> getAllEdids()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Integer> getAllInteriorCELLFormIds()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Integer> getAllWRLDTopGroupFormIds()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Set<Integer> getWRLDExtBlockCELLFormIds()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

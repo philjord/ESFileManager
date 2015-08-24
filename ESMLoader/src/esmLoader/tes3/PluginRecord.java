@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.zip.DataFormatException;
 
-import esmLoader.common.PluginException;
 import tools.io.ESMByteConvert;
+import esmLoader.common.PluginException;
+import esmLoader.common.data.plugin.PluginSubrecord;
 
-public class PluginRecord
+public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 {
 	private String recordType;
 
@@ -29,22 +29,25 @@ public class PluginRecord
 	{
 	}
 
+	@Override
 	public boolean isDeleted()
 	{
 		return (recordFlags & 0x20) != 0;
 	}
 
+	@Override
 	public boolean isIgnored()
 	{
 		return (recordFlags & 0x1000) != 0;
 	}
 
+	@Override
 	public String getRecordType()
 	{
 		return recordType;
 	}
 
-	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException, DataFormatException
+	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
 	{
 		filePositionPointer = in.getFilePointer();
 		byte[] prefix = new byte[16];
@@ -61,16 +64,17 @@ public class PluginRecord
 
 		count = in.read(recordData);
 		if (count != recordSize)
-			throw new PluginException(
-					fileName + ": " + recordType + " record bad length, asked for " + recordSize + " got " + count);
+			throw new PluginException(fileName + ": " + recordType + " record bad length, asked for " + recordSize + " got " + count);
 
 	}
 
+	@Override
 	public byte[] getRecordData()
 	{
 		return recordData;
 	}
 
+	@Override
 	public List<PluginSubrecord> getSubrecords()
 	{
 		// must fill it up before anyone can get it asynch!
@@ -78,7 +82,6 @@ public class PluginRecord
 		{
 			if (subrecordList == null)
 			{
-
 				subrecordList = new ArrayList<PluginSubrecord>();
 				int offset = 0;
 
@@ -103,30 +106,7 @@ public class PluginRecord
 		}
 	}
 
-	public String toString()
-	{
-		String text = "" + recordType + " record";
-		if (isIgnored())
-		{
-			text = "(Ignore) " + text;
-		}
-		else if (isDeleted())
-		{
-			text = "(Deleted) " + text;
-		}
-		return text;
-	}
-
-	public void displaySubs()
-	{
-		List<PluginSubrecord> subrecords = getSubrecords();
-
-		for (PluginSubrecord subrec : subrecords)
-		{
-			System.out.println("subrec " + subrec);
-		}
-	}
-
+	@Override
 	public long getFilePositionPointer()
 	{
 		return filePositionPointer;
@@ -137,9 +117,30 @@ public class PluginRecord
 		return recordFlags;
 	}
 
+	@Override
 	public int getUnknownInt()
 	{
 		return unknownInt;
+	}
+
+	public int getFormID()
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	public String getEditorID()
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	public int getRecordFlags1()
+	{
+		throw new UnsupportedOperationException();
+	}
+
+	public int getRecordFlags2()
+	{
+		throw new UnsupportedOperationException();
 	}
 
 }

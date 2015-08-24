@@ -3,12 +3,13 @@ package esmLoader.loader;
 import java.util.List;
 
 import esmLoader.common.data.plugin.IMaster;
-import esmLoader.common.data.plugin.Master;
 import esmLoader.common.data.record.IRecordStore;
 
 public interface IESMManager extends IMaster,IRecordStore
 {
-	void addMaster(Master master);
+	void addMaster(IMaster master);
+	
+	void addMaster(String absolutePath);
 
 	void clearMasters();
 	
@@ -20,5 +21,7 @@ public interface IESMManager extends IMaster,IRecordStore
 	List<InteriorCELLTopGroup> getInteriorCELLTopGroups();
 
 	int getCellIdOfPersistentTarget(int doorFormId);
+
+
 
 }

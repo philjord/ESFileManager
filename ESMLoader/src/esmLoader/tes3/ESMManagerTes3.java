@@ -1,9 +1,7 @@
-package esmLoader.loader;
+package esmLoader.tes3;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -13,21 +11,19 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
+import tools.WeakValueHashMap;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
 import esmLoader.common.data.plugin.IMaster;
-import esmLoader.common.data.plugin.Master;
 import esmLoader.common.data.plugin.PluginGroup;
-import esmLoader.common.data.plugin.PluginRecord;
 import esmLoader.common.data.record.Record;
-import esmLoader.tes3.ESMManagerTes3;
-import esmLoader.tes3.PluginHeader;
-import tools.WeakValueHashMap;
+import esmLoader.loader.CELLPointer;
+import esmLoader.loader.IESMManager;
+import esmLoader.loader.InteriorCELLTopGroup;
+import esmLoader.loader.WRLDChildren;
+import esmLoader.loader.WRLDTopGroup;
 
-//TODO: this is really an ESMMaster manager (or master plus plugin? esp? for morrowind)
-
-// also the multi master part ( and cacher)  is really very seperate from the ensuremaster and get esm manager bit so perhaps time for 2?
-public class ESMManager implements IESMManager
+public class ESMManagerTes3 implements IESMManager
 {
 	private ArrayList<IMaster> masters = new ArrayList<IMaster>();
 
@@ -43,12 +39,12 @@ public class ESMManager implements IESMManager
 
 	private String pluginName = "";
 
-	public ESMManager()
+	public ESMManagerTes3()
 	{
 
 	}
 
-	public ESMManager(String fileName)
+	public ESMManagerTes3(String fileName)
 	{
 		File m = new File(fileName);
 
@@ -131,7 +127,7 @@ public class ESMManager implements IESMManager
 		{
 			try
 			{
-				PluginRecord pr = getPluginRecord(formID);
+				esmLoader.common.data.plugin.PluginRecord pr = getPluginRecord(formID);
 				if (pr != null)
 				{
 					// TODO: do I need to give a real cell id here?
@@ -240,7 +236,7 @@ public class ESMManager implements IESMManager
 	}
 
 	@Override
-	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
+	public esmLoader.common.data.plugin.PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
 		return getMasterForId(formID).getInteriorCELL(formID);
 	}
@@ -252,13 +248,13 @@ public class ESMManager implements IESMManager
 	}
 
 	@Override
-	public PluginRecord getPluginRecord(int formID) throws PluginException
+	public esmLoader.common.data.plugin.PluginRecord getPluginRecord(int formID) throws PluginException
 	{
 		return getMasterForId(formID).getPluginRecord(formID);
 	}
 
 	@Override
-	public PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
+	public esmLoader.common.data.plugin.PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
 	{
 		return getMasterForId(formID).getWRLD(formID);
 	}
@@ -281,7 +277,7 @@ public class ESMManager implements IESMManager
 	}
 
 	@Override
-	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
+	public esmLoader.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
 		IMaster master = getMasterForId(formID);
 		return master.getWRLDExtBlockCELL(formID);
@@ -327,16 +323,7 @@ public class ESMManager implements IESMManager
 
 	private IMaster getMasterForId(int formID)
 	{
-		for (IMaster m : masters)
-		{
-			if (formID >= m.getMinFormId() && formID <= m.getMaxFormId())
-			{
-				return m;
-			}
-		}
-
-		System.out.println("no master found for form id " + formID);
-		return null;
+		throw new UnsupportedOperationException("ESMManagerTes3 getMasterForId");
 	}
 
 	public synchronized void addMaster(String fileNameToAdd)
@@ -386,22 +373,22 @@ public class ESMManager implements IESMManager
 		List<WRLDTopGroup> WRLDTopGroups = getWRLDTopGroups();
 		for (WRLDTopGroup WRLDTopGroup : WRLDTopGroups)
 		{
-			for (PluginRecord wrld : WRLDTopGroup.WRLDByFormId.values())
+			for (esmLoader.common.data.plugin.PluginRecord wrld : WRLDTopGroup.WRLDByFormId.values())
 			{
 				//WRLD wrld = new WRLD(wrld);
 				WRLDChildren children = getWRLDChildren(wrld.getFormID());
-				PluginRecord cell = children.getCell();
+				esmLoader.common.data.plugin.PluginRecord cell = children.getCell();
 				if (cell != null)
 				{
 					PluginGroup cellChildGroups = children.getCellChildren();
 
 					if (cellChildGroups != null && cellChildGroups.getRecordList() != null)
 					{
-						for (PluginRecord pgr : cellChildGroups.getRecordList())
+						for (esmLoader.common.data.plugin.PluginRecord pgr : cellChildGroups.getRecordList())
 						{
 							PluginGroup pg = (PluginGroup) pgr;
 
-							for (PluginRecord pr : pg.getRecordList())
+							for (esmLoader.common.data.plugin.PluginRecord pr : pg.getRecordList())
 							{
 								if (pr.getFormID() == formId)
 								{
@@ -421,17 +408,17 @@ public class ESMManager implements IESMManager
 			{
 				try
 				{
-					PluginRecord cell = getInteriorCELL(cp.formId);
+					esmLoader.common.data.plugin.PluginRecord cell = getInteriorCELL(cp.formId);
 
 					PluginGroup cellChildGroups = getInteriorCELLChildren(cell.getFormID());
 
 					if (cellChildGroups != null && cellChildGroups.getRecordList() != null)
 					{
-						for (PluginRecord pgr : cellChildGroups.getRecordList())
+						for (esmLoader.common.data.plugin.PluginRecord pgr : cellChildGroups.getRecordList())
 						{
 							PluginGroup pg = (PluginGroup) pgr;
 
-							for (PluginRecord pr : pg.getRecordList())
+							for (esmLoader.common.data.plugin.PluginRecord pr : pg.getRecordList())
 							{
 								if (pr.getFormID() == formId)
 								{
@@ -457,52 +444,6 @@ public class ESMManager implements IESMManager
 			}
 		}
 		return -1;
-	}
-
-	public static IESMManager getESMManager(String esmFile)
-	{
-		File testFile = new File(esmFile);
-		if (!testFile.exists() || !testFile.isFile())
-		{
-			System.out.println("Master file '" + testFile.getAbsolutePath() + "' does not exist");
-
-		}
-		else
-		{
-			try
-			{
-				RandomAccessFile in = new RandomAccessFile(testFile, "r");
-				try
-				{
-					byte[] prefix = new byte[16];
-					int count = in.read(prefix);
-					if (count == 16)
-					{
-						String recordType = new String(prefix, 0, 4);
-						if (recordType.equals("TES3"))
-						{
-							System.out.println("tes3 file!");
-							in.close();
-							return new ESMManagerTes3(esmFile);
-						}
-					}
-					in.close();
-				}
-				catch (IOException e)
-				{
-					//fall through, try tes4
-				}
-
-				//assume tes4
-				return new ESMManager(esmFile);
-			}
-			catch (FileNotFoundException e)
-			{
-				e.printStackTrace();
-			}
-		}
-
-		return null;
 	}
 
 }

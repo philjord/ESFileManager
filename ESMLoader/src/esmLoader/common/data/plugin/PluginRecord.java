@@ -34,6 +34,11 @@ public class PluginRecord
 
 	private List<PluginSubrecord> subrecordList;
 
+	//for tes3 version
+	protected PluginRecord()
+	{
+		
+	}
 	/**
 	 * prefix MUST have length of  either 20 (oblivion) or 24 (fallout) headerbyte count
 	 * @param prefix
