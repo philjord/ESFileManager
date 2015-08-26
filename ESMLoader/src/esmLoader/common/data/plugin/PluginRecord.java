@@ -14,25 +14,25 @@ public class PluginRecord
 {
 	protected int headerByteCount = -1;
 
-	private String recordType;
+	protected String recordType;
 
-	private int recordFlags1;
+	protected int recordFlags1;
 
 	private int recordFlags2;
 
-	private int unknownInt;
+	protected int unknownInt;
 
-	private int formID;
+	protected int formID;
 
-	private String editorID = "";
+	protected String editorID = "";
 
 	private PluginRecord parentRecord;
 
-	private byte[] recordData;
+	protected byte[] recordData;
 
-	private long filePositionPointer = -1;
+	protected long filePositionPointer = -1;
 
-	private List<PluginSubrecord> subrecordList;
+	protected List<PluginSubrecord> subrecordList;
 
 	//for tes3 version
 	protected PluginRecord()

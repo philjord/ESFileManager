@@ -23,7 +23,7 @@ public class PluginHeader extends PluginRecord
 
 	public PluginHeader()
 	{
-		super();
+		super(-1);
 	}
 
 	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
+import tools.WeakValueHashMap;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
 import esmLoader.common.data.plugin.IMaster;
@@ -21,8 +22,6 @@ import esmLoader.common.data.plugin.PluginGroup;
 import esmLoader.common.data.plugin.PluginRecord;
 import esmLoader.common.data.record.Record;
 import esmLoader.tes3.ESMManagerTes3;
-import esmLoader.tes3.PluginHeader;
-import tools.WeakValueHashMap;
 
 //TODO: this is really an ESMMaster manager (or master plus plugin? esp? for morrowind)
 

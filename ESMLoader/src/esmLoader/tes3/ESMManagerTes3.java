@@ -58,10 +58,6 @@ public class ESMManagerTes3 implements IESMManager
 		{
 			e1.printStackTrace();
 		}
-		catch (DataFormatException e1)
-		{
-			e1.printStackTrace();
-		}
 		catch (IOException e1)
 		{
 			e1.printStackTrace();
@@ -277,7 +273,8 @@ public class ESMManagerTes3 implements IESMManager
 	}
 
 	@Override
-	public esmLoader.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
+	public esmLoader.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException,
+			PluginException
 	{
 		IMaster master = getMasterForId(formID);
 		return master.getWRLDExtBlockCELL(formID);
@@ -323,7 +320,16 @@ public class ESMManagerTes3 implements IESMManager
 
 	private IMaster getMasterForId(int formID)
 	{
-		throw new UnsupportedOperationException("ESMManagerTes3 getMasterForId");
+		for (IMaster m : masters)
+		{
+			if (formID >= m.getMinFormId() && formID <= m.getMaxFormId())
+			{
+				return m;
+			}
+		}
+
+		System.out.println("no master found for form id " + formID);
+		return null;
 	}
 
 	public synchronized void addMaster(String fileNameToAdd)
@@ -336,10 +342,6 @@ public class ESMManagerTes3 implements IESMManager
 			addMaster(master);
 		}
 		catch (PluginException e1)
-		{
-			e1.printStackTrace();
-		}
-		catch (DataFormatException e1)
 		{
 			e1.printStackTrace();
 		}
