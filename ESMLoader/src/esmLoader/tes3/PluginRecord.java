@@ -22,6 +22,18 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 		this.formID = formId;
 	}
 
+	/**
+	 * For making the fake wrld  and cell group records for morrowind
+	 * @param formId
+	 */
+	public PluginRecord(int formId, String recordType, String name)
+	{
+		this.formID = formId;
+		this.recordType = recordType;
+		this.editorID = name;
+		subrecordList = new ArrayList<PluginSubrecord>();
+	}
+
 	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
 	{
 		filePositionPointer = in.getFilePointer();
@@ -50,12 +62,20 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 				{
 					if (sub.getSubrecordType().equals("NAME"))
 					{
-						editorID = new String(sub.getSubrecordData());
+						//ZString format
+						editorID = new String(sub.getSubrecordData(), 0, sub.getSubrecordData().length - 1);
 						break;
 					}
 				}
 				break;
 			}
+		}
+
+		// cells have the first (can be blank for exteriors cells)
+		if (recordType.equals("CELL"))
+		{
+			PluginSubrecord name = getSubrecords().get(0);
+			editorID = new String(name.getSubrecordData());
 		}
 
 	}
@@ -125,7 +145,7 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 		
 		10: REGN NAME = Region ID string	
 		11: BSGN NAME = Sign ID string		
-		12: LTEX NAME = Texture ID string		
+		12: LTEX NAME = Texture ID string	*	
 		13: STAT NAME = Static ID string					
 		14: DOOR NAME = Door ID string			
 		15: MISC NAME = Misc ID string
@@ -133,17 +153,17 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 		17: CONT NAME = Container ID string				
 		18: SPEL NAME = Spell ID string		
 		19: CREA NAME = Creature ID string		
-		20: BODY NAME = Body ID string					
+		20: BODY NAME = Body ID string		*			
 		21: LIGH NAME = Light ID string		
 		22: ENCH NAME = Enchantment ID string		
 		23: NPC_ NAME = NPC ID string	
 		24: ARMO NAME = Item ID, required
 		25: CLOT NAME = Item ID, required
-		26: REPA NAME = Item ID, required
+		26: REPA NAME = Item ID, required*
 		27: ACTI NAME = Item ID, required	
 		28: APPA NAME = Item ID, required		
-		29: LOCK NAME = Item ID, required	
-		30: PROB NAME = Item ID, required		
+		29: LOCK NAME = Item ID, required	*
+		30: PROB NAME = Item ID, required	*	
 		31: INGR NAME = Item ID, required		
 		32: BOOK NAME = Item ID, required			
 		33: ALCH NAME = Item ID, required			
@@ -151,7 +171,7 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 		35: LEVC NAME = levelled list ID string
 		
 		38: PGRD NAME = Path Grid ID string
-		39: SNDG NAME = Sound Generator ID string  
+		39: SNDG NAME = Sound Generator ID string  *
 		40: DIAL NAME = Dialogue ID string		
 		
 			

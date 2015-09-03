@@ -47,7 +47,13 @@ public class PluginGroup extends PluginRecord
 
 	public static Map<String, String> typeMap;
 
-	private List<PluginRecord> recordList = new ArrayList<PluginRecord>();
+	protected List<PluginRecord> recordList = new ArrayList<PluginRecord>();
+
+	//for tes3 version
+	protected PluginGroup()
+	{
+
+	}
 
 	public PluginGroup(byte prefix[])
 	{

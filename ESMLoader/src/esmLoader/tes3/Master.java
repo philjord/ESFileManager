@@ -9,13 +9,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
+import tools.io.ESMByteConvert;
 import esmLoader.EsmFileLocations;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
 import esmLoader.common.data.plugin.IMaster;
-import esmLoader.common.data.plugin.PluginGroup;
 import esmLoader.common.data.plugin.PluginSubrecord;
 import esmLoader.loader.InteriorCELLTopGroup;
 import esmLoader.loader.WRLDChildren;
@@ -50,6 +51,9 @@ public class Master implements IMaster
 	private int minFormId = Integer.MAX_VALUE;
 
 	private int maxFormId = Integer.MIN_VALUE;
+
+	// used to indicate the single morrowind world, added first
+	public static int wrldFormId = 0;
 
 	public Master(File masterFile)
 	{
@@ -125,6 +129,10 @@ public class Master implements IMaster
 
 		List<FormInfo> formList = new ArrayList<FormInfo>();
 
+		//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
+		PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
+		formList.add(new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord.getEditorID(), wrldRecord));
+
 		while (in.getFilePointer() < in.length())
 		{
 			PluginRecord record = new PluginRecord(currentFormId++);//note ++
@@ -190,7 +198,12 @@ public class Master implements IMaster
 	@Override
 	public PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
 	{
-		throw new UnsupportedOperationException();
+		if (formID == wrldFormId)
+		{
+			return getPluginRecord(formID);
+		}
+		// no message as null indicates a non world formid
+		return null;
 	}
 
 	@Override
@@ -200,9 +213,46 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
+	public int getWRLDExtBlockCELLId(int wrldFormId2, int x, int y)
 	{
-		throw new UnsupportedOperationException();
+		if (wrldFormId2 != wrldFormId)
+		{
+			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
+		}
+
+		List<Integer> cells = typeToFormIdMap.get("CELL");
+		// only those marked interor
+		for (int id : cells)
+		{
+			try
+			{
+				PluginRecord cell = getInteriorCELL(id);
+
+				PluginSubrecord data = cell.getSubrecords().get(1);
+				long flags = getDATAFlags(data);
+				// interior marker
+				if ((flags & 0x1) == 0)
+				{
+					if (getDATAx(data) == x && getDATAy(data) == y)
+						return id;
+				}
+
+			}
+			catch (DataFormatException e)
+			{
+				e.printStackTrace();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			catch (PluginException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return -1;
 	}
 
 	@Override
@@ -215,36 +265,90 @@ public class Master implements IMaster
 	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
 		throw new UnsupportedOperationException();
+		
+		//TODO: this should have a temp child of the LAND record for exterior use land cell x,y data
 	}
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
-		throw new UnsupportedOperationException();
+		return getPluginRecord(formID);
 	}
 
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		throw new UnsupportedOperationException();
+		// make up a fake group and add all children from the cell
+		PluginRecord cellRecord = getPluginRecord(formID);
+		CELLPluginGroup cell = new CELLPluginGroup(cellRecord);
+		return cell;
+
 	}
 
 	@Override
 	public Set<Integer> getAllInteriorCELLFormIds()
 	{
-		throw new UnsupportedOperationException();
+		TreeSet<Integer> ret = new TreeSet<Integer>();
+		List<Integer> cells = typeToFormIdMap.get("CELL");
+		// only those marked interor
+		for (int id : cells)
+		{
+			try
+			{
+				PluginRecord cell = getInteriorCELL(id);
+
+				PluginSubrecord data = cell.getSubrecords().get(1);
+				long flags = getDATAFlags(data);
+				// interior marker
+				if ((flags & 0x1) != 0)
+				{
+					ret.add(id);
+				}
+			}
+			catch (DataFormatException e)
+			{
+				e.printStackTrace();
+			}
+			catch (IOException e)
+			{
+				e.printStackTrace();
+			}
+			catch (PluginException e)
+			{
+				e.printStackTrace();
+			}
+		}
+
+		return ret;
 	}
 
 	@Override
 	public Set<Integer> getAllWRLDTopGroupFormIds()
 	{
-		throw new UnsupportedOperationException();
+		TreeSet<Integer> ret = new TreeSet<Integer>();
+		ret.add(wrldFormId);
+		return ret;
 	}
 
 	@Override
 	public Set<Integer> getWRLDExtBlockCELLFormIds()
 	{
 		throw new UnsupportedOperationException();
+	}
+
+	private static long getDATAFlags(PluginSubrecord data)
+	{
+		return ESMByteConvert.extractInt(data.getSubrecordData(), 0);
+	}
+
+	private static long getDATAx(PluginSubrecord data)
+	{
+		return ESMByteConvert.extractInt(data.getSubrecordData(), 4);
+	}
+
+	private static long getDATAy(PluginSubrecord data)
+	{
+		return ESMByteConvert.extractInt(data.getSubrecordData(), 8);
 	}
 
 	/**
