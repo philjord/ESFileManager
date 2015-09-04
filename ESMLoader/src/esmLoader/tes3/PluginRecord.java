@@ -95,6 +95,20 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 				editorID = "X" + x + "Y" + y;
 			}
 		}
+		else if (recordType.equals("LTEX"))
+		{
+			//LTEX must have edid swapped to unique key system
+			for (PluginSubrecord sub : getSubrecords())
+			{
+				if (sub.getSubrecordType().equals("INTV"))
+				{
+					byte[] bs = sub.getSubrecordData();
+					editorID = "LTEX_" + ESMByteConvert.extractInt(bs, 0);
+					break;
+				}
+			}
+
+		}
 
 	}
 
@@ -149,11 +163,12 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 	}
 
 	private static String[] edidRecords = new String[]
-	{ "GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN", "REGN", "BSGN", "LTEX", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA",
-			"BODY", "LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", "INGR", "BOOK", "ALCH", "LEVI", "LEVC",
-			"SNDG", "CELL" };
+	{ "GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN", "REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY",
+			"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", "INGR", "BOOK", "ALCH", "LEVI", "LEVC", "SNDG",
+			"CELL" };
 
 	//"PGRD", "DIAL", over lap with other names
+	//LTEX has to be swapped out to use INTV int
 
 	/*	
 	 * 1: GMST NAME = Setting ID string			
