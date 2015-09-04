@@ -62,8 +62,15 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 				{
 					if (sub.getSubrecordType().equals("NAME"))
 					{
-						//ZString format
-						editorID = new String(sub.getSubrecordData(), 0, sub.getSubrecordData().length - 1);
+						byte[] bs = sub.getSubrecordData();
+						int len = bs.length - 1;
+
+						// GMST are not null terminated!!
+						if (recordType.equals("GMST"))
+							len = bs.length;
+
+						editorID = new String(bs, 0, len);
+
 						break;
 					}
 				}
@@ -71,11 +78,22 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 			}
 		}
 
-		// cells have the first (can be blank for exteriors cells)
+		// exterior cells have the x and y as the name (some are blank some are region name)
 		if (recordType.equals("CELL"))
 		{
-			PluginSubrecord name = getSubrecords().get(0);
-			editorID = new String(name.getSubrecordData());
+			PluginSubrecord data = getSubrecords().get(1);
+
+			byte[] bs = data.getSubrecordData();
+			int flags = ESMByteConvert.extractInt(bs, 0);
+
+			// is it exterior
+			if ((flags & 0x1) == 0)
+			{
+				int x = ESMByteConvert.extractInt(bs, 4);
+				int y = ESMByteConvert.extractInt(bs, 8);
+
+				editorID = "X" + x + "Y" + y;
+			}
 		}
 
 	}
@@ -133,7 +151,9 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 	private static String[] edidRecords = new String[]
 	{ "GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN", "REGN", "BSGN", "LTEX", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA",
 			"BODY", "LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", "INGR", "BOOK", "ALCH", "LEVI", "LEVC",
-			"PGRD", "SNDG", "DIAL" };
+			"SNDG", "CELL" };
+
+	//"PGRD", "DIAL", over lap with other names
 
 	/*	
 	 * 1: GMST NAME = Setting ID string			

@@ -150,7 +150,8 @@ public class Master implements IMaster
 			int formID = info.getFormID();
 			idToFormMap.put(new Integer(formID), info);
 
-			if (info.getEditorID() != null && info.getEditorID().length() > 0)
+			// 1 length are single 0's
+			if (info.getEditorID() != null && info.getEditorID().length() > 1)
 			{
 				edidToFormIdMap.put(info.getEditorID(), formID);
 			}
@@ -200,7 +201,11 @@ public class Master implements IMaster
 	{
 		if (formID == wrldFormId)
 		{
-			return getPluginRecord(formID);
+			PluginRecord wrld = getPluginRecord(formID);
+			// loaded as a cell so we'll fake it up
+			wrld.getSubrecords().add(new PluginSubrecord("CELL", "NAME", "Morrowind".getBytes()));
+			wrld.getSubrecords().add(new PluginSubrecord("CELL", "DATA", new byte[12]));
+			return wrld;
 		}
 		// no message as null indicates a non world formid
 		return null;
@@ -209,7 +214,7 @@ public class Master implements IMaster
 	@Override
 	public WRLDChildren getWRLDChildren(int formID)
 	{
-		throw new UnsupportedOperationException();
+		return null;
 	}
 
 	@Override
@@ -258,15 +263,41 @@ public class Master implements IMaster
 	@Override
 	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
-		throw new UnsupportedOperationException();
+		return getPluginRecord(formID);
 	}
 
 	@Override
 	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		throw new UnsupportedOperationException();
-		
-		//TODO: this should have a temp child of the LAND record for exterior use land cell x,y data
+
+		// make up a fake group and add all children from the cell
+		PluginRecord cellRecord = getPluginRecord(formID);
+		CELLPluginGroup cell = new CELLPluginGroup(cellRecord);
+
+		PluginSubrecord data = cellRecord.getSubrecords().get(1);
+
+		int x = getDATAx(data);
+		int y = getDATAy(data);
+
+		List<Integer> lands = typeToFormIdMap.get("LAND");
+		// only those marked interor
+		for (int id : lands)
+		{
+
+			PluginRecord land = getPluginRecord(id);
+			PluginSubrecord intv = land.getSubrecords().get(0);
+
+			int CellX = ESMByteConvert.extractInt(intv.getSubrecordData(), 0);
+			int CellY = ESMByteConvert.extractInt(intv.getSubrecordData(), 4);
+
+			if (CellX == x && CellY == y)
+			{
+				//System.out.println("found a land for a cell! " + x + " " + y);
+				cell.addPluginRecord(land);
+			}
+		}
+
+		return cell;
 	}
 
 	@Override
@@ -341,12 +372,12 @@ public class Master implements IMaster
 		return ESMByteConvert.extractInt(data.getSubrecordData(), 0);
 	}
 
-	private static long getDATAx(PluginSubrecord data)
+	private static int getDATAx(PluginSubrecord data)
 	{
 		return ESMByteConvert.extractInt(data.getSubrecordData(), 4);
 	}
 
-	private static long getDATAy(PluginSubrecord data)
+	private static int getDATAy(PluginSubrecord data)
 	{
 		return ESMByteConvert.extractInt(data.getSubrecordData(), 8);
 	}

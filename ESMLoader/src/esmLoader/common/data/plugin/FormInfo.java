@@ -73,4 +73,10 @@ public class FormInfo
 		return parentFormID;
 	}
 
+	public String toString()
+	{
+		return "recordType:" + recordType + " formID:" + formID + " editorID:" + editorID + " pointer:" + pointer + " pointerOnly:"
+				+ pointerOnly;
+	}
+
 }
