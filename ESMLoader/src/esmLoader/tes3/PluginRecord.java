@@ -123,22 +123,24 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 				subrecordList = new ArrayList<PluginSubrecord>();
 				int offset = 0;
 
-				byte[] rd = getRecordData();
-				if (rd != null)
+				 
+				if (recordData != null)
 				{
-					while (offset < rd.length)
+					while (offset < recordData.length)
 					{
-						String subrecordType = new String(rd, offset + 0, 4);
-						int subrecordLength = ESMByteConvert.extractInt(rd, offset + 4);
+						String subrecordType = new String(recordData, offset + 0, 4);
+						int subrecordLength = ESMByteConvert.extractInt(recordData, offset + 4);
 						byte subrecordData[] = new byte[subrecordLength];
-						System.arraycopy(rd, offset + 8, subrecordData, 0, subrecordLength);
+						System.arraycopy(recordData, offset + 8, subrecordData, 0, subrecordLength);
 
 						subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
 
 						offset += 8 + subrecordLength;
 					}
+					// TODO: can I discard the raw data now?
+					recordData = null;
 				}
-				// TODO: can I discard the raw data now?
+				
 			}
 			return subrecordList;
 		}

@@ -83,6 +83,11 @@ public class Master implements IMaster
 		return maxFormId;
 	}
 
+	public static int getNextFormId()
+	{
+		return currentFormId++;
+	}
+
 	@Override
 	public Set<String> getAllEdids()
 	{
@@ -135,7 +140,7 @@ public class Master implements IMaster
 
 		while (in.getFilePointer() < in.length())
 		{
-			PluginRecord record = new PluginRecord(currentFormId++);//note ++
+			PluginRecord record = new PluginRecord(getNextFormId());
 			record.load(masterFile.getName(), in);
 			records.add(record);
 			formList.add(new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(), record));

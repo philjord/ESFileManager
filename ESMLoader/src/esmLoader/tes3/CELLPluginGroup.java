@@ -23,8 +23,8 @@ public class CELLPluginGroup extends PluginGroup
 				// have we finished a prior now?
 				if (refr != null)
 					temps.getRecordList().add(refr);
-
-				refr = new PluginRecord(i, "REFR", "REFR:" + i);
+				//Note we must use unique record ids (not used anywhere to refer afaik)
+				refr = new PluginRecord(Master.getNextFormId(), "REFR", "REFR:" + i);
 			}
 
 			// just chuck it in, if we are building up a refr now

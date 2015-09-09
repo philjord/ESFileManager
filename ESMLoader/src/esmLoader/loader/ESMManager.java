@@ -480,7 +480,6 @@ public class ESMManager implements IESMManager
 						String recordType = new String(prefix, 0, 4);
 						if (recordType.equals("TES3"))
 						{
-							System.out.println("tes3 file!");
 							in.close();
 							return new ESMManagerTes3(esmFile);
 						}
