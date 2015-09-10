@@ -285,7 +285,7 @@ public class Master implements IMaster
 		int y = getDATAy(data);
 
 		List<Integer> lands = typeToFormIdMap.get("LAND");
-		// only those marked interor
+		
 		for (int id : lands)
 		{
 

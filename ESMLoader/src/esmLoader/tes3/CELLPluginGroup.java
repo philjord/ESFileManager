@@ -6,13 +6,14 @@ public class CELLPluginGroup extends PluginGroup
 {
 	private PluginGroup temps = new PluginGroup(CELL_TEMPORARY);
 
+	private PluginGroup dists = new PluginGroup(CELL_DISTANT);
+
 	public CELLPluginGroup(PluginRecord cellRecord)
 	{
 		super(CELL);
 
-		// one child for now (can have temp,persist and distant)
-
 		getRecordList().add(temps);
+		getRecordList().add(dists);
 
 		PluginRecord refr = null;
 		for (int i = 0; i < cellRecord.getSubrecords().size(); i++)
@@ -40,5 +41,8 @@ public class CELLPluginGroup extends PluginGroup
 	public void addPluginRecord(PluginRecord pr)
 	{
 		temps.getRecordList().add(pr);
+
+		if (pr.getRecordType().equals("LAND"))
+			dists.getRecordList().add(pr);
 	}
 }
