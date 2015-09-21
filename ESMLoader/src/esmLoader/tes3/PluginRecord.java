@@ -3,6 +3,7 @@ package esmLoader.tes3;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import tools.io.ESMByteConvert;
@@ -54,27 +55,24 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 			throw new PluginException(fileName + ": " + recordType + " record bad length, asked for " + recordSize + " got " + count);
 
 		//attempt to find and set editor id
-		for (String edidRecord : edidRecords)
+
+		if (edidRecordSet.contains(recordType))
 		{
-			if (recordType.equals(edidRecord))
+			for (PluginSubrecord sub : getSubrecords())
 			{
-				for (PluginSubrecord sub : getSubrecords())
+				if (sub.getSubrecordType().equals("NAME"))
 				{
-					if (sub.getSubrecordType().equals("NAME"))
-					{
-						byte[] bs = sub.getSubrecordData();
-						int len = bs.length - 1;
+					byte[] bs = sub.getSubrecordData();
+					int len = bs.length - 1;
 
-						// GMST are not null terminated!!
-						if (recordType.equals("GMST"))
-							len = bs.length;
+					// GMST are not null terminated!!
+					if (recordType.equals("GMST"))
+						len = bs.length;
 
-						editorID = new String(bs, 0, len);
+					editorID = new String(bs, 0, len);
 
-						break;
-					}
+					break;
 				}
-				break;
 			}
 		}
 
@@ -123,7 +121,6 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 				subrecordList = new ArrayList<PluginSubrecord>();
 				int offset = 0;
 
-				 
 				if (recordData != null)
 				{
 					while (offset < recordData.length)
@@ -140,7 +137,7 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 					// TODO: can I discard the raw data now?
 					recordData = null;
 				}
-				
+
 			}
 			return subrecordList;
 		}
@@ -169,6 +166,12 @@ public class PluginRecord extends esmLoader.common.data.plugin.PluginRecord
 			"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", "INGR", "BOOK", "ALCH", "LEVI", "LEVC", "SNDG",
 			"CELL" };
 
+	private static HashSet<String> edidRecordSet = new HashSet<String>();
+	static
+	{
+		for (String edidRecord : edidRecords)
+			edidRecordSet.add(edidRecord);
+	}
 	//"PGRD", "DIAL", over lap with other names
 	//LTEX has to be swapped out to use INTV int
 
