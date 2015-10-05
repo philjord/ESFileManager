@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -215,7 +216,11 @@ public class Master implements IMaster
 	@Override
 	public Set<Integer> getAllInteriorCELLFormIds()
 	{
-		return interiorCELLTopGroup.interiorCELLByFormId.keySet();
+		//just for hunter sneaker cut down esm
+		if (interiorCELLTopGroup != null)
+			return interiorCELLTopGroup.interiorCELLByFormId.keySet();
+		else
+			return new HashSet<Integer>();
 	}
 
 	@Override
