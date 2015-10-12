@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
 import tools.WeakValueHashMap;
+import tools.io.MappedByteBufferRAF;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
 import esmLoader.common.data.plugin.IMaster;
@@ -470,7 +471,8 @@ public class ESMManager implements IESMManager
 		{
 			try
 			{
-				RandomAccessFile in = new RandomAccessFile(testFile, "r");
+				//RandomAccessFile in = new RandomAccessFile(testFile, "r");
+				RandomAccessFile in = new MappedByteBufferRAF(testFile, "r");
 				try
 				{
 					byte[] prefix = new byte[16];
@@ -497,6 +499,10 @@ public class ESMManager implements IESMManager
 			catch (FileNotFoundException e)
 			{
 				e.printStackTrace();
+			}
+			catch (IOException e1)
+			{
+				e1.printStackTrace();
 			}
 		}
 

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.zip.DataFormatException;
 
 import tools.io.ESMByteConvert;
+import tools.io.MappedByteBufferRAF;
 import esmLoader.common.PluginException;
 
 public class Plugin implements PluginInterface
@@ -78,7 +79,8 @@ public class Plugin implements PluginInterface
 		if (!pluginFile.exists() || !pluginFile.isFile())
 			throw new IOException("Plugin file '" + pluginFile.getName() + "' does not exist");
 
-		in = new RandomAccessFile(pluginFile, "r");
+		//in = new RandomAccessFile(pluginFile, "r");
+		in = new MappedByteBufferRAF(pluginFile, "r");
 		pluginHeader.read(in);
 		int recordCount = pluginHeader.getRecordCount();
 		formList = new ArrayList<FormInfo>(recordCount);

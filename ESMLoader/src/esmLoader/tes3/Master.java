@@ -13,6 +13,7 @@ import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
 import tools.io.ESMByteConvert;
+import tools.io.MappedByteBufferRAF;
 import esmLoader.EsmFileLocations;
 import esmLoader.common.PluginException;
 import esmLoader.common.data.plugin.FormInfo;
@@ -128,7 +129,8 @@ public class Master implements IMaster
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
-		in = new RandomAccessFile(masterFile, "r");
+		//in = new RandomAccessFile(masterFile, "r");
+		in = new MappedByteBufferRAF(masterFile, "r");
 
 		masterHeader.load(masterFile.getName(), in);
 
@@ -285,7 +287,7 @@ public class Master implements IMaster
 		int y = getDATAy(data);
 
 		List<Integer> lands = typeToFormIdMap.get("LAND");
-		
+
 		for (int id : lands)
 		{
 
