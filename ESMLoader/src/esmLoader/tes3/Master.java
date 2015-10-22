@@ -47,6 +47,9 @@ public class Master implements IMaster
 
 	private HashMap<String, List<Integer>> typeToFormIdMap;
 
+	// each cellRecord will have a faked up set of children refrs attached ot it, must record
+	private HashMap<Integer, CELLPluginGroup> cellChildren = new HashMap<Integer, CELLPluginGroup>();
+
 	private static int currentFormId = 0;
 
 	private int minFormId = Integer.MAX_VALUE;
@@ -276,32 +279,38 @@ public class Master implements IMaster
 	@Override
 	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
+		CELLPluginGroup cell = cellChildren.get(formID);
 
-		// make up a fake group and add all children from the cell
-		PluginRecord cellRecord = getPluginRecord(formID);
-		CELLPluginGroup cell = new CELLPluginGroup(cellRecord);
-
-		PluginSubrecord data = cellRecord.getSubrecords().get(1);
-
-		int x = getDATAx(data);
-		int y = getDATAy(data);
-
-		List<Integer> lands = typeToFormIdMap.get("LAND");
-
-		for (int id : lands)
+		if (cell == null)
 		{
+			// make up a fake group and add all children from the cell
+			PluginRecord cellRecord = getPluginRecord(formID);
+			cell = new CELLPluginGroup(cellRecord);
 
-			PluginRecord land = getPluginRecord(id);
-			PluginSubrecord intv = land.getSubrecords().get(0);
+			PluginSubrecord data = cellRecord.getSubrecords().get(1);
 
-			int CellX = ESMByteConvert.extractInt(intv.getSubrecordData(), 0);
-			int CellY = ESMByteConvert.extractInt(intv.getSubrecordData(), 4);
+			int x = getDATAx(data);
+			int y = getDATAy(data);
 
-			if (CellX == x && CellY == y)
+			List<Integer> lands = typeToFormIdMap.get("LAND");
+
+			for (int id : lands)
 			{
-				//System.out.println("found a land for a cell! " + x + " " + y);
-				cell.addPluginRecord(land);
+
+				PluginRecord land = getPluginRecord(id);
+				PluginSubrecord intv = land.getSubrecords().get(0);
+
+				int CellX = ESMByteConvert.extractInt(intv.getSubrecordData(), 0);
+				int CellY = ESMByteConvert.extractInt(intv.getSubrecordData(), 4);
+
+				if (CellX == x && CellY == y)
+				{
+					//System.out.println("found a land for a cell! " + x + " " + y);
+					cell.addPluginRecord(land);
+				}
 			}
+
+			cellChildren.put(formID, cell);
 		}
 
 		return cell;
@@ -372,6 +381,13 @@ public class Master implements IMaster
 	public Set<Integer> getWRLDExtBlockCELLFormIds()
 	{
 		throw new UnsupportedOperationException();
+	}
+
+	public int convertNameRefToId(String key)
+	{
+		if (edidToFormIdMap.containsKey(key))
+			return edidToFormIdMap.get(key);
+		return -1;
 	}
 
 	private static long getDATAFlags(PluginSubrecord data)

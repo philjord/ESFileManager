@@ -17,7 +17,6 @@ import esmLoader.common.data.plugin.FormInfo;
 import esmLoader.common.data.plugin.IMaster;
 import esmLoader.common.data.plugin.PluginGroup;
 import esmLoader.common.data.record.Record;
-import esmLoader.loader.CELLPointer;
 import esmLoader.loader.IESMManager;
 import esmLoader.loader.InteriorCELLTopGroup;
 import esmLoader.loader.WRLDChildren;
@@ -25,7 +24,7 @@ import esmLoader.loader.WRLDTopGroup;
 
 public class ESMManagerTes3 implements IESMManager
 {
-	private ArrayList<IMaster> masters = new ArrayList<IMaster>();
+	private ArrayList<Master> masters = new ArrayList<Master>();
 
 	private static WeakValueHashMap<Integer, Record> loadedRecordsCache = new WeakValueHashMap<Integer, Record>();
 
@@ -83,7 +82,7 @@ public class ESMManagerTes3 implements IESMManager
 
 		if (!masters.contains(master))
 		{
-			masters.add(master);
+			masters.add((Master) master);
 			idToFormMap.putAll(master.getFormMap());
 			edidToFormIdMap.putAll(master.getEdidToFormIdMap());
 			typeToFormIdMap.putAll(master.getTypeToFormIdMap());
@@ -365,86 +364,20 @@ public class ESMManagerTes3 implements IESMManager
 
 	}
 
-	/**
-	 
-	 * @param formInNewCellId
-	 */
 	public int getCellIdOfPersistentTarget(int formId)
 	{
-		//I need to pre load ALL persistent children for all CELLS and keep them
-		List<WRLDTopGroup> WRLDTopGroups = getWRLDTopGroups();
-		for (WRLDTopGroup WRLDTopGroup : WRLDTopGroups)
+		throw new UnsupportedOperationException("ESMManager does not have a max form id");
+	}
+
+	public int convertNameRefToId(String str)
+	{
+		for (Master m : masters)
 		{
-			for (esmLoader.common.data.plugin.PluginRecord wrld : WRLDTopGroup.WRLDByFormId.values())
-			{
-				//WRLD wrld = new WRLD(wrld);
-				WRLDChildren children = getWRLDChildren(wrld.getFormID());
-				esmLoader.common.data.plugin.PluginRecord cell = children.getCell();
-				if (cell != null)
-				{
-					PluginGroup cellChildGroups = children.getCellChildren();
-
-					if (cellChildGroups != null && cellChildGroups.getRecordList() != null)
-					{
-						for (esmLoader.common.data.plugin.PluginRecord pgr : cellChildGroups.getRecordList())
-						{
-							PluginGroup pg = (PluginGroup) pgr;
-
-							for (esmLoader.common.data.plugin.PluginRecord pr : pg.getRecordList())
-							{
-								if (pr.getFormID() == formId)
-								{
-									return wrld.getFormID();
-								}
-							}
-						}
-					}
-				}
-			}
+			int id = m.convertNameRefToId(str);
+			if (id != -1)
+				return id;
 		}
 
-		List<InteriorCELLTopGroup> interiorCELLTopGroups = getInteriorCELLTopGroups();
-		for (InteriorCELLTopGroup interiorCELLTopGroup : interiorCELLTopGroups)
-		{
-			for (CELLPointer cp : interiorCELLTopGroup.interiorCELLByFormId.values())
-			{
-				try
-				{
-					esmLoader.common.data.plugin.PluginRecord cell = getInteriorCELL(cp.formId);
-
-					PluginGroup cellChildGroups = getInteriorCELLChildren(cell.getFormID());
-
-					if (cellChildGroups != null && cellChildGroups.getRecordList() != null)
-					{
-						for (esmLoader.common.data.plugin.PluginRecord pgr : cellChildGroups.getRecordList())
-						{
-							PluginGroup pg = (PluginGroup) pgr;
-
-							for (esmLoader.common.data.plugin.PluginRecord pr : pg.getRecordList())
-							{
-								if (pr.getFormID() == formId)
-								{
-									return cell.getFormID();
-								}
-							}
-						}
-					}
-
-				}
-				catch (DataFormatException e)
-				{
-					e.printStackTrace();
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-				}
-				catch (PluginException e)
-				{
-					e.printStackTrace();
-				}
-			}
-		}
 		return -1;
 	}
 

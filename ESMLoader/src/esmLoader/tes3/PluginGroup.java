@@ -1,7 +1,7 @@
 package esmLoader.tes3;
 
 /**
- * For mkaing up fake children groups for tes3
+ * For making up fake children groups for tes3
  * @author phil
  *
  */
