@@ -325,9 +325,15 @@ public class Master implements IMaster
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		// make up a fake group and add all children from the cell
-		PluginRecord cellRecord = getPluginRecord(formID);
-		CELLPluginGroup cell = new CELLPluginGroup(cellRecord);
+		CELLPluginGroup cell = cellChildren.get(formID);
+
+		if (cell == null)
+		{
+			// make up a fake group and add all children from the cell
+			PluginRecord cellRecord = getPluginRecord(formID);
+			cell = new CELLPluginGroup(cellRecord);
+			cellChildren.put(formID, cell);
+		}
 		return cell;
 
 	}
