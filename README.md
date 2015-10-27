@@ -5,4 +5,4 @@ This project loads the elder scrolls various *.esm files, which contain the game
 
 Generally it is to be used by other projects.
 
-For more information see the ElderScrollsExplorer project
+See ElderScrollsExplorer for more information https://github.com/philjord/ElderScrollsExplorer
