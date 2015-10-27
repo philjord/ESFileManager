@@ -1,6 +1,8 @@
 ESMLoader
 ====
 
-This project loads the elder scrolls esm files, to be used by other projects
+This project loads the elder scrolls various *.esm files, which contain the game world data.
 
-For more information see teh ElderScrollsExplorer project
+Generally it is to be used by other projects.
+
+For more information see the ElderScrollsExplorer project
