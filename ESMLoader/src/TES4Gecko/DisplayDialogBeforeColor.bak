@@ -1,0 +1,2390 @@
+package TES4Gecko;
+
+import java.io.*;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.regex.*;
+import java.util.zip.DataFormatException;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.event.*;
+import javax.swing.tree.*;
+
+/**
+ * Dialog to display the plugin records.  Records can be copied from the plugin
+ * to a clipboard plugin file or deleted from the plugin.
+ */
+public class DisplayDialog extends DisplayPlugin implements ActionListener, TreeExpansionListener {
+    
+    /** Plugin */
+    private Plugin plugin;
+    
+    /** Plugin node */
+    private PluginNode pluginNode;
+    
+    /** Plugin file */
+    private File pluginFile;
+    
+    /** Plugin tree model */
+    private DefaultTreeModel pluginTreeModel;
+    
+    /** Plugin tree */
+    private JTree pluginTree;
+    
+    /** Plugin modified */
+    private boolean pluginModified = false;
+    
+    /** Plugin master count */
+    private int masterCount;
+    
+    /** Editor ID search field */
+    private JTextField searchField;
+    
+    /** Current editor ID match */
+    private FormInfo searchFormInfo;
+    
+    /** Form ID search field */
+    private JTextField formField;
+    
+    /** Copy references field */
+    private JCheckBox copyReferencesField;
+
+    /** High Form ID in plugin (calculated once, ignoring "ignore" flags) */
+    private int pluginHighFormID = 0;
+
+    /** High Form ID in clipboard (calculated as necessary) */
+    private int clipboardHighFormID = 0;
+
+    /** The header placed before any set of dialogue lines dumped to a file */
+    private final String dumpDialogueHeader = "TES4GECKO DIALOGUE DUMP";
+    
+    /** Tag for empty dialogue, which does happen intentionally on occasion. */
+    private final String noDialogueStr = "[No dialogue]";
+
+    /**
+     * Create the display dialog
+     *
+     * @param       parent          Parent window for the dialog
+     * @param       pluginFile      Plugin file
+     * @param       pluginNode      Plugin node
+     */
+    public DisplayDialog(JFrame parent, File pluginFile, PluginNode pluginNode) {
+        super(parent, "Display "+pluginFile.getName());
+        
+        //
+        // Save the plugin information
+        //
+        this.pluginFile = pluginFile;
+        this.pluginNode = pluginNode;
+        this.plugin = pluginNode.getPlugin();
+        
+        //
+        // Create the editor ID mapping
+        //
+        List<FormInfo> formList = plugin.getFormList();
+        
+        //
+        // Create a null plugin form adjust
+        //
+        pluginNode.setFormAdjust(new FormAdjust());
+        
+        // Create a new master list for the clipboard. If the original
+        // plugin is an ESP, the master list is the same; if an ESM,
+        // however, that ESM is appended to the clipboard master list.
+        List<String> masterList = plugin.getMasterList();
+        List<String> clipboardMasterList = plugin.getMasterList();
+        masterCount = masterList.size();
+        String pluginName = pluginFile.getName();
+        if (plugin.isMaster())
+        {
+        	clipboardMasterList.add(pluginName);
+        }
+        //
+        // Create the clipboard
+        //
+        clipboardFile = new File(pluginFile.getParent()+Main.fileSeparator+"Gecko Clipboard.esp");
+        clipboard = new Plugin(clipboardFile,  plugin.getCreator(), plugin.getSummary(), clipboardMasterList);
+        clipboard.setVersion(plugin.getVersion());
+        clipboard.createInitialGroups();
+        
+        //
+        // Get the number of plugin form ID values
+        //
+        int formCount = 0;
+        for (FormInfo formInfo : formList) {
+            if ((formInfo.getFormID()>>>24) >= masterCount)
+                formCount++;
+        }
+        // Get high form ID for plugin 
+        pluginHighFormID = this.highestFormID(plugin);
+        clipboardHighFormID = pluginHighFormID;
+
+        String highFormID = String.format("%08X", pluginHighFormID);
+        JLabel countLabel = new JLabel("<html>Plugin record count: "+formList.size()+
+                                       "<br>Plugin form ID count: "+formCount+
+                                       "<br>Plugin high form ID (hex): "+highFormID+"</html>");
+        JPanel countPane = new JPanel();
+        countPane.setBackground(Main.backgroundColor);
+        countPane.setBorder(BorderFactory.createEtchedBorder(Color.WHITE, Color.BLACK));
+        countPane.add(countLabel);
+        countPane.setMaximumSize(new Dimension(200, 30));
+        
+        //
+        // Create the master list table
+        //
+        Object[] masterNames = new Object[2];
+        masterNames[0] = "Index";
+        masterNames[1] = "Master";
+
+        Object[][] masterData = new Object[masterCount][2];
+        for (int i=0; i<masterCount; i++) {
+            masterData[i][0] = String.format("%02X", i);
+            masterData[i][1] = masterList.get(i);
+        }
+
+        JTable masterTable = new JTable(masterData, masterNames);
+        masterTable.setColumnSelectionAllowed(false);
+        masterTable.setRowSelectionAllowed(false);
+        masterTable.getColumnModel().getColumn(0).setMaxWidth(45);
+        masterTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        masterTable.setPreferredScrollableViewportSize(new Dimension(200, masterTable.getRowHeight()*Math.max(masterCount, 1)));
+        
+        JScrollPane masterScrollPane = new JScrollPane(masterTable);
+        masterScrollPane.getViewport().setBackground(Main.backgroundColor);
+        
+        //
+        // Create the editor ID search field
+        //
+        JLabel searchLabel = new JLabel("Editor ID Search");
+        searchLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        searchField = new JTextField(20);
+        searchField.setActionCommand("find editor id");
+        searchField.addActionListener(this);
+        
+        JPanel buttonPane = new JPanel();
+        buttonPane.setBackground(Main.backgroundColor);
+        buttonPane.add(Box.createGlue());
+        
+        JButton button = new JButton("Find");
+        button.setActionCommand("find editor id");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        buttonPane.add(Box.createHorizontalStrut(10));
+        
+        button = new JButton("Find Next");
+        button.setActionCommand("find next editor id");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        buttonPane.add(Box.createGlue());
+        
+        BorderLayout searchLayout = new BorderLayout();
+        searchLayout.setVgap(10);
+        JPanel searchPane = new JPanel(searchLayout);
+        searchPane.setBackground(Main.backgroundColor);
+        searchPane.setBorder(BorderFactory.createEtchedBorder(Color.WHITE, Color.BLACK));
+        searchPane.add(searchLabel, BorderLayout.NORTH);
+        searchPane.add(searchField, BorderLayout.CENTER);
+        searchPane.add(buttonPane, BorderLayout.SOUTH);
+        searchPane.setMaximumSize(new Dimension(200, 50));
+        
+        //
+        // Create the form ID search field
+        //
+        searchLabel = new JLabel("Form ID Search");
+        searchLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        formField = new JTextField(10);
+        formField.setActionCommand("find form id");
+        formField.addActionListener(this);
+        
+        button = new JButton("Find");
+        button.setActionCommand("find form id");
+        button.addActionListener(this);
+        
+        buttonPane = new JPanel();
+        buttonPane.setBackground(Main.backgroundColor);
+        buttonPane.add(Box.createGlue());
+        buttonPane.add(button);
+        buttonPane.add(Box.createGlue());
+        
+        searchLayout = new BorderLayout();
+        searchLayout.setVgap(10);
+        JPanel formPane = new JPanel(searchLayout);
+        formPane.setBackground(Main.backgroundColor);
+        formPane.setBorder(BorderFactory.createEtchedBorder(Color.WHITE, Color.BLACK));
+        formPane.add(searchLabel, BorderLayout.NORTH);
+        formPane.add(formField, BorderLayout.CENTER);
+        formPane.add(buttonPane, BorderLayout.SOUTH);
+        formPane.setMaximumSize(new Dimension(200, 50));
+        
+        //
+        // Create the copy references checkbox
+        //
+        copyReferencesField = new JCheckBox("Copy referenced items", copyReferences);
+        copyReferencesField.setBackground(Main.backgroundColor);
+        copyReferencesField.setActionCommand("copy references");
+        copyReferencesField.addActionListener(this);
+        JPanel copyReferencesPanel = new JPanel(new GridLayout(2,1));
+        copyReferencesPanel.setBackground(Main.backgroundColor);
+        copyReferencesPanel.add(copyReferencesField);
+        
+        //
+        // Create the side pane containing the master list and search fields
+        //
+        JPanel sidePane = new JPanel();
+        sidePane.setLayout(new BoxLayout(sidePane, BoxLayout.Y_AXIS));
+        sidePane.setBackground(Main.backgroundColor);
+        sidePane.add(Box.createGlue());
+        sidePane.add(countPane);
+        sidePane.add(Box.createVerticalStrut(25));
+        sidePane.add(masterScrollPane);
+        sidePane.add(Box.createVerticalStrut(25));
+        sidePane.add(searchPane);
+        sidePane.add(Box.createVerticalStrut(25));
+        sidePane.add(formPane);
+        sidePane.add(Box.createVerticalStrut(25));
+        sidePane.add(copyReferencesPanel);
+        sidePane.add(Box.createGlue());
+
+        //
+        // Create the plugin tree pane
+        //
+        pluginTreeModel = new DefaultTreeModel(pluginNode);
+        pluginTree = new JTree(pluginTreeModel);
+        pluginTree.setCellRenderer(new DisplayCellRenderer());
+        pluginTree.setScrollsOnExpand(true);
+        pluginTree.setExpandsSelectedPaths(true);
+        pluginTree.addTreeExpansionListener(this);
+
+        JScrollPane pluginScrollPane = new JScrollPane(pluginTree);
+        pluginScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        pluginScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        pluginScrollPane.setPreferredSize(new Dimension(300, 500));
+        
+        JPanel labelPane = new JPanel();
+        labelPane.setBackground(Main.backgroundColor);
+        labelPane.add(new JLabel(pluginFile.getName()));
+
+        buttonPane = new JPanel(new GridLayout(3, 2, 5, 5));
+        buttonPane.setBackground(Main.backgroundColor);
+        
+        button = new JButton("Toggle Ignore");
+        button.setActionCommand("toggle ignore");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        button = new JButton("Copy to Clipboard");
+        button.setActionCommand("copy record");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        button = new JButton("Display Subrecord");
+        button.setActionCommand("display subrecord");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        button = new JButton("Delete Subrecord");
+        button.setActionCommand("delete subrecord");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        button = new JButton("Save Plugin");
+        button.setActionCommand("save plugin");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        
+        JPanel pluginPane = new JPanel();
+        pluginPane.setLayout(new BoxLayout(pluginPane, BoxLayout.Y_AXIS));
+        pluginPane.setBackground(Main.backgroundColor);
+        pluginPane.setBorder(BorderFactory.createEtchedBorder(Color.WHITE, Color.BLACK));
+        pluginPane.add(labelPane);
+        pluginPane.add(pluginScrollPane);
+        pluginPane.add(Box.createVerticalStrut(10));
+        pluginPane.add(buttonPane);
+        
+        //
+        // Create the clipboard tree pane
+        //
+        PluginNode rootNode = new PluginNode(clipboard);
+        List<PluginGroup> groupList = clipboard.getGroupList();
+        for (PluginGroup group : groupList) {
+            GroupNode groupNode = new GroupNode(group);
+            rootNode.insert(groupNode);
+        }
+        
+        clipboardTreeModel = new DefaultTreeModel(rootNode);
+        clipboardTree = new JTree(clipboardTreeModel);
+        clipboardTree.setScrollsOnExpand(true);
+        clipboardTree.setSelectionModel(null);
+        clipboardTree.addTreeExpansionListener(this);
+
+        JScrollPane clipboardScrollPane = new JScrollPane(clipboardTree);
+        clipboardScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        clipboardScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        clipboardScrollPane.setPreferredSize(new Dimension(300, 500));
+        
+        labelPane = new JPanel();
+        labelPane.setBackground(Main.backgroundColor);
+        labelPane.add(new JLabel(clipboardFile.getName()));
+        
+        buttonPane = new JPanel(new GridLayout(3, 2, 5, 5));
+        buttonPane.setBackground(Main.backgroundColor);
+        
+        button = new JButton("Save Clipboard");
+        button.setActionCommand("save clipboard");
+        button.addActionListener(this);
+        buttonPane.add(button);
+        buttonPane.add(Box.createGlue());
+        buttonPane.add(Box.createGlue());
+        buttonPane.add(Box.createGlue());
+        buttonPane.add(Box.createGlue());
+        
+        JPanel clipboardPane = new JPanel();
+        clipboardPane.setLayout(new BoxLayout(clipboardPane, BoxLayout.Y_AXIS));
+        clipboardPane.setBackground(Main.backgroundColor);
+        clipboardPane.setBorder(BorderFactory.createEtchedBorder(Color.WHITE, Color.BLACK));
+        clipboardPane.add(labelPane);
+        clipboardPane.add(clipboardScrollPane);
+        clipboardPane.add(Box.createVerticalStrut(10));
+        clipboardPane.add(buttonPane);
+        
+        //
+        // Create the tree pane
+        //
+        JPanel treePane = new JPanel();
+        treePane.setLayout(new BoxLayout(treePane, BoxLayout.X_AXIS));
+        treePane.setBackground(Main.backgroundColor);
+        treePane.add(sidePane);
+        treePane.add(Box.createHorizontalStrut(15));
+        treePane.add(pluginPane);
+        treePane.add(Box.createHorizontalStrut(15));
+        treePane.add(clipboardPane);
+        
+        //
+        // Create the buttons
+        //
+        buttonPane = new JPanel();
+        buttonPane.setBackground(Main.backgroundColor);
+
+        button = new JButton("Done");
+        button.setActionCommand("done");
+        button.addActionListener(this);
+        buttonPane.add(button);
+
+        //
+        // Set up the content pane
+        //
+        JPanel contentPane = new JPanel();
+        contentPane.setLayout(new BoxLayout(contentPane, BoxLayout.Y_AXIS));
+        contentPane.setOpaque(true);
+        contentPane.setBackground(Main.backgroundColor);
+        contentPane.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        contentPane.add(treePane);
+        contentPane.add(Box.createVerticalStrut(15));
+        contentPane.add(buttonPane);
+        contentPane.setPreferredSize(new Dimension(975, 650));
+        setContentPane(contentPane);                    
+
+        //
+        // Receive WindowListener events
+        //
+        addWindowListener(new DialogWindowListener());  
+        
+
+        // This should do something when:
+        // - It's a right-click with no keyboard modifiers,
+        // - The tree element has right-click functionality.
+        MouseListener mlClipboard = new MouseAdapter() {
+            public void mouseReleased(MouseEvent e) {
+            	if (e.isAltDown() || e.isAltGraphDown() 
+            			|| e.isControlDown() || e.isShiftDown()) return;
+             	if (e.getButton() != 3) return;
+                int selRow = clipboardTree.getRowForLocation(e.getX(), e.getY());
+            	if (selRow == -1) return;
+                TreePath selPath = clipboardTree.getPathForLocation(e.getX(), e.getY());
+                if (!(selPath.getLastPathComponent() instanceof RecordNode)) return;
+         	   RecordNode recNode = (RecordNode)selPath.getLastPathComponent();
+        	   if (recNode == null) return;
+        	   PluginRecord pluginRec = (PluginRecord)recNode.getUserObject(); 
+        	   if (pluginRec == null) return;
+        	   String actionString = "Popup:Clipboard:" + pluginRec.getRecordType() 
+        	   + ":" + pluginRec.getFormID();        	   
+        	   if (pluginRec.getRecordType().equals("QUST"))
+        	   {
+        		   JPopupMenu popup = new JPopupMenu();
+        		   JMenuItem item = new JMenuItem("Change quest editor ID");
+        		   item.addActionListener(DisplayDialog.this);
+        		   item.setActionCommand(actionString + ":ChangeEditorID");
+        		   popup.add(item);
+        		   popup.addSeparator();
+        		   item = new JMenuItem("Change quest form ID (Quest only)");
+        		   item.addActionListener(DisplayDialog.this);
+        		   item.setActionCommand(actionString + ":ChangeFormID:QuestOnly");
+        		   popup.add(item);
+        		   popup.addSeparator();
+        		   item = new JMenuItem("Change quest form ID (with related INFOS)");
+        		   item.addActionListener(DisplayDialog.this);
+        		   item.setActionCommand(actionString + ":ChangeFormID:RelatedInfos");
+        		   popup.add(item);
+        		   popup.addSeparator();
+        		   item = new JMenuItem("Change quest form ID (with INFOS & unshared DIALs)");
+        		   item.addActionListener(DisplayDialog.this);
+        		   item.setActionCommand(actionString + ":ChangeFormID:UnsharedDials");
+        		   popup.add(item);
+        	       popup.show(clipboardTree, e.getX(), e.getY());
+        	   }
+    		}
+        };
+        clipboardTree.addMouseListener(mlClipboard);
+        
+        // This should do something when:
+        // - It's a right-click with no keyboard modifiers,
+        // - The tree element has right-click functionality.
+        MouseListener mlPlugin = new MouseAdapter() {
+            public void mouseReleased(MouseEvent e) {
+               if (e.isAltDown() || e.isAltGraphDown() 
+               		   || e.isControlDown() || e.isShiftDown()) return;
+               if (e.getButton() != 3) return;
+               int selRow = pluginTree.getRowForLocation(e.getX(), e.getY());
+               if (selRow == -1) return;
+               TreePath selPath = pluginTree.getPathForLocation(e.getX(), e.getY());
+               if ((selPath.getLastPathComponent() instanceof GroupNode))
+               {
+            	   GroupNode groupNode = (GroupNode)selPath.getLastPathComponent();
+            	   if (groupNode == null) return;
+            	   PluginGroup pluginGroup = (PluginGroup)groupNode.getUserObject(); 
+            	   if (pluginGroup == null) return;
+            	   String actionString = "Popup:Plugin:GRUP:" + pluginGroup.getGroupRecordType();
+            	   if (pluginGroup.getGroupRecordType().equals("DIAL"))
+            	   {
+            		   JPopupMenu popup = new JPopupMenu();
+            		   JMenuItem item = new JMenuItem("Read dialogue from file");
+            		   item.addActionListener(DisplayDialog.this);
+            		   item.setActionCommand(actionString + ":ReadDialogue");
+            		   popup.add(item);
+            	       popup.show(pluginTree, e.getX(), e.getY());
+            	   }
+               }
+               if ((selPath.getLastPathComponent() instanceof RecordNode))
+               {
+             	   RecordNode recNode = (RecordNode)selPath.getLastPathComponent();
+            	   if (recNode == null) return;
+            	   PluginRecord pluginRec = (PluginRecord)recNode.getUserObject(); 
+            	   if (pluginRec == null) return;
+            	   boolean isSelected = pluginTree.isPathSelected(selPath);
+            	   String actionString = "Popup:Plugin:" + pluginRec.getRecordType() 
+            	   + ":" + pluginRec.getFormID();
+            	   if (pluginRec.getRecordType().equals("NPC_"))
+            	   {
+            		   JPopupMenu popup = new JPopupMenu();
+            		   JMenuItem item = new JMenuItem("Dump NPC dialogue to file (append)");
+            		   item.addActionListener(DisplayDialog.this);
+            		   item.setActionCommand(actionString + ":DumpDialogue:Append");
+            		   popup.add(item);
+            		   popup.addSeparator();
+            		   item = new JMenuItem("Dump NPC dialogue to file (replace)");
+            		   item.addActionListener(DisplayDialog.this);
+            		   item.setActionCommand(actionString + ":DumpDialogue:Replace");
+            		   popup.add(item);
+            	       popup.show(pluginTree, e.getX(), e.getY());
+            	   }
+            	   if (pluginRec.getRecordType().equals("QUST"))
+            	   {
+            		   JPopupMenu popup = new JPopupMenu();
+            		   String itemString = isSelected ? "Deselect" : "Select";
+            		   itemString += " quest and associated INFOs";
+            		   JMenuItem item = new JMenuItem(itemString);
+            		   item.addActionListener(DisplayDialog.this);
+            		   item.setActionCommand(actionString + ":SelectInfos:"
+            				   + (isSelected ? "Deselect" : "Select"));
+            		   popup.add(item);
+            		   popup.addSeparator();
+            		   item = new JMenuItem("Dump quest dialogue to file (append)");
+            		   item.addActionListener(DisplayDialog.this);
+            		   item.setActionCommand(actionString + ":DumpDialogue:Append");
+            		   popup.add(item);
+            		   popup.addSeparator();
+            		   item = new JMenuItem("Dump Quest dialogue to file (replace)");
+            		   item.addActionListener(DisplayDialog.this);
+            		   item.setActionCommand(actionString + ":DumpDialogue:Replace");
+            		   popup.add(item);
+
+            	       popup.show(pluginTree, e.getX(), e.getY());
+            	   }
+               }
+    		}
+        };
+        pluginTree.addMouseListener(mlPlugin);
+        
+        if (Main.debugMode)
+            System.out.printf(pluginFile.getName() + ": Version " + 
+            		plugin.getVersion() + " loaded with highest FormID used = " +
+            		String.format("%08X", pluginHighFormID) + "\n");
+
+    }
+    
+    /**
+     * Show the dialog
+     *
+     * @param       parent          Parent window for the dialog
+     * @param       pluginFile      Plugin file
+     * @param       pluginNode      Plugin node
+     */
+    public static void showDialog(JFrame parent, File pluginFile, PluginNode pluginNode) {
+        DisplayDialog dialog = new DisplayDialog(parent, pluginFile, pluginNode);
+        dialog.pack();
+        dialog.setLocationRelativeTo(parent);
+        dialog.setVisible(true);
+    }
+    
+    /**
+     * Action performed (ActionListener interface)
+     *
+     * @param       ae              Action event
+     */
+    public void actionPerformed(ActionEvent ae) {
+        try {
+            String action = ae.getActionCommand();
+            if (action.startsWith("Popup")) // A popup event
+            {
+            	popupEventHandler(action);
+            	return;
+            }
+            if (action.equals("save plugin")) {
+                if (pluginModified) {
+                    if (SaveTask.savePlugin(this, pluginFile, plugin)) {
+                        pluginModified = false;
+                        validateTree(pluginTree);
+                    }
+                }
+            } else if (action.equals("save clipboard")) {
+                if (clipboardModified) {
+                    if (SaveTask.savePlugin(this, clipboardFile, clipboard)) {
+                        clipboardModified = false;
+                        validateTree(clipboardTree);
+                    }
+                }
+            } else if (action.equals("copy record")) {
+                copyRecords(pluginTree);
+            } else if (action.equals("display subrecord")) {
+                displaySubrecordData();
+            } else if (action.equals("delete subrecord")) {
+                deleteSubrecords();
+            } else if (action.equals("toggle ignore")) {
+                if (toggleIgnore(pluginTree))
+                    pluginModified = true;
+            } else if (action.equals("find editor id")) {
+                findEditorID(false);
+            } else if (action.equals("find next editor id")) {
+                findEditorID(true);
+            } else if (action.equals("find form id")) {
+                findFormID();
+            } else if (action.equals("copy references")) {
+                copyReferences = copyReferencesField.isSelected();
+            } else if (action.equals("done")) {
+                closeDialog();
+                setVisible(false);
+                dispose();
+            }
+        } catch (Throwable exc) {
+            Main.logException("Exception while processing action event", exc);
+        }   
+    }
+    
+    /**
+     * Search for a form ID
+     */
+    private void findFormID() {
+        
+        //
+        // Get the search term
+        //
+        String text = formField.getText();
+        if (text == null || text.length() == 0) {
+            JOptionPane.showMessageDialog(this, "You must enter a search term",
+                                          "Enter search term", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        //
+        // Find the form ID
+        //
+        FormInfo formInfo = null;
+        try {
+            int formID = Integer.parseInt(text, 16);
+            formInfo = plugin.getFormMap().get(new Integer(formID));
+        } catch (NumberFormatException exc) {
+        }
+        
+        //
+        // Select the tree node corresponding to the matching record
+        //
+        if (formInfo == null) {
+            JOptionPane.showMessageDialog(this, "No match found for '"+text+"'",
+                                          "No match found", JOptionPane.ERROR_MESSAGE);
+        } else {
+            pluginTree.clearSelection();
+            RecordNode recordNode = formInfo.getRecordNode();
+            TreePath treePath = new TreePath(recordNode.getPath());
+            pluginTree.setSelectionPath(treePath);
+            pluginTree.scrollPathToVisible(treePath);
+        }        
+    }
+    
+    /**
+     * Search for an editor ID
+     *
+     * @param       resume          TRUE to resume from last match
+     */
+    private void findEditorID(boolean resume) {
+        
+        //
+        // Clear the previous match if we are not resuming the search
+        //
+        if (!resume)
+            searchFormInfo = null;
+        
+        //
+        // Get the search term
+        //
+        String text = searchField.getText();
+        if (text == null || text.length() == 0) {
+            JOptionPane.showMessageDialog(this, "You must enter a search term",
+                                          "Enter search term", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        //
+        // Compile the search pattern
+        //
+        Pattern p = null;
+        try {
+            p = Pattern.compile(text, Pattern.CASE_INSENSITIVE);
+        } catch (PatternSyntaxException exc) {
+            JOptionPane.showMessageDialog(this, "'"+text+"' is not a valid regular expression",
+                                          "Invalid regular expression", JOptionPane.ERROR_MESSAGE);
+        }
+        
+        if (p == null)
+            return;
+        
+        //
+        // Find the next record with a matching editor ID
+        //
+        List<FormInfo> formList = plugin.getFormList();
+        for (FormInfo formInfo : formList) {
+            if (searchFormInfo != null) {
+                if (searchFormInfo == formInfo)
+                    searchFormInfo = null;
+            } else {
+                String editorID = formInfo.getEditorID();
+                if (editorID != null && editorID.length() > 0) {
+                    Matcher m = p.matcher(editorID);
+                    if (m.matches()) {
+                        searchFormInfo = formInfo;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        //
+        // Select the tree node corresponding to the matching record
+        //
+        if (searchFormInfo == null) {
+            JOptionPane.showMessageDialog(this, "No match found for '"+text+"'",
+                                          "No match found", JOptionPane.ERROR_MESSAGE);
+        } else {
+            pluginTree.clearSelection();
+            RecordNode recordNode = searchFormInfo.getRecordNode();
+            TreePath treePath = new TreePath(recordNode.getPath());
+            pluginTree.setSelectionPath(treePath);
+            pluginTree.scrollPathToVisible(treePath);
+        }
+    }
+    
+    /**
+     * Close the dialog window
+     */
+    private void closeDialog() {
+        if (pluginModified) {
+            int selection = JOptionPane.showConfirmDialog(this, 
+                                    "The plugin has been modified. Do you want to save the changes?", 
+                                    "Plugin Modified", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (selection == JOptionPane.YES_OPTION)
+                SaveTask.savePlugin(this, pluginFile, plugin);
+        }
+
+        if (clipboardModified) {
+            int selection = JOptionPane.showConfirmDialog(this, 
+                                    "The clipboard has been modified. Do you want to save the changes?", 
+                                    "Clipboard Modified", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+            if (selection == JOptionPane.YES_OPTION)
+                SaveTask.savePlugin(this, clipboardFile, clipboard);
+        }        
+    }
+    
+    /**
+     * Display the data for the selected subrecord
+     */
+    private void displaySubrecordData() {
+        
+        //
+        // At least one record must be selected
+        //
+        TreePath[] treePaths = pluginTree.getSelectionPaths();
+        if (treePaths == null) {
+            JOptionPane.showMessageDialog(this, "You must select a subrecord to display.", 
+                                          "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        //
+        // Only subrecords can be displayed
+        //
+        for (TreePath treePath : treePaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode)treePath.getLastPathComponent();
+            Object userObject = node.getUserObject();
+            if (!(userObject instanceof PluginSubrecord)) {
+                JOptionPane.showMessageDialog(this, "Only subrecords may be displayed.", 
+                                              "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        
+        //
+        // Display the selected subrecords
+        //
+        for (TreePath treePath : treePaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode)treePath.getLastPathComponent();
+            Object userObject = node.getUserObject();
+            DisplaySubrecordDialog.showDialog(this, (PluginSubrecord)userObject);
+        }
+    }
+    
+    /**
+     * Delete one or more subrecords
+     *
+     * @exception   DataFormatException     Error while expanding the record data
+     * @exception   IOException             An I/O error occurred
+     * @exception   PluginException         The record data is not valid
+     */
+    private void deleteSubrecords() throws DataFormatException, IOException, PluginException {
+        
+        //
+        // At least one record must be selected
+        //
+        TreePath[] treePaths = pluginTree.getSelectionPaths();
+        if (treePaths == null) {
+            JOptionPane.showMessageDialog(this, "You must select a subrecord to delete.", 
+                                          "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        //
+        // Only subrecords can be deleted
+        //
+        for (TreePath treePath : treePaths) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode)treePath.getLastPathComponent();
+            Object userObject = node.getUserObject();
+            if (!(userObject instanceof PluginSubrecord)) {
+                JOptionPane.showMessageDialog(this, "Only subrecords may be deleted.", 
+                                              "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        }
+        
+        //
+        // Delete the selected subrecords
+        //
+        for (TreePath treePath : treePaths) {
+            DefaultMutableTreeNode subrecordNode = (DefaultMutableTreeNode)treePath.getLastPathComponent();
+            RecordNode recordNode = (RecordNode)subrecordNode.getParent();
+            PluginRecord record = recordNode.getRecord();
+            PluginSubrecord subrecord = (PluginSubrecord)subrecordNode.getUserObject();
+            
+            //
+            // Remove the subrecord from the record data
+            //
+            List<PluginSubrecord> subrecords = record.getSubrecords();
+            ListIterator<PluginSubrecord> lit = subrecords.listIterator();
+            while (lit.hasNext()) {
+                PluginSubrecord checkSubrecord = lit.next();
+                if (checkSubrecord.equals(subrecord)) {
+                    lit.remove();
+                    break;
+                }
+            }
+            
+            record.setSubrecords(subrecords);
+            pluginModified = true;
+            
+            //
+            // Remove the subrecord node from the tree
+            //
+            recordNode.remove(subrecordNode);
+            DefaultTreeModel model = (DefaultTreeModel)pluginTree.getModel();
+            model.nodeStructureChanged(recordNode);
+        }       
+    }
+    
+    /**
+     * Tree node has been expanded (TreeExpansionListener interface)
+     *
+     * @param       event               Tree expansion event
+     */
+    public void treeExpanded(TreeExpansionEvent event) {
+        JTree tree = (JTree)event.getSource();
+        TreePath treePath = event.getPath();
+        DefaultMutableTreeNode node = (DefaultMutableTreeNode)treePath.getLastPathComponent();
+        
+        //
+        // Get the subrecords for a record if we haven't created them yet
+        //
+        if (node instanceof RecordNode) {
+            RecordNode recordNode = (RecordNode)node;
+            DefaultMutableTreeNode subrecordNode = (DefaultMutableTreeNode)recordNode.getFirstChild();
+            if (subrecordNode.getUserObject() == null) {
+                try {
+                    recordNode.removeAllChildren();
+                    createRecordChildren(recordNode);
+                    DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+                    model.nodeStructureChanged(recordNode);
+                } catch (Throwable exc) {
+                    Main.logException("Exception while creating subrecords", exc);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Tree node has been collapsed (TreeExpansionListener interface)
+     *
+     * @param       event               Tree expansion event
+     */
+    public void treeCollapsed(TreeExpansionEvent event) {
+    }
+    
+    /**
+     * Search all form IDs of this plugin and return those that are
+     * INFOs If there are none, an empty List is returned.
+     * 
+     * NOTE: If there is a presorted list of just INFOs available, 
+     * please either let me know or simply rewrite this.
+     * SACarrow 3 jAN 2008
+     *
+     * @param       pl                    plugin
+     */
+    private List<FormInfo> findAllInfos(Plugin pl)
+    {
+    	ArrayList<FormInfo> allInfos = new ArrayList<FormInfo>();
+    	List<FormInfo> allForms = pl.getFormList();
+    	
+    	for (FormInfo form : allForms)
+    	{
+    		if (!form.getRecordType().equals("INFO"))
+    			continue;
+    		allInfos.add(form);
+    	}
+    	return allInfos;
+    }
+    
+    /**
+     * Search all form IDs of this plugin and return those that are
+     * INFOs with the QSTI subrecord matching the input. If there are
+     * none, an empty List is returned.
+     * 
+     * NOTE: If there is a presorted list of just INFOs available, 
+     * please either let me know or simply rewrite this.
+     * SACarrow 12/28/07
+     *
+     * @param       pl                    plugin
+     * @param       questID               Quest form ID
+     */
+    private List<FormInfo> findQuestInfos(Plugin pl, int questID)
+    {
+    	ArrayList<FormInfo> questInfos = new ArrayList<FormInfo>();
+    	List<FormInfo> allForms = pl.getFormList();
+    	PluginRecord pluginRec;
+    	List<PluginSubrecord> pluginSubrecs;
+    	
+    	for (FormInfo form : allForms)
+    	{
+    		if (!form.getRecordType().equals("INFO"))
+    			continue;
+    		// Now check out the QSTI subrecord.
+    		pluginRec = (PluginRecord)form.getSource();
+    		if (pluginRec == null)
+    			continue;
+    		try
+    		{
+    			pluginSubrecs = pluginRec.getSubrecords();
+    		}
+    		catch (Exception ex)
+    		{
+    			continue;
+    		}
+    		for (PluginSubrecord pluginSubrec : pluginSubrecs)
+    		{
+    			if(pluginSubrec.getSubrecordType().equals("QSTI"))
+    			{
+    				byte[] subrecordData;
+    				try
+    	    		{
+    	    			subrecordData = pluginSubrec.getSubrecordData();
+    	    		}
+    	    		catch (Exception ex)
+    	    		{
+    	    			continue;
+    	    		}
+    	    		int infoQuestID = SerializedElement.getInteger(subrecordData, 0);
+    	    		if (questID == infoQuestID)
+    	    		{
+    	    			questInfos.add(form);
+    	    			continue;
+    	    		}
+    			}
+    		}
+    	}
+    	return questInfos;
+    }
+    
+    /**
+     * Search all form IDs of this plugin and return those INFOs that have a CTDA
+     * test that matches the parameters given. To match, the function opcode,
+     * the comparison opcode, and the comparison values must all match.
+     * Additionally, each parameter that the function requires must match; subsequent
+     * parameters are ignored. The CTDA test may be ORed with others (or not).
+     * @param       pl                    plugin
+     * @param       funcCode              function opcode
+     * @param       compCode              comparison opcode
+     * @param       param1                first function parameter (may be null)
+     * @param       param2                second function parameter (may be null)
+     * @param       compValue             comparison value
+     */
+    private List<FormInfo> findInfosWithCondition(Plugin pl, int funcCode, int compCode,
+    		Object param1, Object param2, float compValue)
+    {
+    	ArrayList<FormInfo> condInfos = new ArrayList<FormInfo>();
+    	byte[] byteArray1 = null;
+    	byte[] byteArray2 = null;
+    	// Easy "just return empty list now" conditions:
+    	// - Function opcode invalid,
+    	// - Comparison opcode invalid,
+    	// - Param1 or Param2 not convertible to byte array,
+    	// - Either param1 or param2 null when function info says they should not be.
+    	if (!FunctionCode.isValid(funcCode) || !ComparisonCode.isValid(compCode))
+    		return condInfos;
+    	try
+    	{
+    		if (param1 != null) byteArray1 = PluginRecord.convertToByteArray(param1);
+    		if (param2 != null) byteArray2 = PluginRecord.convertToByteArray(param2);    		
+    	}
+    	catch (Exception ex)
+    	{
+    		// Exception means incorrect data type.
+    		return condInfos;
+    	}
+    	FunctionInfo funcInfo = PluginSubrecord.getFunctionInfo(funcCode);
+    	if (funcInfo == null) return condInfos;
+    	if (funcInfo.isFirstReference() && param1 == null) return condInfos;
+    	if (funcInfo.isSecondReference() && param2 == null) return condInfos;
+    	// All inputs should be valid at this point.
+    	
+    	boolean usesFirst = funcInfo.isFirstReference();
+    	boolean usesSecond = funcInfo.isSecondReference();
+    	List<FormInfo> allForms = pl.getFormList();
+    	PluginRecord pluginRec;
+    	List<PluginSubrecord> pluginSubrecs;
+    	
+    	for (FormInfo form : allForms)
+    	{
+    		if (!form.getRecordType().equals("INFO"))
+    			continue;
+    		// Now check out the QSTI subrecord.
+    		pluginRec = (PluginRecord)form.getSource();
+    		if (pluginRec == null)
+    			continue;
+    		try
+    		{
+    			pluginSubrecs = pluginRec.getSubrecords();
+    		}
+    		catch (Exception ex)
+    		{
+    			continue;
+    		}
+    		for (PluginSubrecord pluginSubrec : pluginSubrecs)
+    		{
+    			if(pluginSubrec.getSubrecordType().equals("CTDA"))
+    			{
+    	            //
+    	            // CTDA subrecord
+    	            //   Byte 0:      Type
+    	            //   Bytes 1-3:   Unknown
+    	            //   Bytes 4-7:   Value (float)
+    	            //   Bytes 8-11:  Function code
+    	            //   Bytes 12-15: Parameter 1
+    	            //   Bytes 16-19: Parameter 2
+    	            //   BTW this is NOT the format listed in the UESP Wiki:
+    				//   http://www.uesp.net/wiki/Tes4Mod:Mod_File_Format/INFO
+
+    				byte[] subrecordData;
+    				try
+    	    		{
+    	    			subrecordData = pluginSubrec.getSubrecordData();
+    	    			int subCompCode = (subrecordData[0] & 0xF0) >>> 4; // Top half-byte contains the comparison operator 
+    	                int subCompValueInt = SerializedElement.getInteger(subrecordData, 4);
+    	                float subCompValue = Float.intBitsToFloat(subCompValueInt);
+    	                int subFuncCode = SerializedElement.getInteger(subrecordData, 8)
+;
+    	                if (subCompCode != compCode || subFuncCode != funcCode
+    	                		|| subCompValue != compValue) continue;
+    	                if (usesFirst && SerializedElement.compareArrays(byteArray1, 0, subrecordData, 12, 4) != 0)
+    	                	continue;
+    	                if (usesSecond && SerializedElement.compareArrays(byteArray2, 0, subrecordData, 16, 4) != 0)
+    	                	continue;
+    	    			condInfos.add(form);
+    	    			break;
+    	    		}
+    	    		catch (Exception ex)
+    	    		{
+    	    			continue;
+    	    		}
+    			}
+    		}
+    	}
+    	return condInfos;
+    }
+    
+    /**
+     * Searches all form IDs for DIALs and INFOs related to the quest 
+     * with the "old" form ID and relates them to the "new" form ID.
+     * - Since INFOs are assumed to have been duplicated, they are re-IDed
+     *   and the QSTI block changed to the new quest form ID.
+     * - Also, PNAM fields must be changed to point to the correct 
+     *   renumbered INFOs. This must be done throughout the plugin.
+     * - DIALs that are not to be duplicated have an additional
+     *   QSTI entry added.  
+     * - DIALs that are to be duplicated have their form ID, editor ID,
+     *   INFO group parent ID and their QSTI entry changed. For duplication
+     *   criteria, see the dialToBeCloned() method. Cloning DIALs is optional
+     *   and whether to do that is controlled by the last parameter. 
+     * 
+     * SACarrow 3 Jan 2008
+     *
+     * @param       pl                    plugin
+     * @param       oldQID                Old quest ID
+     * @param       newQID                New quest ID
+     * @param       lastFormID            Last form ID used
+     * @param       cloneDIALs            Whether any DIALs are to be cloned
+     * @returns     int                   Number of new form IDs used
+     */
+    private int changeQuestTopics(Plugin pl, int oldQID, int newQID, int lastFormID, boolean cloneDIALs)
+    throws DataFormatException, IOException, PluginException
+    {
+    	PluginRecord pluginRec;
+    	List<FormInfo> allQuestDials = findQuestDials(pl, oldQID);
+    	int dialFormIDsUsed = 0, infoFormIDsUsed = 0, lastFormIDUsed = lastFormID;
+    	for (FormInfo form : allQuestDials)
+    	{
+    		pluginRec = (PluginRecord)form.getSource();
+    		if (cloneDIALs && dialToBeCloned(pluginRec, oldQID))
+    		{
+    			// To clone a DIAL, its form ID and editor ID must be changed,
+    			// its single QSTI must be changed, and its group parent ID too.
+    			int oldDialID = pluginRec.getFormID();
+    			PluginGroup topicGroup = findTopicGroup(pl, oldDialID);
+    			if (topicGroup == null)
+    			{
+            		if (Main.debugMode)
+            		{
+                       System.out.printf("changeQuestTopics: No INFO group found for DIAL record [%08X]\n",
+                    		   oldDialID);
+            		}
+    			}
+    			else // Duplicate the DIAL.
+    			{
+    				lastFormIDUsed++;
+    	    		pluginRec.setFormID(lastFormIDUsed); // New form ID for DIAL
+    	    		String oldName = pluginRec.getEditorID();
+    	    		try 
+    	    		{
+	    			   FormInfo dialFormInfo = pl.getFormMap().get(oldDialID);
+	    			   pluginRec.setFormID(lastFormIDUsed); // New form ID for DIAL
+	    			   dialFormInfo.setFormID(lastFormIDUsed);
+	    			   dialFormInfo.setMergedFormID(lastFormIDUsed);
+	    			   pluginRec.setEditorID(oldName + "GECKO");
+	    			   dialFormInfo.setEditorID(oldName + "GECKO");
+	    			   dialFormInfo.setMergedEditorID(oldName + "GECKO");
+	    			   pl.getFormMap().remove(oldDialID);
+	    			   pl.getFormMap().put(new Integer(lastFormIDUsed), dialFormInfo);
+    	    		   pluginRec.setEditorID(oldName + "GECKO"); 
+    	    		}
+    	    		catch (Exception ex) { ex.printStackTrace(System.out); };
+    	    		if (Main.debugMode)
+    	    		{
+    				   System.out.printf("Dialogue Form ID Change: Changed DIAL record with form ID "
+    						   + "%08X and name " + oldName + " to ID %08X and name %s \n",
+    						   oldDialID, pluginRec.getFormID(), pluginRec.getEditorID() );
+    	    		}
+    	    		int oldGroupID = topicGroup.getGroupParentID();
+    	    		topicGroup.setGroupParentID(lastFormIDUsed); // Reset the parent to the INFO group.
+    	    		if (Main.debugMode)
+    	    		{
+    				   System.out.printf("INFO Group Parent Change: Changed parent form ID "
+    						   + "%08X to parent form ID %08X \n",
+    						   oldGroupID, topicGroup.getGroupParentID());
+    	    		}
+    	    		boolean changed = pluginRec.changeSubrecord("QSTI", new Integer(oldQID), new Integer(newQID));
+    	    		if (changed && Main.debugMode)
+    	    		{
+    	               System.out.printf("changeQuestTopics: Changed QSTI Subrecord with value "
+    	            		   + "%08X to value %08X in DIAL record [%08X]\n", oldQID,
+    	            		   newQID, pluginRec.getFormID());
+    	    		}
+    	    		dialFormIDsUsed++;
+    			}
+    		}
+    		else
+    		{
+        		boolean changed = pluginRec.addAdditionalSubrecord("QSTI", new Integer(newQID));
+        		if (changed && Main.debugMode)
+        		{
+                   System.out.printf("changeQuestTopics: Added QSTI Subrecord with value "
+                		   + "%08X to DIAL record " + pluginRec.getEditorID() + " [%08X]\n",
+                		   newQID, pluginRec.getFormID());
+        		}
+    		}
+    	}
+    	List<FormInfo> allQuestInfos = findQuestInfos(pl, oldQID);
+    	ArrayList<Integer> oldForms = new ArrayList<Integer>(allQuestInfos.size());
+    	ArrayList<Integer> newForms = new ArrayList<Integer>(allQuestInfos.size());
+    	// Change the quest-related INFO form IDs, saving the old ones for later 
+    	// PNAM renaming.
+    	for (FormInfo form : allQuestInfos)
+    	{
+    		lastFormIDUsed++;
+    		int oldFormID = form.getFormID();
+    		oldForms.add(new Integer(form.getFormID()));
+    		newForms.add(new Integer(lastFormIDUsed));
+    		pluginRec = (PluginRecord)form.getSource();
+    		pluginRec.setFormID(lastFormIDUsed);
+			form.setFormID(lastFormIDUsed);
+			form.setMergedFormID(lastFormIDUsed);
+			pl.getFormMap().remove(oldFormID);
+			pl.getFormMap().put(new Integer(lastFormIDUsed), form);
+    		boolean changed = pluginRec.changeSubrecord("QSTI", new Integer(oldQID), new Integer(newQID));
+    		if (changed && Main.debugMode)
+    		{
+               System.out.printf("changeQuestTopics: Changed QSTI Subrecord with value "
+            		   + "%08X to value %08X in INFO record [%08X]\n", oldQID,
+            		   newQID, pluginRec.getFormID());
+    		}
+
+    		infoFormIDsUsed++;
+    	}
+    	
+    	// Now go through all INFOs, changing any PNAM that was changed above.
+    	List<FormInfo> allInfos = findAllInfos(pl);
+    	
+    	for (FormInfo form : allInfos)
+    	{
+    		pluginRec = (PluginRecord)form.getSource();    		
+    		// Since pluginRec.changeSubrecord is a no-op when the old value
+    		// is not found, it is safe to use every time.
+    		for (int i = 0; i < infoFormIDsUsed; i++)
+    		{
+        		boolean changed = pluginRec.changeSubrecord("PNAM", oldForms.get(i), newForms.get(i));
+        		if (changed && Main.debugMode)
+        		{
+                   System.out.printf("changeQuestTopics: Changed PNAM Subrecord with value "
+                		   + "%08X to value %08X in INFO record [%08X]\n", oldForms.get(i),
+                		   newForms.get(i), pluginRec.getFormID());
+        		}
+
+        		if (changed) break;
+    		}   			
+    	}
+    	return dialFormIDsUsed + infoFormIDsUsed;
+    }
+    
+    /**
+     * Search all form IDs of this plugin and return those that are
+     * DIALs with a QSTI subrecord matching the input. If there are
+     * none, an empty List is returned.
+     * 
+     * NOTE: If there is a presorted list of just DIALs available, 
+     * please either let me know or simply rewrite this.
+     * SACarrow 12/28/07
+     *
+     * @param       pl                    plugin
+     * @param       questID               Quest form ID
+     */
+    private List<FormInfo> findQuestDials(Plugin pl, int questID)
+    {
+    	ArrayList<FormInfo> questDials = new ArrayList<FormInfo>();
+    	List<FormInfo> allForms = pl.getFormList();
+    	PluginRecord pluginRec;
+    	List<PluginSubrecord> pluginSubrecs;
+    	
+    	for (FormInfo form : allForms)
+    	{
+    		if (!form.getRecordType().equals("DIAL"))
+    			continue;
+    		// Now check out the QSTI subrecords.
+    		pluginRec = (PluginRecord)form.getSource();
+    		if (pluginRec == null)
+    			continue;
+    		try
+    		{
+    			pluginSubrecs = pluginRec.getSubrecords();
+    		}
+    		catch (Exception ex)
+    		{
+    			continue;
+    		}
+    		for (PluginSubrecord pluginSubrec : pluginSubrecs)
+    		{
+    			if(pluginSubrec.getSubrecordType().equals("QSTI"))
+    			{
+    				byte[] subrecordData;
+    				try
+    	    		{
+    	    			subrecordData = pluginSubrec.getSubrecordData();
+    	    		}
+    	    		catch (Exception ex)
+    	    		{
+    	    			continue;
+    	    		}
+    	    		int infoQuestID = SerializedElement.getInteger(subrecordData, 0);
+    	    		if (questID == infoQuestID)
+    	    		{
+    	    			questDials.add(form);
+    	    			continue;
+    	    		}
+    			}
+    		}
+    	}
+    	return questDials;
+    }
+    
+    /**
+     * Search all form IDs of this plugin, returning the highest formID
+     * currently in use. Even though there may be gaps in form ID, the 
+     * next value available and all higher are guaranteed unused.
+     * SACarrow 01/01/08
+     *
+     * @param       pl                    plugin
+     */
+    private int highestFormID(Plugin pl)
+    {
+    	List<FormInfo> allForms = pl.getFormList();
+    	int highFormID = allForms.get(0).getFormID();
+    	for (FormInfo form : allForms)
+    	{
+    		int formID = form.getFormID();
+    		if (formID > highFormID) highFormID = formID;
+    	}
+    	return highFormID;
+    }
+
+   protected int modifyQuestFormID(Plugin pl, PluginRecord pluginRec, int highFormID, String howMany)
+   {
+	   int tmpHighFormID = highFormID;
+	   int numNewFormIDs = 0;
+	   int oldQID = pluginRec.getFormID();
+	   String oldName = pluginRec.getEditorID();
+	   // Always Re-ID the quest
+	   tmpHighFormID++;
+	   numNewFormIDs++;
+	   // - Change the plugin rec,
+	   // - Change the form info containing that rec,
+	   // - Remove the old form map entry and insert the new one.
+	   try 
+	   { 
+		   FormInfo questFormInfo = pl.getFormMap().get(oldQID);
+		   pluginRec.setFormID(tmpHighFormID);
+		   questFormInfo.setFormID(tmpHighFormID);
+		   questFormInfo.setMergedFormID(tmpHighFormID);
+		   pluginRec.setEditorID(oldName + "GECKO");
+		   questFormInfo.setEditorID(oldName + "GECKO");
+		   questFormInfo.setMergedEditorID(oldName + "GECKO");
+		   pl.getFormMap().remove(oldQID);
+		   pl.getFormMap().put(new Integer(tmpHighFormID), questFormInfo);
+	   }
+	   catch (Exception ex) { ex.printStackTrace(System.out); };
+	   if (Main.debugMode)
+	   {
+		   System.out.printf("Quest Form ID Change: Changed QUST record with form ID "
+				   + "%08X and name " + oldName + " to ID %08X and name %s \n",
+				   oldQID, pluginRec.getFormID(), pluginRec.getEditorID() );
+		}
+	   if (howMany.equals("RelatedInfos") || howMany.equals("UnsharedDials")) // Propagate the new ID to DIALs & INFOs.
+	   {
+		   boolean cloneDIALs = howMany.equals("UnsharedDials") ? true : false; 
+		   try
+		   {
+			   int numNewDialIDs = changeQuestTopics(pl, oldQID, tmpHighFormID, tmpHighFormID, cloneDIALs);
+			   numNewFormIDs += numNewDialIDs;
+		   }
+		   catch (Exception ex) { ex.printStackTrace(System.out); };
+	   }
+	   return numNewFormIDs;
+	}
+  
+   /**
+    * Determines whether a given DIAL associated with a quest to be cloned
+    * should itself be cloned or simply have a QSTI reference added for
+    * the cloned quest. The DIAL plugin records param is presumed to be from
+    * the list returned by findQuestDials; results with any other record 
+    * are unpredictable. The current criteria are:
+    * - The DIAL must have the same mod index as the quest,
+    * - The DIAL must have only one QSTI block with the quest param.
+    * 
+    * SACarrow, 10 Jan 2008
+    *
+    * @param       pluginRec             plugin record
+    * @param       oldQID                Quest ID
+    * @returns     boolean               Whether DIAL should be cloned
+    */
+	private boolean dialToBeCloned(PluginRecord pluginRec, int oldQID)
+	{
+		if (pluginRec instanceof PluginGroup || !pluginRec.getRecordType().equals("DIAL"))
+			return false;
+		int dialMod = pluginRec.getFormID() >>> 24, questMod = oldQID >>>24;
+		if (dialMod != questMod)
+			return false;
+		boolean foundOnlyOne = false;
+    	List<PluginSubrecord> pluginSubrecs;
+		try
+		{
+			pluginSubrecs = pluginRec.getSubrecords();
+		}
+		catch (Exception ex)
+		{
+			return false;
+		}
+		for (PluginSubrecord pluginSubrec : pluginSubrecs)
+		{
+			if(pluginSubrec.getSubrecordType().equals("QSTI"))
+			{
+				if (foundOnlyOne) // Already found one, so not to be cloned.
+				{
+					foundOnlyOne = false;
+					break;
+				}
+				foundOnlyOne = true;
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = pluginSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			break; // If this happens, just get out.
+	    		}
+	    		int infoQuestID = SerializedElement.getInteger(subrecordData, 0);
+	    		if (oldQID != infoQuestID) // Not a match, so not to be cloned.
+				{
+					foundOnlyOne = false;
+					break;
+				}
+			}
+		}
+		return foundOnlyOne;
+	}
+	
+   /**
+    * Finds the INFO group within the plugin with the parent ID matching
+    * the DIAL ID given. Reurns null if no match found.
+    * SACarrow, 10 Jan 2008
+    *
+    * @param       plugin                plugin
+    * @param       dialID                DIAL ID
+    * @returns     PluginGroup           Group found or null
+    */
+
+	private PluginGroup findTopicGroup(Plugin pl, int dialID)
+	{
+		List<PluginGroup> topList = pl.getGroupList();
+		PluginGroup returnGroup = null, dialGroup = null;
+		for (PluginGroup topGroup : topList)
+		{
+			if (topGroup.getGroupType() == PluginGroup.TOP 
+					&& topGroup.getGroupRecordType().equals("DIAL"))
+			{
+				dialGroup = topGroup;
+				break;
+			}
+		}
+		if (dialGroup == null) return null;
+		List<PluginRecord> dialList = dialGroup.getRecordList();
+		for (PluginRecord infoGroup : dialList)
+		{
+			if (!(infoGroup instanceof PluginGroup)) continue;
+			if (((PluginGroup)infoGroup).getGroupType() == PluginGroup.TOPIC
+					&& ((PluginGroup)infoGroup).getGroupParentID() == dialID)
+			{
+				returnGroup = (PluginGroup)infoGroup;
+				break;
+			}
+		}
+		return returnGroup;
+	}
+	
+   /**
+    * Given an NPC record, searches all INFO records of the plugin to find
+    * whether any directly refer to the NPC (GetIsId<FormID> == 1.0). No other
+    * conditions (race, gender, faction, etc.) are checked. All INFO records
+    * containing that condition dump the voice response info into the selected
+    * file.
+    * SACarrow, 15 Jan 2008
+    *
+    * @param       plugin                plugin
+    * @param       plRec                 NPC record
+    * @param       append              whether to append or replace
+    */
+	private void dumpNPCDialogue(Plugin pl, PluginRecord plRec, boolean append)
+	{
+		if (!(plRec.getRecordType().equals("NPC_"))) return;
+		File file = getDialogueDumpFile("NPC_");
+		if (file == null) return; //Popup with error type has already appeared.
+		if (!append) // Ask if overwriting.
+		{
+			int dontLeave = JOptionPane.showConfirmDialog(this, 
+					"This will overwrite whatever data exists in the file.\n Do you wish to continue?",
+					"Possible Content Overwrite", JOptionPane.WARNING_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+			if (dontLeave != JOptionPane.OK_OPTION) return;			
+		}
+        if (Main.debugMode)
+            System.out.printf("File <" + file.getAbsolutePath() + "> selected");
+        String headerLine = dumpDialogueHeader + " for NPC " + plRec.getEditorID()
+        + " [" + String.format("%08X", new Integer(plRec.getFormID())) + "]\n";
+        List<FormInfo> condInfos = findInfosWithCondition(pl, FunctionCode.GetIsID, 
+        		ComparisonCode.EqualTo, plRec.getFormID(), null, 1.0f);
+        if (condInfos.size() == 0)
+		{
+			JOptionPane.showMessageDialog(this, "No dialogue data was found for this NPC");
+			return;			
+		}
+        FileOutputStream outFile;
+        try { outFile = new FileOutputStream(file, append); }
+        catch (Exception ex) {return;}
+        try { outFile.write(headerLine.getBytes()); }
+        catch (Exception ex) {return;}
+    	for (FormInfo form : condInfos)
+    	{
+            try { outFile.write(dialogueForInfo(pl, form).getBytes()); }
+            catch (Exception ex) {return;}
+    	}
+    	try {outFile.close();}
+        catch (Exception ex) {return;}
+		JOptionPane.showMessageDialog(this, "Dialogue data for NPC " + plRec.getEditorID()
+				+ "\nwritten to file " + file.getName());
+	}
+
+	/**
+    * Gets a file with dialogue lines in the format of the dump dialogue file
+    * and reads them into the plugin, changing (but not adding) info and responses
+    * (including notes) as necessary. Whitespace characters transformed in the dump process
+    * are re-transformed back into whitespace.
+    * SACarrow, 27 Jan 2008
+    *
+    * @param       plugin                plugin
+    * @return      int                   number of lines changed in plugin
+    */
+	private int readDialogue(Plugin pl)
+	{
+		int linesChanged = 0;
+		File file = getDialogueReadFile();
+		if (file == null) return 0; //Popup with error type has already appeared.
+		int dontLeave = JOptionPane.showConfirmDialog(this, 
+				"This will replace dialogue data in this plugin.\n Do you wish to continue?",
+				"Possible Content Overwrite", JOptionPane.WARNING_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+		if (dontLeave != JOptionPane.OK_OPTION) return 0;			
+        if (Main.debugMode)
+            System.out.printf("File <" + file.getAbsolutePath() + "> selected");
+        BufferedReader inputStream = null;
+        try { inputStream = new BufferedReader(new FileReader(file));}
+        catch (Exception ex) {return 0;}
+        String inLine = null;
+        try
+        {
+	        while ((inLine = inputStream.readLine()) != null)
+	        {
+	        	if (inLine.startsWith(dumpDialogueHeader) || inLine.endsWith("TAB:"))
+	        		continue;
+	        	String[] lineParts = inLine.split("\t");
+	        	String[] fileParts = lineParts[0].split("_");
+	        	String[] emoParts = lineParts[1].split(":");
+	        	
+	        	// Since we do not have the mod index of the INFO gotten from the file name,
+	        	// we kinda have to guess. The way we guess here is to start from the plugin mod
+	        	// index and look for an INFO in this plugin with the form ID from the file name
+	        	// and the plugin mod index. If one is not found, then decrement the index and
+	        	// try again. If none are found, log it if in debug mode.
+	        	int plModIndex = pl.getMasterList().size();
+	        	String dialogueLine = (lineParts.length > 2) ? lineParts[2] : " "; // Should always have this.
+	        	String dialogueNotes = (lineParts.length == 5) ? lineParts[4] : ""; // Often won't have this.
+	        	
+	        	for (int i = plModIndex; i >= 0; i--)
+	        	{
+	        		int formid = 0, emoLevel = 0, respNum = 0;
+	        		int emoType = EmotionCode.getCode(emoParts[0]);
+	        		try 
+	        		{
+	        			formid = Integer.parseInt(fileParts[2], 16);
+	        			emoLevel = Integer.parseInt(emoParts[1]);
+	        			respNum = Integer.parseInt(fileParts[3]);
+	        		}
+	        		catch (Exception ex)
+	        		{
+	        	        if (Main.debugMode)
+	        	            System.out.printf("One of the numerical components in line <"
+	        	            		+ inLine + "> is not a number.");
+	        			break;
+	        		}
+	        		FormInfo info = pl.getFormMap().get((formid & 0x00FFFFFF) | (i << 24));
+	        		if (info == null || !info.getRecordType().equals("INFO"))
+	        			continue;
+	        		if (!changeResponseInINFO(info, emoType, emoLevel, respNum, 
+	        				dialogueLine, dialogueNotes))
+	        		{
+	        	        if (Main.debugMode)
+	        	            System.out.printf("Error in changing response in line <"
+	        	            		+ inLine + ">.");
+	        		}
+	        		else
+	        		{
+	        			linesChanged++;
+	        		}
+	    			break;
+	        	}
+	        }
+	
+	    	inputStream.close();
+	    }
+        catch (Exception ex) {}
+        return linesChanged;
+	}
+
+
+   /**
+    * Given an quest record, searches all INFO records of the plugin to find
+    * those that refer to this quest. All INFO records dealing with that quest dump
+    * the voice response info into the selected file, grouped by dialogue type or CS tab.
+    * SACarrow, 22 Jan 2008
+    *
+    * @param       plugin                plugin
+    * @param       plRec                 NPC record
+    * @param       append                whether to append or replace
+    */
+	private void dumpQuestDialogue(Plugin pl, PluginRecord plRec, boolean append)
+	{
+		if (!(plRec.getRecordType().equals("QUST"))) return;
+		File file = getDialogueDumpFile("QUST");
+		if (file == null) return; //Popup with error type has already appeared.
+		if (!append) // Ask if overwriting.
+		{
+			int dontLeave = JOptionPane.showConfirmDialog(this, 
+					"This will overwrite whatever data exists in the file.\n Do you wish to continue?",
+					"Possible Content Overwrite", JOptionPane.WARNING_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+			if (dontLeave != JOptionPane.OK_OPTION) return;			
+		}
+        if (Main.debugMode)
+            System.out.printf("File <" + file.getAbsolutePath() + "> selected");
+        String headerLine = dumpDialogueHeader + " for Quest " + plRec.getEditorID()
+        + " [" + String.format("%08X", new Integer(plRec.getFormID())) + "]\n";
+        List<FormInfo> questInfos = this.findQuestInfos(pl, plRec.getFormID());
+        if (questInfos.size() == 0)
+		{
+			JOptionPane.showMessageDialog(this, "No dialogue data was found for this quest");
+			return;			
+		}
+        FileOutputStream outFile;
+        try { outFile = new FileOutputStream(file, append); }
+        catch (Exception ex) {return;}
+        try { outFile.write(headerLine.getBytes()); }
+        catch (Exception ex) {return;}
+        // This works a little differently; since we want to group by type, we go through the whole list
+        // for each type, since I am afraid of messing up the implicit iterator.
+        for (int dialType = DialogueTypeCode.Topic; dialType <= DialogueTypeCode.Miscellaneous; dialType++)
+        {
+        	String dialTypeHeader = DialogueTypeCode.getString(dialType).toUpperCase() + " TAB:\n";
+        	boolean firstOneFound = true;
+        	for (FormInfo form : questInfos)
+        	{
+        		if (getInfoDialogueType(form) == dialType)
+        		{
+                    try 
+        			{
+                    	if (firstOneFound)
+                    	{
+                    		outFile.write(dialTypeHeader.getBytes());
+                    		firstOneFound = false;
+                    	}
+                    	outFile.write(dialogueForInfo(pl, form).getBytes()); 
+                    }
+                    catch (Exception ex) {return;}
+        		}
+        	}
+        }
+    	try {outFile.close();}
+        catch (Exception ex) {return;}
+		JOptionPane.showMessageDialog(this, "Dialogue data for quest " + plRec.getEditorID()
+				+ "\nwritten to file " + file.getName());
+	}
+
+   /**
+    * Fires up a file chooser and tests the file for acceptability. The criteria:
+    * - Must be a file ending in TXT,
+    * - Must be non-existent or empty, or
+    * - If not empty, must begin with the dialogue dump header.
+    * The last one is so that other TXT files are not overwritten here. 
+    * If that is the desire of the user, he or she will have to kill the
+    * file outside of Gecko. :)
+    * Return is a File object ready for use or null if an acceptable file is not chosen.
+    * SACarrow, 18 Jan 2008
+    *
+    * @param       recType           4-char OB rec ID; for decorating the dialog box.
+    * @return      File              File ready for use or null.
+    */
+	private File getDialogueDumpFile(String recType)
+	{
+        // Get the file to dump dialog to.
+		FileOutputStream outFile = null;
+		FileInputStream inFile = null;
+        JFileChooser chooser = new JFileChooser(Main.pluginDirectory);
+        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        String recName = "";
+        if (recType.equals("NPC_")) recName = "NPC";
+        if (recType.equals("QUST")) recName = "Quest";	        
+        chooser.setDialogTitle("Select File to Dump " + recName + " Dialogue");
+        chooser.setFileFilter(new TextFileFilter());
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+            return null;
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toUpperCase().endsWith(".TXT"))
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue dump file \"" + file.getName() + "\" must be a text file.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        if (file.exists() && (file.isDirectory() || !file.canWrite()))
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue dump file \"" + file.getName() + "\" must be a writable file.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        if (!file.exists())
+        {
+        	try {file.createNewFile();} catch (Exception ex) {return null;}
+        }
+        // File now exists and can be written to. Now check to see if it's
+        // empty or begins with the dialogue dump string.
+        try 
+        {
+        	outFile = new FileOutputStream(file, true); // Set append true, as this is just a test.
+        	outFile.close();
+        	inFile = new FileInputStream(file);
+        	byte[] headerTest = new byte[dumpDialogueHeader.length()];
+        	int bytesRead = inFile.read(headerTest);
+        	inFile.close();
+        	if (bytesRead == 0 || bytesRead == -1)
+        	{
+        		// Finding an empty file
+        	}
+        	else
+        	{
+        		String tmp = new String(headerTest);
+        		if (!tmp.equals(dumpDialogueHeader))
+    	        {
+    	            JOptionPane.showMessageDialog(this,
+    	            		"Dialogue dump file \"" + file.getName() + "\" has non-dialogue dump content.",
+    	                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+    	            return null;
+    	        }
+        	}
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue dump file \"" + file.getName() + "\" cannot be opened.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        return file;
+	}
+	
+   /**
+    * Fires up a file chooser and tests the file for acceptability. The criteria:
+    * - Must be a file ending in TXT,
+    * - Must exist and begin with the dialogue dump header.
+    * Return is a File object ready for reading or null if an acceptable file
+    * is not chosen.
+    * SACarrow, 27 Jan 2008
+    *
+    * @return      File              File ready for use or null.
+    */
+	private File getDialogueReadFile()
+	{
+        // Get the file to read dialog from.
+		FileInputStream inFile = null;
+        JFileChooser chooser = new JFileChooser(Main.pluginDirectory);
+        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        chooser.setDialogTitle("Select File to Read Dialogue");
+        chooser.setFileFilter(new TextFileFilter());
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+            return null;
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toUpperCase().endsWith(".TXT"))
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue read file \"" + file.getName() + "\" must be a text file.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        if (file.exists() && (file.isDirectory() || !file.canRead()))
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue read file \"" + file.getName() + "\" must be a readable file.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        if (!file.exists())
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue read file \"" + file.getName() + "\" must exist.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        // File now exists and can be written to. Now check to see if it's
+        // empty or begins with the dialogue dump string.
+        try 
+        {
+        	inFile = new FileInputStream(file);
+        	byte[] headerTest = new byte[dumpDialogueHeader.length()];
+        	int bytesRead = inFile.read(headerTest);
+        	inFile.close();
+        	if (bytesRead == 0 || bytesRead == -1)
+        	{
+        		// Finding an empty file
+                JOptionPane.showMessageDialog(this,
+                		"Dialogue read file \"" + file.getName() + "\" is empty.",
+                        "File Type Error", JOptionPane.ERROR_MESSAGE);
+                return null;
+        	}
+        	else
+        	{
+        		String tmp = new String(headerTest);
+        		if (!tmp.equals(dumpDialogueHeader))
+    	        {
+    	            JOptionPane.showMessageDialog(this,
+    	            		"Dialogue read file \"" + file.getName() + "\" has non-dialogue read content.",
+    	                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+    	            return null;
+    	        }
+        	}
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(this,
+            		"Dialogue read file \"" + file.getName() + "\" cannot be opened.",
+                    "File Type Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        return file;
+	}
+	
+   /**
+    * Takes an INFO and extracts the included dialogue and information about that dialogue
+    * as a readable string. An INFO nay have multiple lines, based on TRDT-NAM1-NAM2 triplets,
+    * but each line will be separated by a newline and will be in the tab-delimited format:
+    * <base_voice_file_name> <emo type:emo level> "<line of dialogue>" PRODNOTE: "<notes for voice actor>"
+    * "PRODNOTE:" and beyond are optional; no notes means no appearance. The voice file name format is
+    * <QUST EDID>_<DIAL EDID>_<INFO formid with mod index zeroed out>_< response #>
+    * Any occurrences of \t, \r, \" and \n in either the line or the notes is replaced by "[TAB]", "[CR]", "[DQ]"
+    * and "[NL]" rescpectively.
+    * If the quest ID is not found in this plugin, then the placeholder is "QID<8-char quest formID>"
+    * If the DIAL ID is not found in this plugin, then the placeholder is "DID<8-char DIAL formID>"
+    * @param       pl                plugin
+    * @param       form              INFO topic to extract dialogue from.
+    * @return      String            Formatted dialogue information string
+    */
+	private String dialogueForInfo(Plugin pl, FormInfo form)
+	{
+		String retStr = "";
+		String questEditorID = "";
+		String dialEditorID = "";
+		if (!form.getRecordType().equals("INFO"))
+			return retStr;
+		// Now check out the QSTI subrecords.
+		PluginRecord plRec = (PluginRecord)form.getSource();
+		if (plRec == null)
+			return retStr;
+		// All INFOs have a parent group record with an same ID is the DIAL.
+		// Use that to get the topic name.
+		PluginGroup plGroup = (PluginGroup)plRec.getParent();
+		if (plGroup == null)
+			return retStr;
+		int dialFormID = SerializedElement.getInteger(plGroup.getGroupLabel(), 0);
+		FormInfo parentDial = pl.getFormMap().get(dialFormID);
+		if (parentDial == null)
+		{
+			dialEditorID = "DID" + String.format("%08X", new Integer(plGroup.getFormID()));
+		}
+		else
+		{
+			dialEditorID = parentDial.getEditorID();
+		}
+    	List<PluginSubrecord> plSubrecs;
+		try
+		{
+			plSubrecs = plRec.getSubrecords();
+		}
+		catch (Exception ex)
+		{
+			return retStr;
+		}
+		for (PluginSubrecord plSubrec : plSubrecs)
+		{
+			if (plSubrec.getSubrecordType().equals("QSTI")) // Only one QSTI and before the others of interest.
+			{
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = plSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			return retStr;
+	    		}
+	    		int parentQuestID = SerializedElement.getInteger(subrecordData, 0);
+	    		FormInfo parentQuest = pl.getFormMap().get(new Integer(parentQuestID));
+	    		if (parentQuest == null)
+	    		{
+	    			questEditorID = "QID" + String.format("%08X", parentQuestID);
+	    		}
+	    		else
+	    		{
+	    			questEditorID = parentQuest.getEditorID();
+	    		}
+			}
+			else if (plSubrec.getSubrecordType().equals("TRDT")) // First of the TRDT-NAM1-NAM2 triplet.
+			{
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = plSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			return retStr;
+	    		}
+	    		int emotionCode = SerializedElement.getInteger(subrecordData, 0);
+	    		int emotionValue = SerializedElement.getInteger(subrecordData, 4);
+	    		int responseNum = subrecordData[12];
+	    		// Start building the string.
+	    		retStr += questEditorID + "_" + dialEditorID + "_"
+	    		+ String.format("%08X", (form.getFormID() & 0x0FFFFFF)) + "_" +  responseNum
+	    		+ "\t" + EmotionCode.getString(emotionCode) + ":" + emotionValue + "\t";
+			}
+			else if (plSubrec.getSubrecordType().equals("NAM1")) // Second of the TRDT-NAM1-NAM2 triplet.
+			{
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = plSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			return retStr;
+	    		}
+	    		// Continue building the string; the NAM1 value is the line itself.
+	    		String dialogueLine = "";
+                if (subrecordData.length > 1)
+                	dialogueLine = new String(subrecordData, 0, subrecordData.length-1);
+	    		if (dialogueLine.trim().equals("")) // Should never happen.
+	    			retStr += "\"" + noDialogueStr + "\"";
+	    		else
+    	    		retStr += "\"" + hideWhitespace(dialogueLine).trim() + "\"";	
+			}
+			else if (plSubrec.getSubrecordType().equals("NAM2")) // Third of the TRDT-NAM1-NAM2 triplet.
+			{
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = plSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			return retStr;
+	    		}
+	    		// Continue building the string; the NAM2 value is an
+	    		// optional production note to the voice actor.
+	    		String prodNote = "";
+                if (subrecordData.length > 1)
+                	prodNote = new String(subrecordData, 0, subrecordData.length-1);
+	    		if (prodNote.trim().equals("")) // Should almost always happen.
+	    			retStr += "\n";
+	    		else
+    	    		retStr += "\tPRODNOTE:\t\"" + hideWhitespace(prodNote).trim() + "\"\n";	
+			}
+		}
+		return retStr;
+	}
+
+   /**
+    * Changes an INFO response to the information given in the arguments. Only one response 
+    * is changed, which is determined by respNum. The two String arguments are run through
+    * unhideWhiteSpace() to bring back any escaped whitespace prior to insertion. If the 
+    * emotion type is invalid, "Neutral" is used; if emotion value is out-of-range, "50" is used.
+    * @param       form              INFO topic to change response for.
+    * @param       emoType           Emotion type.
+    * @param       emoLevel          Emotion level (1-100).
+    * @param       respNum           Response number to change; 1-based.
+    * @param       dialogueLine      Line of dialogue to change.
+    * @param       dialogueNotes     Production note to change; may be empty.
+    * @return      boolean           Whether INFO was changed.
+    */
+	private boolean changeResponseInINFO(FormInfo form, int emoType, int emoLevel, int respNum, 
+			String dialogueLine, String dialogueNotes)
+	{
+		boolean retVal = false;
+		if (!form.getRecordType().equals("INFO"))
+			return retVal;
+		PluginRecord plRec = (PluginRecord)form.getSource();
+		if (plRec == null)
+			return retVal;
+    	List<PluginSubrecord> plSubrecs;
+		try
+		{
+			plSubrecs = plRec.getSubrecords();
+		}
+		catch (Exception ex)
+		{
+			return retVal;
+		}
+		int timesTRDTHit = 0;
+		for (PluginSubrecord plSubrec : plSubrecs)
+		{
+			if (plSubrec.getSubrecordType().equals("TRDT")) // First of the TRDT-NAM1-NAM2 triplet.
+			{
+				timesTRDTHit++;
+				if (timesTRDTHit != respNum) continue;
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = plSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			return retVal;
+	    		}
+	    		SerializedElement.setInteger((emoType == EmotionCode.Invalid) ? EmotionCode.Neutral : emoType,
+	    		subrecordData, 0);
+	    		SerializedElement.setInteger((emoLevel < 0 || emoLevel > 100) ? 50 : emoLevel,
+	    		subrecordData, 4);
+	    		try {plSubrec.setSubrecordData(subrecordData);}
+	    		catch (Exception ex) {return false;}
+			}
+			else if (plSubrec.getSubrecordType().equals("NAM1")) // Second of the TRDT-NAM1-NAM2 triplet.
+			{
+				if (timesTRDTHit != respNum) continue;
+				// In both NAM1 & NAM2, the value is always replaced.
+				// Don't forget to strip the flanking quotes!
+				String newStr = dialogueLine.replace('"', ' ').trim();
+				// There is one special case. There are several attack sounds that intentionally have no
+				// dialogue so as not to have any captioning. For those cases, the dialogue will be
+				// reduced to a single space.
+				if (newStr.equals(noDialogueStr)) newStr = " ";
+				String cleanLine = this.unhideWhitespace(newStr);
+				byte[] cleanLineBytes = cleanLine.getBytes();
+                byte[] subrecordData = new byte[cleanLineBytes.length+1];
+                System.arraycopy(cleanLineBytes, 0, subrecordData, 0, cleanLineBytes.length);
+                subrecordData[cleanLineBytes.length] = 0;
+	    		try {plSubrec.setSubrecordData(subrecordData);}
+	    		catch (Exception ex) {return false;}
+                retVal = true;
+			}
+			else if (plSubrec.getSubrecordType().equals("NAM2")) // Third of the TRDT-NAM1-NAM2 triplet.
+			{
+				if (timesTRDTHit != respNum) continue;
+				String newStr = dialogueNotes.replace('"', ' ').trim();
+				String cleanNote = this.unhideWhitespace(newStr);
+				byte[] cleanNoteBytes = cleanNote.getBytes();
+                byte[] subrecordData = new byte[cleanNoteBytes.length+1];
+                System.arraycopy(cleanNoteBytes, 0, subrecordData, 0, cleanNoteBytes.length);
+                subrecordData[cleanNoteBytes.length] = 0;
+	    		try {plSubrec.setSubrecordData(subrecordData);}
+	    		catch (Exception ex) {return false;}
+			}
+		}
+		if (retVal)
+		{
+    		try {plRec.setSubrecords(plSubrecs);}
+    		catch (Exception ex) {return false;}
+		}
+		return retVal;
+	}
+
+	private String hideWhitespace(String param)
+	{
+		// Replace '\t' with "[TAB]", '\r' with "[RET]", '\n' with "[NL]", and '"' with "[DQ]"
+		return param.replaceAll("\t", "[TAB]").replaceAll("\r", "[RET]")
+		.replaceAll("\n", "[NL]").replaceAll("\"", "[DQ]");
+	}
+	
+	private String unhideWhitespace(String param)
+	{
+		// Reverse hideWhitespace().
+		return param.replaceAll("\\[TAB\\]", "\t").replaceAll("\\[RET\\]", "\r")
+		.replaceAll("\\[NL\\]", "\n").replaceAll("\\[DQ\\]", "\"");
+	}
+	
+   /**
+    * Takes an INFO and extracts the dialogue type (Topic, Persuasion, etc.)
+    * Returns -1 if FormInfo is not an INFO or other errors occur.
+    * @param       form              INFO topic to get dialogue type from.
+    * @return      String            Formatted dialogue information string
+    */
+	private int getInfoDialogueType(FormInfo form)
+	{
+		int retVal = -1;
+		if (!form.getRecordType().equals("INFO"))
+			return retVal;
+		// Now check out the QSTI subrecords.
+		PluginRecord plRec = (PluginRecord)form.getSource();
+		if (plRec == null)
+			return retVal;
+    	List<PluginSubrecord> plSubrecs;
+		try
+		{
+			plSubrecs = plRec.getSubrecords();
+		}
+		catch (Exception ex)
+		{
+			return retVal;
+		}
+		for (PluginSubrecord plSubrec : plSubrecs)
+		{
+			if (plSubrec.getSubrecordType().equals("DATA")) // Only one DATA and it's first.
+			{
+				byte[] subrecordData;
+				try
+	    		{
+	    			subrecordData = plSubrec.getSubrecordData();
+	    		}
+	    		catch (Exception ex)
+	    		{
+	    			return retVal;
+	    		}
+	    		retVal = subrecordData[0];
+			}
+		}
+		return retVal;
+	}
+		
+   /**
+    * Given an QUST record, searches all INFO records of the plugin to find
+    * the ones referring to the quest. Then either select or deselect the quest
+    * and all INFOs on the appropriate tree.
+    * SACarrow, 15 Jan 2008
+    *
+    * @param       plugin                plugin
+    * @param       plRec                 QUST record
+    * @param       plTree                JTree to update
+    * @param       questForm             FormInfo for quest
+    * @param       selected              whether to select or deselect
+    */
+	private void selectQuestInfos(Plugin pl, PluginRecord plRec,
+			JTree plTree, FormInfo questForm, boolean selected)
+	{
+	   if (!(plRec.getRecordType().equals("QUST"))) return;
+	   ArrayList<TreePath> pathList = new ArrayList<TreePath>(); 
+	   pathList.add(new TreePath(questForm.getRecordNode().getPath())); // Tree path for quest
+	   List<FormInfo> questInfos = findQuestInfos(pl, questForm.getFormID());
+	   for (FormInfo INFOFormInfo : questInfos)
+	   {
+           RecordNode recordNode = INFOFormInfo.getRecordNode();
+           TreePath treePath = new TreePath(recordNode.getPath());
+           pathList.add(treePath);
+	   }
+       if (pathList.size() > 0)
+       {
+    	   setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+           TreePath[] pathArray = new TreePath[pathList.size()];
+           if (selected)
+        	   pluginTree.addSelectionPaths(pathList.toArray(pathArray));
+           else
+        	   pluginTree.removeSelectionPaths(pathList.toArray(pathArray));			        	   
+    	   setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
+           pluginTree.scrollPathToVisible(pathArray[0]);
+           // Scroll back to first treepath in set.
+       }
+	}
+	/**
+    * Fires up a popup asking for the base form ID to start renumbering from. The initial
+    * value is the highest form ID in the current plugin. If the entered hex value is either
+    * not a number or lower than the initial, then -1 is returned. Else the first value to
+    * start with is returned.
+    * SACarrow, 1 Feb 2008
+    *
+    * @param       baseID                popup event action string
+    */
+	private int getStartFormID(int baseID)
+	{
+		int retVal = -1;
+		String inputID = (String)JOptionPane.showInputDialog(
+                this, "Please enter the starting form ID -in hex-"
+                + "\n(Numbering will start at this number plus one):",
+                "New Starting Form ID", JOptionPane.PLAIN_MESSAGE,
+                null, null, String.format("%08X", baseID));
+		if (inputID == null) return retVal;
+		try
+		{
+			retVal = Integer.parseInt(inputID, 16);
+		}
+		catch (Exception ex)
+		{
+            JOptionPane.showMessageDialog(this,
+            		"Value entered: \"" + inputID + "\" is not a valid number.",
+                    "Entry Error", JOptionPane.ERROR_MESSAGE);
+            return -1;
+		}
+		if (retVal < baseID)
+		{
+            JOptionPane.showMessageDialog(this,
+            		"Number entered: \"" + String.format("%08X", retVal) + "\" is too small.",
+                    "Entry Error", JOptionPane.ERROR_MESSAGE);
+            return -1;
+		}
+		return retVal; 
+	}
+
+	/**
+    * Given a string generated from a popup event action, does rudimentary
+    * parsing on the string and executes the appropriate method.
+    * The action string format is:
+    * Popup:<Plugin or Clipboard>:<record type>:<form ID>:<command>:<optional args>
+    * SACarrow, 15 Jan 2008
+    *
+    * @param       action                popup event action string
+    */
+	private void popupEventHandler(String action)
+	{
+		// Error conditions.
+		if (action == null || !action.startsWith("Popup") || !action.contains(":"))
+			return;
+		String[] argList = null;
+		try { argList = action.split(":");} catch (Exception ex) {return;}
+		if (argList.length < 5) return;
+		Plugin pl = null;
+		JTree plTree = null;
+		String whichJTree = argList[1];
+		String recType = argList[2];
+		int formID = 0;
+		String groupType = "";
+		if (recType.equals("GRUP")) groupType = argList[3];
+		else formID = Integer.parseInt(argList[3]);
+		String cmd = argList[4];
+		if (whichJTree.equals("Plugin"))
+		{
+			pl = plugin;
+			plTree = pluginTree;
+		}
+		else
+		{
+			pl = clipboard;
+			plTree = clipboardTree;
+		}
+		// Regardless of command, there's always a plugin record.
+		// Not true any more; if 3rd arg is "GRUP", there is no form ID.
+		FormInfo formInfo = null;
+		PluginRecord pluginRec = null;
+		if (formID != 0)
+		{
+			formInfo = pl.getFormMap().get(new Integer(formID));
+			pluginRec = (PluginRecord)formInfo.getSource();
+		}
+
+		if (whichJTree.equals("Clipboard"))
+		{
+			if (recType.equals("QUST"))
+			{
+				if (cmd.equals("ChangeEditorID"))
+				{
+					String inputID = (String)JOptionPane.showInputDialog(
+			                this, "Please enter the new editor ID for " 
+			                + pluginRec.getEditorID() + ":",
+			                "New Editor ID", JOptionPane.PLAIN_MESSAGE,
+			                null, null, pluginRec.getEditorID());
+					if (inputID == null || inputID.equals("")) return;
+					try 
+					{
+						pluginRec.setEditorID(inputID);
+						clipboardModified = true;
+						((DefaultTreeModel)clipboardTree.getModel()).reload();
+					} catch (Exception ex)
+					{return;}
+				}
+				if (cmd.equals("ChangeFormID"))
+				{
+					int baseID = getStartFormID(clipboardHighFormID);
+					if (baseID == -1) return;
+			    	setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.WAIT_CURSOR));
+					int formIDsAdded = modifyQuestFormID(pl, pluginRec, baseID, argList[5]);
+					if (formIDsAdded > 0)
+					{
+						clipboardHighFormID = baseID + formIDsAdded;
+						clipboardModified = true;
+						((DefaultTreeModel)clipboardTree.getModel()).reload();
+					}
+			    	setCursor(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.DEFAULT_CURSOR));
+				}
+			}
+		}
+		else if (whichJTree.equals("Plugin"))
+		{
+			if (recType.equals("QUST"))
+			{
+				if (cmd.equals("SelectInfos"))
+				{
+		    	   boolean selected = argList[5].equals("Select");
+		    	   long startTime = System.currentTimeMillis();
+		    	   selectQuestInfos(pl, pluginRec, plTree, formInfo, selected);
+		    	   if (Main.debugMode)
+		    	   {
+		    		   System.out.printf("Quest %s %s completed in %.2f seconds.\n",
+		    				   pluginRec.getEditorID(), (selected ? "selection" : "deselection"),
+		    				   ((float)(System.currentTimeMillis() - startTime)/1000));
+		    	   }
+				}
+				if (cmd.equals("DumpDialogue"))
+				{
+		    	   boolean append = argList[5].equals("Append");
+        		   dumpQuestDialogue(pl, pluginRec, append);
+				}
+			}
+			if (recType.equals("NPC_"))
+			{
+				if (cmd.equals("DumpDialogue"))
+				{
+		    	   boolean append = argList[5].equals("Append");
+        		   dumpNPCDialogue(pl, pluginRec, append);
+				}
+			}
+			if (recType.equals("GRUP"))
+			{
+				if (groupType.equals("DIAL"))
+				{
+					if (cmd.equals("ReadDialogue"))
+					{
+						int linesRead = this.readDialogue(pl);
+						if (linesRead == 0)
+				            JOptionPane.showMessageDialog(this, "No lines of dialogue were changed",
+                                    "Read Dialogue Result", JOptionPane.ERROR_MESSAGE);
+						else
+						{
+				            JOptionPane.showMessageDialog(this, "" + linesRead + " lines of dialogue were changed",
+                                    "Read Dialogue Result", JOptionPane.INFORMATION_MESSAGE);
+							pluginModified = true;
+						}
+					}
+				}
+			}
+		}		
+	}
+
+    /**
+     * Process window events
+     */
+    private class DialogWindowListener extends WindowAdapter {
+        
+        /**
+         * Create a new window listener
+         */
+        public DialogWindowListener() {
+            super();
+        }
+
+        /**
+         * Window is closing (WindowListener interface)
+         *
+         * @param       we              Window event
+         */
+        public void windowClosing(WindowEvent we) {
+            closeDialog();
+        }
+    }
+    
+    /**
+     * Tree cell renderer for the plugin display tree
+     */
+    private class DisplayCellRenderer extends DefaultTreeCellRenderer {
+        
+        /**
+         * Create a new tree cell renderer
+         */
+        public DisplayCellRenderer() {
+            super();
+            
+            //
+            // Set our color scheme
+            //
+            setTextSelectionColor(Color.WHITE);
+            setTextNonSelectionColor(Color.BLACK);
+            setBackgroundSelectionColor(Color.BLUE);
+            setBackgroundNonSelectionColor(Color.WHITE);
+        }
+        
+        /**
+         * Get the tree cell renderer component
+         *
+         * @param       tree        The tree
+         * @param       value       The tree node
+         * @param       isSelected  TRUE if the node is selected
+         * @param       isExpanded  TRUE if the node is expanded
+         * @param       isLeaf      TRUE if the node is a leaf
+         * @param       row         The tree row
+         * @param       hasFocus    TRUE if the tree has the focus
+         * @return                  The component used to render the cell
+         */
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean isSelected, boolean isExpanded,
+                                                      boolean isLeaf, int row, boolean hasFocus) {
+            
+            //
+            // Get the cell renderer component (JLabel)
+            //
+            Component component = super.getTreeCellRendererComponent(tree, value, isSelected, isExpanded, isLeaf, 
+                                                                     row, hasFocus);
+            
+            //
+            // Set the non-selected background color depending on whether the node is a master record
+            //
+            if (value instanceof RecordNode)
+            {
+            	Color bkgnd = Color.WHITE;
+            	if (((RecordNode)value).getRecord().getFormID() >>> 24 == masterCount - 1)
+                    bkgnd = Color.YELLOW;
+            	if (((RecordNode)value).getRecord().getFormID() >>> 24 < masterCount - 1)
+                    bkgnd = Color.PINK;
+                setBackgroundNonSelectionColor(bkgnd);
+            }
+            else
+                setBackgroundNonSelectionColor(Color.WHITE);
+            
+            return component;
+        }
+    }    
+ 
+}
