@@ -2,7 +2,7 @@ package analyzer;
 
 import java.util.LinkedHashMap;
 
-import esmLoader.common.data.record.Subrecord;
+import esmmanager.common.data.record.Subrecord;
 
 public class SubrecordStatsList extends LinkedHashMap<String, SubrecordStats>
 {

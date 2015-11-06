@@ -16,16 +16,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 
-import esmLoader.EsmFileLocations;
-import esmLoader.common.PluginException;
-import esmLoader.common.data.plugin.PluginGroup;
-import esmLoader.common.data.plugin.PluginRecord;
-import esmLoader.common.data.record.Record;
-import esmLoader.loader.CELLPointer;
-import esmLoader.loader.ESMManager;
-import esmLoader.loader.IESMManager;
-import esmLoader.loader.InteriorCELLTopGroup;
-import esmLoader.loader.WRLDTopGroup;
+import esmmanager.EsmFileLocations;
+import esmmanager.common.PluginException;
+import esmmanager.common.data.plugin.PluginGroup;
+import esmmanager.common.data.plugin.PluginRecord;
+import esmmanager.common.data.record.Record;
+import esmmanager.loader.CELLPointer;
+import esmmanager.loader.ESMManager;
+import esmmanager.loader.IESMManager;
+import esmmanager.loader.InteriorCELLTopGroup;
+import esmmanager.loader.WRLDTopGroup;
 
 public class EsmFormatAnalyzer
 {

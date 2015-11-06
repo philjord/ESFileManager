@@ -4,7 +4,7 @@ import java.util.HashSet;
 import java.util.regex.Pattern;
 
 import tools.io.ESMByteConvert;
-import esmLoader.common.data.record.Subrecord;
+import esmmanager.common.data.record.Subrecord;
 
 public class SubrecordStats
 {

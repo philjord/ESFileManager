@@ -2,9 +2,9 @@ package utils.source;
 
 import java.util.HashMap;
 
-import esmLoader.common.data.record.Record;
-import esmLoader.common.data.record.Subrecord;
-import esmLoader.loader.IESMManager;
+import esmmanager.common.data.record.Record;
+import esmmanager.common.data.record.Subrecord;
+import esmmanager.loader.IESMManager;
 
 public class EsmSoundKeyToName implements SoundKeyToName
 {

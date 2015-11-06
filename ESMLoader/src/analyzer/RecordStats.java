@@ -2,8 +2,8 @@ package analyzer;
 
 import java.util.ArrayList;
 
-import esmLoader.common.data.record.Record;
-import esmLoader.common.data.record.Subrecord;
+import esmmanager.common.data.record.Record;
+import esmmanager.common.data.record.Subrecord;
 
 public class RecordStats
 {
