@@ -1,4 +1,4 @@
-ESMLoader
+ESMManager
 ====
 
 This project loads the elder scrolls various *.esm files, which contain the game world data.
