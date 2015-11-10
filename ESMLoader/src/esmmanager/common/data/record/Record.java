@@ -13,8 +13,6 @@ public class Record
 
 	private int formID;
 
-	private int cellFormID;
-
 	private int recordFlags1;
 
 	private int recordFlags2;
@@ -23,9 +21,9 @@ public class Record
 
 	private ArrayList<Subrecord> subrecordList = new ArrayList<Subrecord>();
 
-	public Record(PluginRecord pluginRecord, int cellFormID)
+	public Record(PluginRecord pluginRecord)
 	{
-		this(pluginRecord.getRecordType(), pluginRecord.getFormID(), cellFormID, pluginRecord.getRecordFlags1(), pluginRecord.getRecordFlags2(),
+		this(pluginRecord.getRecordType(), pluginRecord.getFormID(), -1, pluginRecord.getRecordFlags1(), pluginRecord.getRecordFlags2(),
 				pluginRecord.getSubrecords());
 	}
 
@@ -145,6 +143,9 @@ public class Record
 	{
 		updated = false;
 	}
+
+	//ONLY for ESMConverter.ConverterFO3
+	private int cellFormID = -1;
 
 	public int getCellFormID()
 	{

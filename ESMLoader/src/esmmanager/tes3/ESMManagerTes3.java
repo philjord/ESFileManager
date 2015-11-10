@@ -126,7 +126,7 @@ public class ESMManagerTes3 implements IESMManager
 				if (pr != null)
 				{
 					// TODO: do I need to give a real cell id here?
-					Record record = new Record(pr, -1);
+					Record record = new Record(pr);
 					loadedRecordsCache.put(key, record);
 					return record;
 				}
@@ -187,34 +187,12 @@ public class ESMManagerTes3 implements IESMManager
 	}
 
 	@Override
-	public List<WRLDTopGroup> getWRLDTopGroups()
-	{
-		ArrayList<WRLDTopGroup> ret = new ArrayList<WRLDTopGroup>();
-		for (IMaster m : masters)
-		{
-			ret.add(m.getWRLDTopGroup());
-		}
-		return ret;
-	}
-
-	@Override
 	public Set<Integer> getAllWRLDTopGroupFormIds()
 	{
 		TreeSet<Integer> ret = new TreeSet<Integer>();
 		for (IMaster m : masters)
 		{
 			ret.addAll(m.getAllWRLDTopGroupFormIds());
-		}
-		return ret;
-	}
-
-	@Override
-	public List<InteriorCELLTopGroup> getInteriorCELLTopGroups()
-	{
-		ArrayList<InteriorCELLTopGroup> ret = new ArrayList<InteriorCELLTopGroup>();
-		for (IMaster m : masters)
-		{
-			ret.add(m.getInteriorCELLTopGroup());
 		}
 		return ret;
 	}
@@ -362,11 +340,6 @@ public class ESMManagerTes3 implements IESMManager
 
 		pluginVersion = -1;
 
-	}
-
-	public int getCellIdOfPersistentTarget(int formId)
-	{
-		throw new UnsupportedOperationException("ESMManager does not have a max form id");
 	}
 
 	public int convertNameRefToId(String str)

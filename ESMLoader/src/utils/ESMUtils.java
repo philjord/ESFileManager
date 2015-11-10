@@ -30,7 +30,7 @@ public class ESMUtils
 				{
 					for (PluginRecord pr : pg.getRecordList())
 					{
-						Record record = new Record(pr, -1);
+						Record record = new Record(pr);
 						ret.add(record);
 					}
 				}

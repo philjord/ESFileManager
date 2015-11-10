@@ -66,7 +66,7 @@ public class EsmFormatAnalyzer
 		try
 		{
 			Thread.currentThread().setPriority(4);
-			IESMManager esmManager = ESMManager.getESMManager(generalEsmFile);
+			ESMManager esmManager = (ESMManager) ESMManager.getESMManager(generalEsmFile);
 			Thread.currentThread().setPriority(Thread.NORM_PRIORITY);
 			System.out.println("Done in " + (System.currentTimeMillis() - start) + " analyzing...");
 
@@ -89,7 +89,7 @@ public class EsmFormatAnalyzer
 
 	}
 
-	public static void analyze(IESMManager esmManager) throws DataFormatException, IOException, PluginException
+	public static void analyze(ESMManager esmManager) throws DataFormatException, IOException, PluginException
 	{
 
 		int c = esmManager.getAllFormIds().size();
@@ -403,7 +403,7 @@ public class EsmFormatAnalyzer
 
 		recordsDone.add(pr.getFormID());
 
-		Record rec = new Record(pr, -1);
+		Record rec = new Record(pr);
 		//	allRecords.add(rec);
 
 		recordStatsList.applyRecord(rec, interior, exterior, allSubrecordStatsList);

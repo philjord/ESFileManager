@@ -135,7 +135,7 @@ public class ESMManager implements IESMManager
 				if (pr != null)
 				{
 					// TODO: do I need to give a real cell id here?
-					Record record = new Record(pr, -1);
+					Record record = new Record(pr);
 					loadedRecordsCache.put(key, record);
 					return record;
 				}
@@ -195,7 +195,6 @@ public class ESMManager implements IESMManager
 		return idToFormMap;
 	}
 
-	@Override
 	public List<WRLDTopGroup> getWRLDTopGroups()
 	{
 		ArrayList<WRLDTopGroup> ret = new ArrayList<WRLDTopGroup>();
@@ -217,7 +216,6 @@ public class ESMManager implements IESMManager
 		return ret;
 	}
 
-	@Override
 	public List<InteriorCELLTopGroup> getInteriorCELLTopGroups()
 	{
 		ArrayList<InteriorCELLTopGroup> ret = new ArrayList<InteriorCELLTopGroup>();
@@ -374,89 +372,6 @@ public class ESMManager implements IESMManager
 
 		pluginVersion = -1;
 
-	}
-
-	/**
-	 
-	 * @param formInNewCellId
-	 */
-	public int getCellIdOfPersistentTarget(int formId)
-	{
-		//I need to pre load ALL persistent children for all CELLS and keep them
-		List<WRLDTopGroup> WRLDTopGroups = getWRLDTopGroups();
-		for (WRLDTopGroup WRLDTopGroup : WRLDTopGroups)
-		{
-			for (PluginRecord wrld : WRLDTopGroup.WRLDByFormId.values())
-			{
-				//WRLD wrld = new WRLD(wrld);
-				WRLDChildren children = getWRLDChildren(wrld.getFormID());
-				PluginRecord cell = children.getCell();
-				if (cell != null)
-				{
-					PluginGroup cellChildGroups = children.getCellChildren();
-
-					if (cellChildGroups != null && cellChildGroups.getRecordList() != null)
-					{
-						for (PluginRecord pgr : cellChildGroups.getRecordList())
-						{
-							PluginGroup pg = (PluginGroup) pgr;
-
-							for (PluginRecord pr : pg.getRecordList())
-							{
-								if (pr.getFormID() == formId)
-								{
-									return wrld.getFormID();
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-
-		List<InteriorCELLTopGroup> interiorCELLTopGroups = getInteriorCELLTopGroups();
-		for (InteriorCELLTopGroup interiorCELLTopGroup : interiorCELLTopGroups)
-		{
-			for (CELLPointer cp : interiorCELLTopGroup.interiorCELLByFormId.values())
-			{
-				try
-				{
-					PluginRecord cell = getInteriorCELL(cp.formId);
-
-					PluginGroup cellChildGroups = getInteriorCELLChildren(cell.getFormID());
-
-					if (cellChildGroups != null && cellChildGroups.getRecordList() != null)
-					{
-						for (PluginRecord pgr : cellChildGroups.getRecordList())
-						{
-							PluginGroup pg = (PluginGroup) pgr;
-
-							for (PluginRecord pr : pg.getRecordList())
-							{
-								if (pr.getFormID() == formId)
-								{
-									return cell.getFormID();
-								}
-							}
-						}
-					}
-
-				}
-				catch (DataFormatException e)
-				{
-					e.printStackTrace();
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-				}
-				catch (PluginException e)
-				{
-					e.printStackTrace();
-				}
-			}
-		}
-		return -1;
 	}
 
 	public static IESMManager getESMManager(String esmFile)
