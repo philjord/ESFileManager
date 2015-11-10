@@ -109,32 +109,38 @@ public class Master implements IMaster
 
 	private PluginRecord getRecordFromFile(long pointer) throws PluginException, IOException, DataFormatException
 	{
-		in.seek(pointer);
+		synchronized (in)
+		{
+			in.seek(pointer);
 
-		byte prefix[] = new byte[headerByteCount];
-		in.read(prefix);
+			byte prefix[] = new byte[headerByteCount];
+			in.read(prefix);
 
-		int length = ESMByteConvert.extractInt(prefix, 4);
+			int length = ESMByteConvert.extractInt(prefix, 4);
 
-		PluginRecord cellRecord = new PluginRecord(prefix);
-		cellRecord.load(masterFile.getName(), in, length);
+			PluginRecord cellRecord = new PluginRecord(prefix);
+			cellRecord.load(masterFile.getName(), in, length);
 
-		return cellRecord;
+			return cellRecord;
+		}
 	}
 
 	private PluginGroup getChildrenFromFile(long pointer) throws PluginException, IOException, DataFormatException
 	{
-		in.seek(pointer);
+		synchronized (in)
+		{
+			in.seek(pointer);
 
-		byte prefix[] = new byte[headerByteCount];
-		in.read(prefix);
+			byte prefix[] = new byte[headerByteCount];
+			in.read(prefix);
 
-		int length = ESMByteConvert.extractInt(prefix, 4);
-		length -= headerByteCount;
-		PluginGroup childrenGroup = new PluginGroup(prefix);
-		childrenGroup.load(masterFile.getName(), in, length);
+			int length = ESMByteConvert.extractInt(prefix, 4);
+			length -= headerByteCount;
+			PluginGroup childrenGroup = new PluginGroup(prefix);
+			childrenGroup.load(masterFile.getName(), in, length);
 
-		return childrenGroup;
+			return childrenGroup;
+		}
 	}
 
 	public WRLDTopGroup getWRLDTopGroup()
@@ -148,19 +154,19 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public synchronized PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
+	public  PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
 	{
 		return wRLDTopGroup.WRLDByFormId.get(formID);
 	}
 
 	@Override
-	public synchronized WRLDChildren getWRLDChildren(int formID)
+	public  WRLDChildren getWRLDChildren(int formID)
 	{
 		return wRLDTopGroup.WRLDChildrenByFormId.get(formID);
 	}
 
 	@Override
-	public synchronized int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
+	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
 	{
 		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
 		if (children != null)
@@ -176,7 +182,7 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public synchronized PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
+	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
 		CELLPointer cellPointer = wRLDTopGroup.WRLDExtBlockCELLByFormId.get(new Integer(formID));
 		if (cellPointer == null || cellPointer.cellFilePointer == -1)
@@ -196,7 +202,7 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public synchronized PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
+	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
 		CELLPointer cellPointer = wRLDTopGroup.WRLDExtBlockCELLByFormId.get(new Integer(formID));
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
@@ -225,7 +231,7 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public synchronized PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
+	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
 		CELLPointer cellPointer = interiorCELLTopGroup.interiorCELLByFormId.get(new Integer(formID));
 		if (cellPointer == null || cellPointer.cellFilePointer == -1)
@@ -245,7 +251,7 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public synchronized PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
+	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
 		CELLPointer cellPointer = interiorCELLTopGroup.interiorCELLByFormId.get(new Integer(formID));
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
@@ -265,169 +271,169 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public synchronized PluginRecord getPluginRecord(int formID) throws PluginException
+	public PluginRecord getPluginRecord(int formID)
 	{
 		//TODO: sort out the multiple esm file form id pointers properly, recall it is paretn pointers only, no cross references
 		int masterFormID = formID & 0xffffff | masterID << 24;
 		FormInfo formInfo = idToFormMap.get(new Integer(masterFormID));
 
-		if (formInfo == null)
-		{
-			throw new PluginException("" + masterFile.getName() + ": Record " + masterFormID
-					+ " not found, it may be a CELL or WRLD record");
-		}
+		if (formInfo != null)
+			return formInfo.getPluginRecord();
 
-		return formInfo.getPluginRecord();
+		//possibly from an unloaded cell etc.
+		return null;
 	}
 
-	public synchronized void load() throws PluginException, DataFormatException, IOException
+	public void load() throws PluginException, DataFormatException, IOException
 	{
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
 		//in = new RandomAccessFile(masterFile, "r");
 		in = new MappedByteBufferRAF(masterFile, "r");
-
-		long fp = in.getFilePointer();
-
-		in.seek(fp);
-
-		masterHeader.read(in);
-
-		headerByteCount = masterHeader.getHeaderByteCount();
-
-		// now load an index into memory
-		byte prefix[] = new byte[headerByteCount];
-		masterID = masterHeader.getMasterList().size();
-		int recordCount = masterHeader.getRecordCount();
-		List<FormInfo> formList = new ArrayList<FormInfo>(recordCount);
-
-		int count = in.read(prefix);
-		while (count != -1)
+		synchronized (in)
 		{
-			if (count != headerByteCount)
-				throw new PluginException(masterFile.getName() + ": Group record prefix is too short");
+			long fp = in.getFilePointer();
 
-			String recordType = new String(prefix, 0, 4);
-			int groupLength = ESMByteConvert.extractInt(prefix, 4);
+			in.seek(fp);
 
-			//String groupRecordType2 = new String(prefix, 8, 4);
+			masterHeader.read(in);
 
-			if (recordType.equals("TES4"))
+			headerByteCount = masterHeader.getHeaderByteCount();
+
+			// now load an index into memory
+			byte prefix[] = new byte[headerByteCount];
+			masterID = masterHeader.getMasterList().size();
+			int recordCount = masterHeader.getRecordCount();
+			List<FormInfo> formList = new ArrayList<FormInfo>(recordCount);
+
+			int count = in.read(prefix);
+			while (count != -1)
 			{
-				in.skipBytes(groupLength);
-			}
-			else
-			{
-				if (!recordType.equals("GRUP"))
-					throw new PluginException(masterFile.getName() + ": Top-level record is not a group");
-				if (prefix[12] != 0)
-					throw new PluginException(masterFile.getName() + ": Top-level group type is not 0");
+				if (count != headerByteCount)
+					throw new PluginException(masterFile.getName() + ": Group record prefix is too short");
 
-				String groupRecordType = new String(prefix, 8, 4);
-				groupLength -= headerByteCount;
+				String recordType = new String(prefix, 0, 4);
+				int groupLength = ESMByteConvert.extractInt(prefix, 4);
 
-				if (groupRecordType.equals("WRLD"))
+				//String groupRecordType2 = new String(prefix, 8, 4);
+
+				if (recordType.equals("TES4"))
 				{
-					wRLDTopGroup = new WRLDTopGroup(prefix);
-					wRLDTopGroup.loadAndIndex(masterFile.getName(), in, groupLength);
-				}
-				else if (groupRecordType.equals("CELL"))
-				{
-					interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
-					interiorCELLTopGroup.loadAndIndex(masterFile.getName(), in, groupLength);
+					in.skipBytes(groupLength);
 				}
 				else
 				{
-					while (groupLength >= headerByteCount)
+					if (!recordType.equals("GRUP"))
+						throw new PluginException(masterFile.getName() + ": Top-level record is not a group");
+					if (prefix[12] != 0)
+						throw new PluginException(masterFile.getName() + ": Top-level group type is not 0");
+
+					String groupRecordType = new String(prefix, 8, 4);
+					groupLength -= headerByteCount;
+
+					if (groupRecordType.equals("WRLD"))
 					{
-						count = in.read(prefix);
-						if (count != headerByteCount)
+						wRLDTopGroup = new WRLDTopGroup(prefix);
+						wRLDTopGroup.loadAndIndex(masterFile.getName(), in, groupLength);
+					}
+					else if (groupRecordType.equals("CELL"))
+					{
+						interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
+						interiorCELLTopGroup.loadAndIndex(masterFile.getName(), in, groupLength);
+					}
+					else
+					{
+						while (groupLength >= headerByteCount)
 						{
-							throw new PluginException(masterFile.getName() + ": Group " + groupRecordType + " is incomplete");
-						}
-
-						recordType = new String(prefix, 0, 4);
-						int recordLength = ESMByteConvert.extractInt(prefix, 4);
-						if (recordType.equals("GRUP"))
-						{
-							groupLength -= recordLength;
-							in.skipBytes(recordLength - headerByteCount);
-						}
-						else
-						{
-							PluginRecord record = new PluginRecord(prefix);
-							int formID = record.getFormID();
-
-							if (record.isDeleted() || record.isIgnored() || formID == 0 || formID >>> 24 < masterID)
+							count = in.read(prefix);
+							if (count != headerByteCount)
 							{
-								in.skipBytes(recordLength);
+								throw new PluginException(masterFile.getName() + ": Group " + groupRecordType + " is incomplete");
+							}
+
+							recordType = new String(prefix, 0, 4);
+							int recordLength = ESMByteConvert.extractInt(prefix, 4);
+							if (recordType.equals("GRUP"))
+							{
+								groupLength -= recordLength;
+								in.skipBytes(recordLength - headerByteCount);
 							}
 							else
 							{
-								record.load(masterFile.getName(), in, recordLength);
-								formList.add(new FormInfo(recordType, formID, record.getEditorID(), record));
+								PluginRecord record = new PluginRecord(prefix);
+								int formID = record.getFormID();
 
+								if (record.isDeleted() || record.isIgnored() || formID == 0 || formID >>> 24 < masterID)
+								{
+									in.skipBytes(recordLength);
+								}
+								else
+								{
+									record.load(masterFile.getName(), in, recordLength);
+									formList.add(new FormInfo(recordType, formID, record.getEditorID(), record));
+
+								}
+								groupLength -= recordLength + headerByteCount;
 							}
-							groupLength -= recordLength + headerByteCount;
+						}
+
+						if (groupLength != 0)
+						{
+							throw new PluginException(masterFile.getName() + ": Group " + groupRecordType + " is incomplete");
 						}
 					}
-
-					if (groupLength != 0)
-					{
-						throw new PluginException(masterFile.getName() + ": Group " + groupRecordType + " is incomplete");
-					}
 				}
+
+				// prep for the next loop
+				count = in.read(prefix);
 			}
 
-			// prep for the next loop
-			count = in.read(prefix);
-		}
+			addGeckDefaultObjects(formList);
 
-		addGeckDefaultObjects(formList);
+			recordCount = formList.size();
+			idToFormMap = new LinkedHashMap<Integer, FormInfo>(recordCount);
+			edidToFormIdMap = new HashMap<String, Integer>();
+			typeToFormIdMap = new HashMap<String, List<Integer>>();
 
-		recordCount = formList.size();
-		idToFormMap = new LinkedHashMap<Integer, FormInfo>(recordCount);
-		edidToFormIdMap = new HashMap<String, Integer>();
-		typeToFormIdMap = new HashMap<String, List<Integer>>();
-
-		for (FormInfo info : formList)
-		{
-			int formID = info.getFormID();
-			formID = formID & 0xffffff | masterID << 24;
-			idToFormMap.put(new Integer(formID), info);
-
-			if (info.getEditorID() != null && info.getEditorID().length() > 0)
+			for (FormInfo info : formList)
 			{
-				edidToFormIdMap.put(info.getEditorID(), formID);
+				int formID = info.getFormID();
+				formID = formID & 0xffffff | masterID << 24;
+				idToFormMap.put(new Integer(formID), info);
+
+				if (info.getEditorID() != null && info.getEditorID().length() > 0)
+				{
+					edidToFormIdMap.put(info.getEditorID(), formID);
+				}
+
+				List<Integer> typeList = typeToFormIdMap.get(info.getRecordType());
+				if (typeList == null)
+				{
+					typeList = new ArrayList<Integer>();
+					typeToFormIdMap.put(info.getRecordType(), typeList);
+				}
+				typeList.add(info.getFormID());
+
 			}
 
-			List<Integer> typeList = typeToFormIdMap.get(info.getRecordType());
-			if (typeList == null)
+			// now establish min and max form id range
+			for (Integer formId : idToFormMap.keySet())
 			{
-				typeList = new ArrayList<Integer>();
-				typeToFormIdMap.put(info.getRecordType(), typeList);
+				minFormId = formId < minFormId ? formId : minFormId;
+				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
-			typeList.add(info.getFormID());
+			for (Integer formId : getAllInteriorCELLFormIds())
+			{
+				minFormId = formId < minFormId ? formId : minFormId;
+				maxFormId = formId > maxFormId ? formId : maxFormId;
+			}
 
-		}
-
-		// now establish min and max form id range
-		for (Integer formId : idToFormMap.keySet())
-		{
-			minFormId = formId < minFormId ? formId : minFormId;
-			maxFormId = formId > maxFormId ? formId : maxFormId;
-		}
-		for (Integer formId : getAllInteriorCELLFormIds())
-		{
-			minFormId = formId < minFormId ? formId : minFormId;
-			maxFormId = formId > maxFormId ? formId : maxFormId;
-		}
-
-		for (Integer formId : getAllWRLDTopGroupFormIds())
-		{
-			minFormId = formId < minFormId ? formId : minFormId;
-			maxFormId = formId > maxFormId ? formId : maxFormId;
+			for (Integer formId : getAllWRLDTopGroupFormIds())
+			{
+				minFormId = formId < minFormId ? formId : minFormId;
+				maxFormId = formId > maxFormId ? formId : maxFormId;
+			}
 		}
 
 	}

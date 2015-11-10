@@ -135,50 +135,53 @@ public class Master implements IMaster
 		//in = new RandomAccessFile(masterFile, "r");
 		in = new MappedByteBufferRAF(masterFile, "r");
 
-		masterHeader.load(masterFile.getName(), in);
-
-		List<FormInfo> formList = new ArrayList<FormInfo>();
-
-		//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
-		PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
-		formList.add(new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord.getEditorID(), wrldRecord));
-
-		while (in.getFilePointer() < in.length())
+		synchronized (in)
 		{
-			PluginRecord record = new PluginRecord(getNextFormId());
-			record.load(masterFile.getName(), in);
-			records.add(record);
-			formList.add(new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(), record));
-		}
+			masterHeader.load(masterFile.getName(), in);
 
-		idToFormMap = new LinkedHashMap<Integer, FormInfo>();
-		edidToFormIdMap = new HashMap<String, Integer>();
-		typeToFormIdMap = new HashMap<String, List<Integer>>();
+			List<FormInfo> formList = new ArrayList<FormInfo>();
 
-		for (FormInfo info : formList)
-		{
-			int formID = info.getFormID();
-			idToFormMap.put(new Integer(formID), info);
+			//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
+			PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
+			formList.add(new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord.getEditorID(), wrldRecord));
 
-			// 1 length are single 0's
-			if (info.getEditorID() != null && info.getEditorID().length() > 1)
+			while (in.getFilePointer() < in.length())
 			{
-				edidToFormIdMap.put(info.getEditorID(), formID);
+				PluginRecord record = new PluginRecord(getNextFormId());
+				record.load(masterFile.getName(), in);
+				records.add(record);
+				formList.add(new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(), record));
 			}
 
-			List<Integer> typeList = typeToFormIdMap.get(info.getRecordType());
-			if (typeList == null)
+			idToFormMap = new LinkedHashMap<Integer, FormInfo>();
+			edidToFormIdMap = new HashMap<String, Integer>();
+			typeToFormIdMap = new HashMap<String, List<Integer>>();
+
+			for (FormInfo info : formList)
 			{
-				typeList = new ArrayList<Integer>();
-				typeToFormIdMap.put(info.getRecordType(), typeList);
+				int formID = info.getFormID();
+				idToFormMap.put(new Integer(formID), info);
+
+				// 1 length are single 0's
+				if (info.getEditorID() != null && info.getEditorID().length() > 1)
+				{
+					edidToFormIdMap.put(info.getEditorID(), formID);
+				}
+
+				List<Integer> typeList = typeToFormIdMap.get(info.getRecordType());
+				if (typeList == null)
+				{
+					typeList = new ArrayList<Integer>();
+					typeToFormIdMap.put(info.getRecordType(), typeList);
+				}
+				typeList.add(info.getFormID());
+
 			}
-			typeList.add(info.getFormID());
 
+			// now establish min and max form id range
+			minFormId = 0;
+			maxFormId = currentFormId - 1;
 		}
-
-		// now establish min and max form id range
-		minFormId = 0;
-		maxFormId = currentFormId - 1;
 	}
 
 	@Override
