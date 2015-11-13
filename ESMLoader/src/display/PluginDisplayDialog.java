@@ -2,6 +2,7 @@ package display;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -14,12 +15,13 @@ import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -36,14 +38,14 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 	public static void main(String[] args)
 	{
 		String generalEsmFile = EsmFileLocations.getGeneralEsmFile();
-		
+
 		System.out.println("loading file " + generalEsmFile);
 
 		File pluginFile = new File(generalEsmFile);
 		Plugin plugin = new Plugin(pluginFile);
 		try
 		{
-			plugin.load(false);
+			plugin.load(true);
 
 			PluginDisplayDialog displayDialog = new PluginDisplayDialog(plugin);
 			displayDialog.setTitle("Display of " + pluginFile.getName());
@@ -67,6 +69,8 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 
 	private JTree pluginTree;
 
+	private JPanel displayPane;
+
 	public PluginDisplayDialog(Plugin plugin)
 	{
 		pluginTree = new JTree(createPluginNodes(plugin));
@@ -77,41 +81,33 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 		pluginScrollPane.setVerticalScrollBarPolicy(22);
 		pluginScrollPane.setPreferredSize(new Dimension(380, 380));
 
-		JPanel buttonPane = new JPanel();
-		buttonPane.setLayout(new BoxLayout(buttonPane, 1));
-		buttonPane.setBackground(new Color(240, 240, 240));
-
-		JButton button = new JButton("Display (Alt-D)");
-		button.setActionCommand("display");
-		button.setMnemonic(68);
-		button.setHorizontalAlignment(0);
-		button.addActionListener(this);
-		JPanel paddedButton = new JPanel();
-		paddedButton.setLayout(new BoxLayout(paddedButton, 0));
-		paddedButton.setOpaque(false);
-		paddedButton.add(button);
-		buttonPane.add(paddedButton);
-		buttonPane.add(Box.createVerticalStrut(10));
-
-		JPanel actionPane = new JPanel();
-		actionPane.setLayout(new BoxLayout(actionPane, 1));
-		actionPane.setBackground(new Color(240, 240, 240));
-		actionPane.add(Box.createGlue());
-		actionPane.add(buttonPane);
-		actionPane.add(Box.createGlue());
 		JPanel treePane = new JPanel();
 		treePane.setLayout(new BoxLayout(treePane, 0));
 		treePane.setOpaque(true);
 		treePane.setBackground(new Color(240, 240, 240));
 		treePane.add(pluginScrollPane);
 		treePane.add(Box.createHorizontalStrut(5));
-		treePane.add(actionPane);
-		treePane.add(Box.createHorizontalStrut(5));
 
-		buttonPane = new JPanel();
+		displayPane = new JPanel();
+		displayPane.setLayout(new GridLayout(1, 1));
+		treePane.add(displayPane);
+
+		pluginTree.addTreeSelectionListener(new TreeSelectionListener()
+		{
+
+			@Override
+			public void valueChanged(TreeSelectionEvent e)
+			{
+				displaySubrecordData();
+			}
+
+		});
+
+		treePane.add(Box.createHorizontalStrut(5));
+		JPanel buttonPane = new JPanel();
 		buttonPane.setBackground(new Color(240, 240, 240));
 
-		button = new JButton("Done");
+		JButton button = new JButton("Done");
 		button.setActionCommand("done");
 		button.setHorizontalAlignment(0);
 		button.addActionListener(this);
@@ -124,6 +120,7 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 		contentPane.add(treePane);
 		contentPane.add(Box.createVerticalStrut(15));
 		contentPane.add(buttonPane);
+
 		setContentPane(contentPane);
 
 	}
@@ -131,11 +128,7 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 	public void actionPerformed(ActionEvent ae)
 	{
 		String action = ae.getActionCommand();
-		if (action.equals("display"))
-		{
-			displaySubrecordData();
-		}
-		else if (action.equals("done"))
+		if (action.equals("done"))
 		{
 			setVisible(false);
 			dispose();
@@ -145,24 +138,20 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 	private void displaySubrecordData()
 	{
 		TreePath treePaths[] = pluginTree.getSelectionPaths();
-		if (treePaths == null)
+		if (treePaths != null)
 		{
-			JOptionPane.showMessageDialog(this, "You must select a subrecord to display.", "Error", 0);
-			return;
-		}
+			for (TreePath treePath : treePaths)
+			{
+				DefaultMutableTreeNode node = (DefaultMutableTreeNode) treePath.getLastPathComponent();
+				Object userObject = node.getUserObject();
+				if (userObject instanceof PluginSubrecord)
+				{
+					displayPane.removeAll();
+					displayPane.add(DisplaySubrecordDialog.getTextArea((PluginSubrecord) userObject));
 
-		for (TreePath treePath : treePaths)
-		{
-			DefaultMutableTreeNode node = (DefaultMutableTreeNode) treePath.getLastPathComponent();
-			Object userObject = node.getUserObject();
-			if (!(userObject instanceof PluginSubrecord))
-			{
-				JOptionPane.showMessageDialog(this, "Only subrecord may be displayed.", "Error", 0);
-				return;
-			}
-			else
-			{
-				DisplaySubrecordDialog.showDialog(this, (PluginSubrecord) userObject);
+					this.validate();
+
+				}
 			}
 		}
 
@@ -196,7 +185,8 @@ public class PluginDisplayDialog extends JFrame implements ActionListener, TreeE
 		return root;
 	}
 
-	private void createGroupChildren(DefaultMutableTreeNode groupNode, PluginGroup group) throws DataFormatException, IOException, PluginException
+	private void createGroupChildren(DefaultMutableTreeNode groupNode, PluginGroup group) throws DataFormatException, IOException,
+			PluginException
 	{
 		for (PluginRecord record : group.getRecordList())
 		{

@@ -24,9 +24,23 @@ public class DisplaySubrecordDialog extends JDialog implements ActionListener
 	{
 		super(parent, "Subrecord Data", Dialog.ModalityType.MODELESS);
 		setDefaultCloseOperation(2);
-		byte subrecordData[];
 
-		subrecordData = subrecord.getSubrecordData();
+		JPanel contentPane = getTextArea(subrecord);
+
+		JPanel buttonPane = new JPanel();
+		buttonPane.setBackground(new Color(240, 240, 240));
+		JButton button = new JButton("Done");
+		button.setActionCommand("done");
+		button.setHorizontalAlignment(0);
+		button.addActionListener(this);
+		buttonPane.add(button);
+		contentPane.add(buttonPane);
+		setContentPane(contentPane);
+	}
+
+	public static JPanel getTextArea(PluginSubrecord subrecord)
+	{
+		byte[] subrecordData = subrecord.getSubrecordData();
 
 		StringBuffer dumpData = new StringBuffer(128 + 3 * subrecordData.length + 6 * (subrecordData.length / 16));
 		/*dumpData.append(String.format("%s subrecord: Data length x'%X'\n", new Object[] {
@@ -70,13 +84,7 @@ public class DisplaySubrecordDialog extends JDialog implements ActionListener
 		JTextArea textArea = new JTextArea(dumpData.toString());
 		JScrollPane scrollPane = new JScrollPane(textArea);
 		scrollPane.setVerticalScrollBarPolicy(22);
-		JPanel buttonPane = new JPanel();
-		buttonPane.setBackground(new Color(240, 240, 240));
-		JButton button = new JButton("Done");
-		button.setActionCommand("done");
-		button.setHorizontalAlignment(0);
-		button.addActionListener(this);
-		buttonPane.add(button);
+
 		JPanel contentPane = new JPanel();
 		contentPane.setLayout(new BoxLayout(contentPane, 1));
 		contentPane.setOpaque(true);
@@ -84,8 +92,8 @@ public class DisplaySubrecordDialog extends JDialog implements ActionListener
 		contentPane.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
 		contentPane.add(scrollPane);
 		contentPane.add(Box.createVerticalStrut(15));
-		contentPane.add(buttonPane);
-		setContentPane(contentPane);
+
+		return contentPane;
 	}
 
 	public static void showDialog(Window parent, PluginSubrecord subrecord)
