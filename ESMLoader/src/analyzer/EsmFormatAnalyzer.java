@@ -30,13 +30,13 @@ import esmmanager.loader.WRLDTopGroup;
 public class EsmFormatAnalyzer
 {
 
-	public static final boolean ANALYZE_CELLS = true;
+	public static boolean ANALYZE_CELLS = true;
 
-	public static final boolean OUPUT_SUBREC_CODE = false;
+	public static boolean OUPUT_SUBREC_CODE = false;
 
-	public static final boolean LOAD_J3DCELLS = false;
+	public static boolean LOAD_J3DCELLS = false;
 
-	public static final boolean LOAD_BSA_FILES = false;
+	public static boolean LOAD_BSA_FILES = false;
 
 	public static RecordLoader recordLoader = null;
 
@@ -116,7 +116,7 @@ public class EsmFormatAnalyzer
 				{
 					PluginRecord pr2 = esmManager.getInteriorCELL(cp.formId);
 					applyRecord(pr2, true, false);
-					 
+
 					PluginGroup cellChildren = esmManager.getInteriorCELLChildren(cp.formId);
 					if (cellChildren != null)
 					{
@@ -193,8 +193,7 @@ public class EsmFormatAnalyzer
 		for (RecordStats rs : sortedRecsMap.values())
 		{
 			String desc = PluginGroup.typeMap.get(rs.type);
-			String r = "" + rs.type + " n=" + rs.count + " " + (rs.appearsInIntCELL ? "int" : "") + " "
-					+ (rs.appearsInExtCELL ? "ext" : "");
+			String r = "" + rs.type + " n=" + rs.count + " " + (rs.appearsInIntCELL ? "int" : "") + " " + (rs.appearsInExtCELL ? "ext" : "");
 			r += " (" + desc + ")";
 			DefaultMutableTreeNode recNode = new DefaultMutableTreeNode(r);
 			root.add(recNode);
@@ -202,8 +201,7 @@ public class EsmFormatAnalyzer
 
 			for (SubrecordStats srs : rs.subrecordStatsList.values())
 			{
-				String sr = "\t" + srs.subrecordType + " n=" + srs.count + (srs.count == rs.count ? " M" : "") + " " + srs.minLength + "-"
-						+ srs.maxLength + " " + (srs.isString ? "isString" : "");
+				String sr = "\t" + srs.subrecordType + " n=" + srs.count + (srs.count == rs.count ? " M" : "") + " " + srs.minLength + "-" + srs.maxLength + " " + (srs.isString ? "isString" : "");
 
 				if (srs.hasOrderOf.size() == 1)
 				{
@@ -351,8 +349,7 @@ public class EsmFormatAnalyzer
 	private static Map<String, SubrecordStats> getSortedSubsMap()
 	{
 		List<Map.Entry<String, SubrecordStats>> entries = new ArrayList<Map.Entry<String, SubrecordStats>>(allSubrecordStatsList.entrySet());
-		Collections.sort(entries, new Comparator<Map.Entry<String, SubrecordStats>>()
-		{
+		Collections.sort(entries, new Comparator<Map.Entry<String, SubrecordStats>>() {
 			public int compare(Map.Entry<String, SubrecordStats> a, Map.Entry<String, SubrecordStats> b)
 			{
 				return a.getKey().compareTo(b.getKey());
@@ -371,8 +368,7 @@ public class EsmFormatAnalyzer
 	private static Map<String, RecordStats> getSortedRecsMap()
 	{
 		List<Map.Entry<String, RecordStats>> entries = new ArrayList<Map.Entry<String, RecordStats>>(recordStatsList.entrySet());
-		Collections.sort(entries, new Comparator<Map.Entry<String, RecordStats>>()
-		{
+		Collections.sort(entries, new Comparator<Map.Entry<String, RecordStats>>() {
 			public int compare(Map.Entry<String, RecordStats> a, Map.Entry<String, RecordStats> b)
 			{
 				return a.getKey().compareTo(b.getKey());
