@@ -12,9 +12,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
-import tools.io.ESMByteConvert;
-import tools.io.MappedByteBufferRAF;
-import esmmanager.EsmFileLocations;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
@@ -22,6 +19,8 @@ import esmmanager.common.data.plugin.PluginSubrecord;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
+import tools.io.ESMByteConvert;
+import tools.io.MappedByteBufferRAF;
 
 /**
  * This is a copy of the master file in data package, however it holds onto a
@@ -412,45 +411,6 @@ public class Master implements IMaster
 	private static int getDATAy(PluginSubrecord data)
 	{
 		return ESMByteConvert.extractInt(data.getSubrecordData(), 8);
-	}
-
-	/**
-	 * For quick testing only
-	 * @param args
-	 */
-	public static void main(String[] args)
-	{
-		String generalEsmFile = EsmFileLocations.getGeneralEsmFile();
-
-		System.out.println("loading file " + generalEsmFile);
-
-		File pluginFile = new File(generalEsmFile);
-		Master plugin = new Master(pluginFile);
-		try
-		{
-			plugin.load();
-
-			for (PluginRecord r : plugin.getRecords())
-			{
-				if (r.getRecordType().equals("LEVI"))
-				{
-					System.out.println("" + r);
-					for (PluginSubrecord sr : r.getSubrecords())
-					{
-						System.out.println("\t" + sr.displaySubrecord());
-					}
-				}
-			}
-			System.out.println("done");
-		}
-		catch (PluginException e)
-		{
-			e.printStackTrace();
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
 	}
 
 }

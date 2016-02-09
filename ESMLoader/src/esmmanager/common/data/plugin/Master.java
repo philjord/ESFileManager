@@ -1,6 +1,5 @@
 package esmmanager.common.data.plugin;
 
-import java.awt.Point;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -13,13 +12,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
 
-import tools.io.ESMByteConvert;
-import tools.io.MappedByteBufferRAF;
+import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.loader.CELLPointer;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
+import tools.io.ESMByteConvert;
+import tools.io.MappedByteBufferRAF;
 
 /**
  * This is a copy of the master file in data package, however 

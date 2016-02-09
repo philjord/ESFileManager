@@ -1,14 +1,14 @@
 package esmmanager.loader;
 
-import java.awt.Point;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import tools.io.ESMByteConvert;
+import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginGroup;
+import tools.io.ESMByteConvert;
 
 public class WRLDExtBlock extends PluginGroup
 {
