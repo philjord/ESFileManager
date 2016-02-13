@@ -5,6 +5,7 @@ import java.util.HashMap;
 import esmmanager.common.data.record.Record;
 import esmmanager.common.data.record.Subrecord;
 import esmmanager.loader.IESMManager;
+import tools.SoundKeyToName;
 
 public class EsmSoundKeyToName implements SoundKeyToName
 {

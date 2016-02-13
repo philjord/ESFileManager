@@ -28,4 +28,10 @@ public class Point
 		return (((int) bits) ^ ((int) (bits >> 32)));
 
 	}
+	
+	@Override
+	public String toString()
+	{
+		return "Point[" + x + ", " + y + "]";
+	}
 }
