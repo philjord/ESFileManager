@@ -295,7 +295,8 @@ public class Master implements IMaster
 		{
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
-		return extCellXYToFormIdMap.get(new Point(x, y));
+		Integer id = extCellXYToFormIdMap.get(new Point(x, y));
+		return id == null ? -1 : id;
 	}
 
 	@Override
