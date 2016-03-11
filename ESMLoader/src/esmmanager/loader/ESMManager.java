@@ -29,6 +29,9 @@ import esmmanager.tes3.ESMManagerTes3;
 // also the multi master part ( and cacher)  is really very seperate from the ensuremaster and get esm manager bit so perhaps time for 2?
 public class ESMManager implements IESMManager
 {
+	
+	public static boolean USE_FILE_MAPS = true;
+	
 	private ArrayList<IMaster> masters = new ArrayList<IMaster>();
 
 	private static WeakValueHashMap<Integer, Record> loadedRecordsCache = new WeakValueHashMap<Integer, Record>();

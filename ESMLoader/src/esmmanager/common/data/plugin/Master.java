@@ -15,6 +15,7 @@ import java.util.zip.DataFormatException;
 import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.loader.CELLPointer;
+import esmmanager.loader.ESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
@@ -289,8 +290,11 @@ public class Master implements IMaster
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
-		//in = new RandomAccessFile(masterFile, "r");
-		in = new MappedByteBufferRAF(masterFile, "r");
+		if (masterFile.length() > Integer.MAX_VALUE || !ESMManager.USE_FILE_MAPS)
+			in = new RandomAccessFile(masterFile, "r");
+		else
+			in = new MappedByteBufferRAF(masterFile, "r");
+		
 		synchronized (in)
 		{
 			long fp = in.getFilePointer();

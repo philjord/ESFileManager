@@ -17,6 +17,7 @@ import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginSubrecord;
+import esmmanager.loader.ESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
@@ -137,8 +138,10 @@ public class Master implements IMaster
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
-		//in = new RandomAccessFile(masterFile, "r");
-		in = new MappedByteBufferRAF(masterFile, "r");
+		if (masterFile.length() > Integer.MAX_VALUE || !ESMManager.USE_FILE_MAPS)
+			in = new RandomAccessFile(masterFile, "r");
+		else
+			in = new MappedByteBufferRAF(masterFile, "r");
 
 		synchronized (in)
 		{
@@ -322,9 +325,12 @@ public class Master implements IMaster
 			if ((flags & 0x1) == 0)
 			{
 				Point xy = new Point(getDATAx(data), getDATAy(data));
-				int landId = extLandXYToFormIdMap.get(xy);
-				PluginRecord land = getPluginRecord(landId);
-				cell.addPluginRecord(land);
+				Integer landId = extLandXYToFormIdMap.get(xy);
+				if (landId != null)
+				{
+					PluginRecord land = getPluginRecord(landId);
+					cell.addPluginRecord(land);
+				}
 				cellChildren.put(formID, cell);
 			}
 			else
