@@ -135,6 +135,9 @@ public class Master implements IMaster
 
 	public synchronized void load() throws PluginException, IOException
 	{
+		
+		//TODO: implement a extblock sub block system for much faster loading! just like the others
+		
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
@@ -292,25 +295,25 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public int getWRLDExtBlockCELLId(int wrldFormId2, int x, int y)
+	public PluginRecord getWRLDExtBlockCELL(int wrldFormId2, int x, int y) throws DataFormatException, IOException, PluginException
 	{
 		if (wrldFormId2 != wrldFormId)
 		{
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
-		Integer id = extCellXYToFormIdMap.get(new Point(x, y));
-		return id == null ? -1 : id;
-	}
+		Integer formID = extCellXYToFormIdMap.get(new Point(x, y));
 
-	@Override
-	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
-	{
 		return getPluginRecord(formID);
 	}
 
 	@Override
-	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
+	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId2, int x, int y) throws DataFormatException, IOException, PluginException
 	{
+		if (wrldFormId2 != wrldFormId)
+		{
+			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
+		}
+		Integer formID = extCellXYToFormIdMap.get(new Point(x, y));
 		CELLPluginGroup cell = cellChildren.get(formID);
 		if (cell == null)
 		{
@@ -407,12 +410,6 @@ public class Master implements IMaster
 		TreeSet<Integer> ret = new TreeSet<Integer>();
 		ret.add(wrldFormId);
 		return ret;
-	}
-
-	@Override
-	public Set<Integer> getWRLDExtBlockCELLFormIds()
-	{
-		throw new UnsupportedOperationException();
 	}
 
 	public int convertNameRefToId(String key)

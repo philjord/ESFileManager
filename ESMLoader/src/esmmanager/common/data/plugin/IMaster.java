@@ -21,11 +21,9 @@ public interface IMaster
 
 	public WRLDChildren getWRLDChildren(int formID);
 
-	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y);
+	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException;
 
-	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException;
-
-	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException;
+	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException;
 
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException;
 
@@ -46,8 +44,6 @@ public interface IMaster
 	public Set<Integer> getAllInteriorCELLFormIds();
 
 	public Set<Integer> getAllWRLDTopGroupFormIds();
-
-	public Set<Integer> getWRLDExtBlockCELLFormIds();
 
 	public String getName();
 

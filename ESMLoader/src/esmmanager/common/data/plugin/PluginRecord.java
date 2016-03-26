@@ -127,7 +127,8 @@ public class PluginRecord
 	{
 		return editorID;
 	}
-
+	
+	//Dear god this String fileName appears to do something magical without it failures!	
 	public void load(String fileName, RandomAccessFile in, int recordLength) throws PluginException, IOException, DataFormatException
 	{
 		filePositionPointer = in.getFilePointer();

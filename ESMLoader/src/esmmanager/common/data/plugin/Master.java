@@ -120,7 +120,9 @@ public class Master implements IMaster
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
 			PluginRecord cellRecord = new PluginRecord(prefix);
-			cellRecord.load(masterFile.getName(), in, length);
+			
+			//cellRecord.load(masterFile.getName(), in, length);
+			cellRecord.load("", in, length);
 
 			return cellRecord;
 		}
@@ -138,7 +140,8 @@ public class Master implements IMaster
 			int length = ESMByteConvert.extractInt(prefix, 4);
 			length -= headerByteCount;
 			PluginGroup childrenGroup = new PluginGroup(prefix);
-			childrenGroup.load(masterFile.getName(), in, length);
+			//Dear god this String fileName appears to do something magical without it failures!
+			childrenGroup.load("", in, length);
 
 			return childrenGroup;
 		}
@@ -155,70 +158,66 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public  PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
+	public PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException
 	{
 		return wRLDTopGroup.WRLDByFormId.get(formID);
 	}
 
 	@Override
-	public  WRLDChildren getWRLDChildren(int formID)
+	public WRLDChildren getWRLDChildren(int formID)
 	{
 		return wRLDTopGroup.WRLDChildrenByFormId.get(formID);
 	}
 
 	@Override
-	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
+	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException
 	{
 		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
 		if (children != null)
 		{
-			CELLPointer pointer = children.WRLDExtBlockCELLByXY.get(new Point(x, y));
-			if (pointer != null)
+			CELLPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
+
+			if (cellPointer == null || cellPointer.cellFilePointer == -1)
 			{
-				return pointer.formId;
+				return null;
 			}
-		}
 
-		return -1;
+			PluginRecord cellRecord = getRecordFromFile(cellPointer.cellFilePointer);
+
+			if (!cellRecord.getRecordType().equals("CELL"))
+			{
+				System.out.println("Non CELL found " + wrldFormId + " x " + x + " y " + y);
+				return null;
+			}
+
+			return cellRecord;
+		}
+		return null;
 	}
 
 	@Override
-	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
+	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException
 	{
-		CELLPointer cellPointer = wRLDTopGroup.WRLDExtBlockCELLByFormId.get(new Integer(formID));
-		if (cellPointer == null || cellPointer.cellFilePointer == -1)
+		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
+		if (children != null)
 		{
-			return null;
+			CELLPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
+
+			if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
+			{
+				return null;
+			}
+
+			PluginGroup childrenGroup = getChildrenFromFile(cellPointer.cellChildrenFilePointer);
+			if (!childrenGroup.getRecordType().equals("GRUP"))
+			{
+				System.out.println("Non GRUP found " + wrldFormId + " x " + x + " y " + y);
+				return null;
+			}
+
+			return childrenGroup;
 		}
-
-		PluginRecord cellRecord = getRecordFromFile(cellPointer.cellFilePointer);
-
-		if (!cellRecord.getRecordType().equals("CELL"))
-		{
-			System.out.println("Non CELL requested " + formID);
-			return null;
-		}
-
-		return cellRecord;
-	}
-
-	@Override
-	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
-	{
-		CELLPointer cellPointer = wRLDTopGroup.WRLDExtBlockCELLByFormId.get(new Integer(formID));
-		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
-		{
-			return null;
-		}
-
-		PluginGroup childrenGroup = getChildrenFromFile(cellPointer.cellChildrenFilePointer);
-		if (!childrenGroup.getRecordType().equals("GRUP"))
-		{
-			System.out.println("Non GRUP requested " + formID);
-			return null;
-		}
-
-		return childrenGroup;
+		return null;
 	}
 
 	@Override
@@ -374,7 +373,7 @@ public class Master implements IMaster
 								}
 								else
 								{
-									record.load(masterFile.getName(), in, recordLength);
+									record.load("", in, recordLength);
 									formList.add(new FormInfo(recordType, formID, record.getEditorID(), record));
 
 								}
@@ -446,12 +445,6 @@ public class Master implements IMaster
 	public Set<Integer> getAllWRLDTopGroupFormIds()
 	{
 		return wRLDTopGroup.WRLDByFormId.keySet();
-	}
-
-	@Override
-	public Set<Integer> getWRLDExtBlockCELLFormIds()
-	{
-		return wRLDTopGroup.WRLDExtBlockCELLByFormId.keySet();
 	}
 
 	/**

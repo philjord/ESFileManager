@@ -103,7 +103,8 @@ public class Plugin implements PluginInterface
 			length -= pluginHeader.getHeaderByteCount();
 
 			PluginGroup group = new PluginGroup(prefix);
-			group.load(pluginFile.getName(), in, length);
+			//Dear god this String fileName appears to do something magical without it failures!			
+			group.load("", in, length);
 
 			// if requested we only index the wrld and cell records, as that is 99% of the file size
 			if (indexCellsOnly && (group.getGroupRecordType().equals("WRLD") || group.getGroupRecordType().equals("CELL")))

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.zip.DataFormatException;
 
 import tools.io.ESMByteConvert;
+import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginGroup;
 import esmmanager.common.data.plugin.PluginRecord;
@@ -18,15 +19,21 @@ public class WRLDTopGroup extends PluginGroup
 
 	public Map<Integer, WRLDChildren> WRLDChildrenByFormId = new LinkedHashMap<Integer, WRLDChildren>();
 
-	public Map<Integer, CELLPointer> WRLDExtBlockCELLByFormId = new LinkedHashMap<Integer, CELLPointer>();
-
 	public WRLDTopGroup(byte[] prefix)
 	{
 		super(prefix);
 	}
 
-	public void loadAndIndex(String fileName, RandomAccessFile in, int groupLength) throws IOException, DataFormatException,
-			PluginException
+	public CELLPointer getWRLDExtBlockCELLByXY(int wrldFormId, Point point)
+	{
+		WRLDChildren wrldChildren = WRLDChildrenByFormId.get(wrldFormId);
+		if (wrldChildren != null)
+			return wrldChildren.getWRLDExtBlockCELLByXY(point);
+		
+		return null;
+	}
+
+	public void loadAndIndex(String fileName, RandomAccessFile in, int groupLength) throws IOException, DataFormatException, PluginException
 	{
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
@@ -41,7 +48,7 @@ public class WRLDTopGroup extends PluginGroup
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
 			PluginRecord wrldRecord = new PluginRecord(prefix);
-			wrldRecord.load(fileName, in, length);
+			wrldRecord.load("", in, length);
 			WRLDByFormId.put(new Integer(wrldRecord.getFormID()), wrldRecord);
 
 			dataLength -= length;
@@ -60,8 +67,7 @@ public class WRLDTopGroup extends PluginGroup
 			if (subGroupType == PluginGroup.WORLDSPACE)
 			{
 				WRLDChildren children = new WRLDChildren(prefix);
-
-				children.loadAndIndex(fileName, in, length, WRLDExtBlockCELLByFormId);
+				children.loadAndIndex(in, length);
 				WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);
 			}
 			else

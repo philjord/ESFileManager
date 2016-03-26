@@ -2,7 +2,7 @@ package esmmanager.loader;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Map;
+import java.util.HashMap;
 import java.util.zip.DataFormatException;
 
 import esmmanager.Point;
@@ -12,22 +12,58 @@ import tools.io.ESMByteConvert;
 
 public class WRLDExtBlock extends PluginGroup
 {
-	public WRLDExtBlock(byte[] prefix)
+	public long fileOffset;
+	public int length;
+	public int x;
+	public int y;
+
+	private HashMap<Point, WRLDExtSubblock> WRLDExtSubblockChildren = null;
+
+	public WRLDExtBlock(byte[] prefix, long fileOffset, int length)
 	{
 		super(prefix);
+		this.fileOffset = fileOffset;
+		this.length = length;
+
+		int intValue = ESMByteConvert.extractInt(groupLabel, 0);
+		x = intValue >>> 16;
+		if ((x & 0x8000) != 0)
+			x |= 0xffff0000;
+		y = intValue & 0xffff;
+		if ((y & 0x8000) != 0)
+			y |= 0xffff0000;
 	}
 
-	public void loadAndIndex(String fileName, RandomAccessFile in, int groupLength, Map<Integer, CELLPointer> WRLDExtBlockCELLByFormId,
-			Map<Point, CELLPointer> WRLDExtBlockCELLByXY) throws IOException, DataFormatException, PluginException
+	public CELLPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
 	{
-		int dataLength = groupLength;
+		if (WRLDExtSubblockChildren == null)
+			loadAndIndex(in);
+
+		//pointy point here
+		Point extSubPoint = new Point((int) Math.floor(point.x / 8f), (int) Math.floor(point.y / 8f));
+		WRLDExtSubblock wrldExtSubblock = WRLDExtSubblockChildren.get(extSubPoint);
+		if (wrldExtSubblock != null)
+		{
+			return wrldExtSubblock.getWRLDExtBlockCELLByXY(point, in);
+		}
+		else
+		{
+			return null;
+		}
+	}
+
+	private void loadAndIndex(RandomAccessFile in) throws IOException, DataFormatException, PluginException
+	{
+		WRLDExtSubblockChildren = new HashMap<Point, WRLDExtSubblock>();
+		in.seek(fileOffset);
+		int dataLength = length;
 		byte prefix[] = new byte[headerByteCount];
 
 		while (dataLength >= headerByteCount)
 		{
 			int count = in.read(prefix);
 			if (count != headerByteCount)
-				throw new PluginException(fileName + ": Record prefix is incomplete");
+				throw new PluginException("Record prefix is incomplete");
 			dataLength -= headerByteCount;
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
@@ -39,8 +75,10 @@ public class WRLDExtBlock extends PluginGroup
 
 				if (subGroupType == PluginGroup.EXTERIOR_SUBBLOCK)
 				{
-					WRLDExtSubblock children = new WRLDExtSubblock(prefix);
-					children.loadAndIndex(fileName, in, length, WRLDExtBlockCELLByFormId, WRLDExtBlockCELLByXY);
+					WRLDExtSubblock wrldExtSubblock = new WRLDExtSubblock(prefix, in.getFilePointer(), length);
+					WRLDExtSubblockChildren.put(new Point(wrldExtSubblock.x, wrldExtSubblock.y), wrldExtSubblock);
+					//we DO NOT index now, later
+					in.skipBytes(length);
 				}
 				else
 				{
@@ -59,9 +97,9 @@ public class WRLDExtBlock extends PluginGroup
 		if (dataLength != 0)
 		{
 			if (getGroupType() == 0)
-				throw new PluginException(fileName + ": Group " + getGroupRecordType() + " is incomplete");
+				throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
 			else
-				throw new PluginException(fileName + ": Subgroup type " + getGroupType() + " is incomplete");
+				throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
 		}
 
 	}

@@ -101,7 +101,8 @@ public class PluginGroup extends PluginRecord
 
 		return recordCount;
 	}
-
+	
+	//Dear god this String fileName appears to do something magical without it failures!	
 	public void load(String fileName, RandomAccessFile in, int groupLength) throws IOException, DataFormatException, PluginException
 	{
 		int dataLength = groupLength;
@@ -128,7 +129,7 @@ public class PluginGroup extends PluginRecord
 
 			try
 			{
-				record.load(fileName, in, length);
+				record.load("", in, length);
 			}
 			catch (Exception e)
 			{

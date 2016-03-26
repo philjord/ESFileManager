@@ -29,9 +29,10 @@ import esmmanager.tes3.ESMManagerTes3;
 // also the multi master part ( and cacher)  is really very seperate from the ensuremaster and get esm manager bit so perhaps time for 2?
 public class ESMManager implements IESMManager
 {
-	
+
 	public static boolean USE_FILE_MAPS = true;
-	
+	public static boolean USE_MINI_CHANNEL_MAPS = false;//TODO: but requires a bit of an overhaul
+
 	private ArrayList<IMaster> masters = new ArrayList<IMaster>();
 
 	private static WeakValueHashMap<Integer, Record> loadedRecordsCache = new WeakValueHashMap<Integer, Record>();
@@ -87,8 +88,8 @@ public class ESMManager implements IESMManager
 		{
 			if (master.getVersion() != pluginVersion)
 			{
-				System.out.println("Mismatched master version, ESMManager has this " + pluginVersion + " added master has "
-						+ master.getVersion());
+				System.out.println(
+						"Mismatched master version, ESMManager has this " + pluginVersion + " added master has " + master.getVersion());
 			}
 		}
 
@@ -271,35 +272,15 @@ public class ESMManager implements IESMManager
 	}
 
 	@Override
-	public Set<Integer> getWRLDExtBlockCELLFormIds()
+	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException
 	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
-		for (IMaster m : masters)
-		{
-			ret.addAll(m.getWRLDExtBlockCELLFormIds());
-		}
-		return ret;
+		return getMasterForId(wrldFormId).getWRLDExtBlockCELL(wrldFormId, x, y);
 	}
 
 	@Override
-	public PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException, PluginException
+	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException
 	{
-		IMaster master = getMasterForId(formID);
-		return master.getWRLDExtBlockCELL(formID);
-	}
-
-	@Override
-	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
-	{
-		IMaster master = getMasterForId(formID);
-		return master.getWRLDExtBlockCELLChildren(formID);
-	}
-
-	@Override
-	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
-	{
-		IMaster master = getMasterForId(wrldFormId);
-		return master.getWRLDExtBlockCELLId(wrldFormId, x, y);
+		return getMasterForId(wrldFormId).getWRLDExtBlockCELLChildren(wrldFormId, x, y);
 	}
 
 	@Override

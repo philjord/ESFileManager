@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
-import tools.WeakValueHashMap;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
@@ -21,6 +20,7 @@ import esmmanager.loader.IESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
+import tools.WeakValueHashMap;
 
 public class ESMManagerTes3 implements IESMManager
 {
@@ -75,8 +75,8 @@ public class ESMManagerTes3 implements IESMManager
 		{
 			if (master.getVersion() != pluginVersion)
 			{
-				System.out.println("Mismatched master version, ESMManager has this " + pluginVersion + " added master has "
-						+ master.getVersion());
+				System.out.println(
+						"Mismatched master version, ESMManager has this " + pluginVersion + " added master has " + master.getVersion());
 			}
 		}
 
@@ -239,36 +239,19 @@ public class ESMManagerTes3 implements IESMManager
 	}
 
 	@Override
-	public Set<Integer> getWRLDExtBlockCELLFormIds()
-	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
-		for (IMaster m : masters)
-		{
-			ret.addAll(m.getWRLDExtBlockCELLFormIds());
-		}
-		return ret;
-	}
-
-	@Override
-	public esmmanager.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int formID) throws DataFormatException, IOException,
-			PluginException
-	{
-		IMaster master = getMasterForId(formID);
-		return master.getWRLDExtBlockCELL(formID);
-	}
-
-	@Override
-	public PluginGroup getWRLDExtBlockCELLChildren(int formID) throws DataFormatException, IOException, PluginException
-	{
-		IMaster master = getMasterForId(formID);
-		return master.getWRLDExtBlockCELLChildren(formID);
-	}
-
-	@Override
-	public int getWRLDExtBlockCELLId(int wrldFormId, int x, int y)
+	public esmmanager.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y)
+			throws DataFormatException, IOException, PluginException
 	{
 		IMaster master = getMasterForId(wrldFormId);
-		return master.getWRLDExtBlockCELLId(wrldFormId, x, y);
+		return master.getWRLDExtBlockCELL(wrldFormId, x, y);
+	}
+
+	@Override
+	public esmmanager.common.data.plugin.PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y)
+			throws DataFormatException, IOException, PluginException
+	{
+		IMaster master = getMasterForId(wrldFormId);
+		return master.getWRLDExtBlockCELLChildren(wrldFormId, x, y);
 	}
 
 	@Override
