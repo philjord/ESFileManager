@@ -63,21 +63,21 @@ public class PluginGroup extends PluginRecord
 		groupType = prefix[12] & 0xff;
 		switch (groupType)
 		{
-			case TOP: // '\0'
-				if (groupLabel[0] >= 32)
-					groupRecordType = new String(groupLabel);
-				else
-					groupRecordType = new String();
-				break;
+		case TOP: // '\0'
+			if (groupLabel[0] >= 32)
+				groupRecordType = new String(groupLabel);
+			else
+				groupRecordType = new String();
+			break;
 
-			case WORLDSPACE: // '\001'
-			case CELL: // '\006'
-			case TOPIC: // '\007'
-			case CELL_PERSISTENT: // '\b'
-			case CELL_TEMPORARY: // '\t'
-			case CELL_DISTANT: // '\n'
-				groupParentID = ESMByteConvert.extractInt(groupLabel, 0);
-				break;
+		case WORLDSPACE: // '\001'
+		case CELL: // '\006'
+		case TOPIC: // '\007'
+		case CELL_PERSISTENT: // '\b'
+		case CELL_TEMPORARY: // '\t'
+		case CELL_DISTANT: // '\n'
+			groupParentID = ESMByteConvert.extractInt(groupLabel, 0);
+			break;
 		}
 
 	}
@@ -101,9 +101,18 @@ public class PluginGroup extends PluginRecord
 
 		return recordCount;
 	}
-	
+
 	//Dear god this String fileName appears to do something magical without it failures!	
+	@Override
 	public void load(String fileName, RandomAccessFile in, int groupLength) throws IOException, DataFormatException, PluginException
+	{
+		//-1 means load all children groups that exist (only relevant to the "children" of CELLS groups
+		load(fileName, in, groupLength, -1);
+	}
+
+	//Dear god this String fileName appears to do something magical without it failures!	
+	public void load(String fileName, RandomAccessFile in, int groupLength, int childGroupType)
+			throws IOException, DataFormatException, PluginException
 	{
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
@@ -116,26 +125,28 @@ public class PluginGroup extends PluginRecord
 			dataLength -= headerByteCount;
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
-			PluginRecord record;
+
 			if (type.equals("GRUP"))
 			{
 				length -= headerByteCount;
-				record = new PluginGroup(prefix);
+				PluginGroup pg = new PluginGroup(prefix);
+				if (childGroupType == -1 || pg.getGroupType() == childGroupType)
+				{
+					pg.load("", in, length);
+					recordList.add(pg);
+				}
+				else
+				{
+					// not loading this group now
+					in.skipBytes(length);
+				}
 			}
 			else
 			{
-				record = new PluginRecord(prefix);
-			}
-
-			try
-			{
+				PluginRecord record = new PluginRecord(prefix);
 				record.load("", in, length);
+				recordList.add(record);
 			}
-			catch (Exception e)
-			{
-				System.out.println("Bad PluginGroup.load of reocrd " + type + " : " + e + " " + e.getStackTrace()[0]);
-			}
-			recordList.add(record);
 
 			// remove this iteration from the total
 			dataLength -= length;
@@ -179,237 +190,149 @@ public class PluginGroup extends PluginRecord
 
 		switch (groupType)
 		{
-			case TOP: // '\0'
-			{
-				String type = new String(groupLabel);
-				String description = typeMap.get(type);
-				if (description != null)
-					text = "Group: " + type + " : " + description;
-				else
-					text = "Group: Type " + new String(groupLabel);
-				break;
-			}
+		case TOP: // '\0'
+		{
+			String type = new String(groupLabel);
+			String description = typeMap.get(type);
+			if (description != null)
+				text = "Group: " + type + " : " + description;
+			else
+				text = "Group: Type " + new String(groupLabel);
+			break;
+		}
 
-			case WORLDSPACE: // '\001'
-			{
-				text = "Group: Worldspace (" + intValue + ") children";
-				break;
-			}
+		case WORLDSPACE: // '\001'
+		{
+			text = "Group: Worldspace (" + intValue + ") children";
+			break;
+		}
 
-			case INTERIOR_BLOCK: // '\002'
-			{
-				text = "Group: Interior cell block " + intValue;
-				break;
-			}
+		case INTERIOR_BLOCK: // '\002'
+		{
+			text = "Group: Interior cell block " + intValue;
+			break;
+		}
 
-			case INTERIOR_SUBBLOCK: // '\003'
-			{
-				text = "Group: Interior cell subblock " + intValue;
-				break;
-			}
+		case INTERIOR_SUBBLOCK: // '\003'
+		{
+			text = "Group: Interior cell subblock " + intValue;
+			break;
+		}
 
-			case EXTERIOR_BLOCK: // '\004'
-			{
-				int x = intValue >>> 16;
-				if ((x & 0x8000) != 0)
-					x |= 0xffff0000;
-				int y = intValue & 0xffff;
-				if ((y & 0x8000) != 0)
-					y |= 0xffff0000;
+		case EXTERIOR_BLOCK: // '\004'
+		{
+			int x = intValue >>> 16;
+			if ((x & 0x8000) != 0)
+				x |= 0xffff0000;
+			int y = intValue & 0xffff;
+			if ((y & 0x8000) != 0)
+				y |= 0xffff0000;
 
-				text = "Group: Exterior cell block " + x + "," + y;
-				break;
-			}
+			text = "Group: Exterior cell block " + x + "," + y;
+			break;
+		}
 
-			case EXTERIOR_SUBBLOCK: // '\005'
-			{
-				int x = intValue >>> 16;
-				if ((x & 0x8000) != 0)
-					x |= 0xffff0000;
-				int y = intValue & 0xffff;
-				if ((y & 0x8000) != 0)
-					y |= 0xffff0000;
+		case EXTERIOR_SUBBLOCK: // '\005'
+		{
+			int x = intValue >>> 16;
+			if ((x & 0x8000) != 0)
+				x |= 0xffff0000;
+			int y = intValue & 0xffff;
+			if ((y & 0x8000) != 0)
+				y |= 0xffff0000;
 
-				text = "Group: Exterior cell subblock " + x + "," + y;
-				break;
-			}
+			text = "Group: Exterior cell subblock " + x + "," + y;
+			break;
+		}
 
-			case CELL: // '\006'
-			{
+		case CELL: // '\006'
+		{
 
-				text = "Group: Cell (" + intValue + ") children";
-				break;
-			}
+			text = "Group: Cell (" + intValue + ") children";
+			break;
+		}
 
-			case TOPIC: // '\007'
-			{
-				text = "Group: Topic (" + intValue + ") children";
-				break;
-			}
+		case TOPIC: // '\007'
+		{
+			text = "Group: Topic (" + intValue + ") children";
+			break;
+		}
 
-			case CELL_PERSISTENT: // '\b'
-			{
-				text = "Group: Cell (" + intValue + ") persistent children";
-				break;
-			}
+		case CELL_PERSISTENT: // '\b'
+		{
+			text = "Group: Cell (" + intValue + ") persistent children";
+			break;
+		}
 
-			case CELL_TEMPORARY: // '\t'
-			{
-				text = "Group: Cell (" + intValue + ") temporary children";
-				break;
-			}
+		case CELL_TEMPORARY: // '\t'
+		{
+			text = "Group: Cell (" + intValue + ") temporary children";
+			break;
+		}
 
-			case CELL_DISTANT: // '\n'
-			{
-				text = "Group: Cell (" + intValue + ") visible distant children";
-				break;
-			}
+		case CELL_DISTANT: // '\n'
+		{
+			text = "Group: Cell (" + intValue + ") visible distant children";
+			break;
+		}
 
-			default:
-			{
-				text = "Group: Type " + groupType + ", Parent " + intValue;
-				break;
-			}
+		default:
+		{
+			text = "Group: Type " + groupType + ", Parent " + intValue;
+			break;
+		}
 		}
 		return text;
 	}
 
-	private static String groupDescriptions[][] =
-	{
-	{ "GRUP", "Form Group" },//
-			{ "REFR", "Object Reference" },
-			{ "ACHR", "Actor Reference" },
-			{ "ACTI", "Activators" },
-			{ "ALCH", "Potions" },
-			{ "AMMO", "Ammunition" },
-			{ "ANIO", "Animated Object" },
-			{ "APPA", "Apparatus" }, //Not in FO3 
-			{ "ARMO", "Armor" },
-			{ "BOOK", "Books" },
-			{ "BSGN", "Birthsigns" }, //Not in FO3 , Not in Skyrim
-			{ "CELL", "Cells" },
-			{ "CLAS", "Classes" },
-			{ "CLOT", "Clothing" }, //Not in FO3 , Not in Skyrim
-			{ "CLMT", "Climate" },
-			{ "CONT", "Containers" },
-			{ "CREA", "Creatures" }, //Not in Skyrim 
-			{ "CSTY", "Combat Styles" },
-			{ "DIAL", "Dialog" },
-			{ "DOOR", "Doors" },
-			{ "EFSH", "Effect Shaders" },
-			{ "ENCH", "Enchantments" },
-			{ "EYES", "Eyes" },
-			{ "FACT", "Factions" },
-			{ "FLOR", "Flora" }, //Not in FO3 
-			{ "FURN", "Furniture" },
-			{ "GLOB", "Global Variables" },
-			{ "GMST", "Game Settings" },
-			{ "GRAS", "Grass" },
-			{ "HAIR", "Hair" }, // Not in Skyrim
-			{ "IDLE", "Idle Animations" },
-			{ "INGR", "Ingredients" },
-			{ "KEYM", "Keys" },
-			{ "LIGH", "Lights" },
-			{ "LSCR", "Load Screens" },
-			{ "LTEX", "Land Textures" },
-			{ "LVLC", "Leveled Creatures" }, // Not in Skyrim
-			{ "LVLI", "Leveled Items" },
-			{ "LVSP", "Leveled Spells" }, //Not in FO3 
-			{ "MGEF", "Magic Effects" },
-			{ "MISC", "Miscellaneous Items" },
-			{ "NPC_", "NPCs" },
-			{ "PACK", "Packages" },
-			{ "QUST", "Quests" },
-			{ "RACE", "Races" },
-			{ "REGN", "Regions" },
-			{ "SBSP", "Subspaces" }, //Not in FO3, Not in Skyrim
+	private static String groupDescriptions[][] = { { "GRUP", "Form Group" }, //
+			{ "REFR", "Object Reference" }, { "ACHR", "Actor Reference" }, { "ACTI", "Activators" }, { "ALCH", "Potions" },
+			{ "AMMO", "Ammunition" }, { "ANIO", "Animated Object" }, { "APPA", "Apparatus" }, //Not in FO3 
+			{ "ARMO", "Armor" }, { "BOOK", "Books" }, { "BSGN", "Birthsigns" }, //Not in FO3 , Not in Skyrim
+			{ "CELL", "Cells" }, { "CLAS", "Classes" }, { "CLOT", "Clothing" }, //Not in FO3 , Not in Skyrim
+			{ "CLMT", "Climate" }, { "CONT", "Containers" }, { "CREA", "Creatures" }, //Not in Skyrim 
+			{ "CSTY", "Combat Styles" }, { "DIAL", "Dialog" }, { "DOOR", "Doors" }, { "EFSH", "Effect Shaders" },
+			{ "ENCH", "Enchantments" }, { "EYES", "Eyes" }, { "FACT", "Factions" }, { "FLOR", "Flora" }, //Not in FO3 
+			{ "FURN", "Furniture" }, { "GLOB", "Global Variables" }, { "GMST", "Game Settings" }, { "GRAS", "Grass" }, { "HAIR", "Hair" }, // Not in Skyrim
+			{ "IDLE", "Idle Animations" }, { "INGR", "Ingredients" }, { "KEYM", "Keys" }, { "LIGH", "Lights" }, { "LSCR", "Load Screens" },
+			{ "LTEX", "Land Textures" }, { "LVLC", "Leveled Creatures" }, // Not in Skyrim
+			{ "LVLI", "Leveled Items" }, { "LVSP", "Leveled Spells" }, //Not in FO3 
+			{ "MGEF", "Magic Effects" }, { "MISC", "Miscellaneous Items" }, { "NPC_", "NPCs" }, { "PACK", "Packages" },
+			{ "QUST", "Quests" }, { "RACE", "Races" }, { "REGN", "Regions" }, { "SBSP", "Subspaces" }, //Not in FO3, Not in Skyrim
 			{ "SCPT", "Scripts" }, // Not in Skyrim
 			{ "SGST", "Sigil Stones" }, //Not in FO3, Not in SKyrim 
 			{ "SKIL", "Skills" }, //Not in FO3, Not in SKyrim   
 			{ "SLGM", "Soul Gems" }, //Not in FO3 
-			{ "SOUN", "Sounds" },
-			{ "SPEL", "Spells" },
-			{ "STAT", "Statics" },
-			{ "TREE", "Trees" },
-			{ "WATR", "Water" },
-			{ "WEAP", "Weapons" },
-			{ "WTHR", "Weather" },
-			{ "WRLD", "World Spaces" },
+			{ "SOUN", "Sounds" }, { "SPEL", "Spells" }, { "STAT", "Statics" }, { "TREE", "Trees" }, { "WATR", "Water" },
+			{ "WEAP", "Weapons" }, { "WTHR", "Weather" }, { "WRLD", "World Spaces" },
 
 			//new in FO3 
-			{ "ADDN", "Addon Node" },
-			{ "ARMA", "Armor Addon" },
-			{ "ASPC", "Acoustic Space" },
-			{ "AVIF", "Actor Values/Perk Tree Graphics" },
-			{ "BPTD", "Body Part Data" },
-			{ "CAMS", "Cameras" },
-			{ "COBJ", "Constructible Object (recipes)" },
-			{ "CPTH", "Camera Path" },
-			{ "DEBR", "Debris" },
-			{ "DOBJ", "Default Object Manager" },
-			{ "ECZN", "Encounter Zone" },
-			{ "EXPL", "Explosion" },
-			{ "FLST", "Form List (non-leveled list)" },
-			{ "HDPT", "Head Part" },
-			{ "IDLM", "Idle Marker" },
-			{ "IMAD", "Image Space Modifier" },
-			{ "IMGS", "Image Space" },
-			{ "IPCT", "Impact" },
-			{ "IPDS", "Impact Data Set" },
-			{ "LVLN", "LeveledCharacter" },
-			{ "LGTM", "Lighting Template" },
-			{ "MESG", "Message" },
-			{ "MICN", "Menu Icon" }, // Not in Skyrim
-			{ "MSTT", "Movable Static" },
-			{ "MUSC", "Music" },
-			{ "NAVI", "Navigation" },
-			{ "NOTE", "Notes" }, // Not in Skyrim
-			{ "PERK", "Perk" },
-			{ "PROJ", "Projectile" },
-			{ "PWAT", "Placeable Water" }, // Not in Skyrim
-			{ "RADS", "Unknown RADS ?" },// Not in Skyrim
-			{ "RGDL", "Ragdoll" },// Not in Skyrim
-			{ "SCOL", "Static Collection" },// Not in Skyrim
-			{ "TACT", "Talking Activator" },
-			{ "TERM", "Terminal" },// Not in Skyrim
-			{ "TXST", "Texture Set" },
-			{ "VTYP", "Voice Type" },
+			{ "ADDN", "Addon Node" }, { "ARMA", "Armor Addon" }, { "ASPC", "Acoustic Space" },
+			{ "AVIF", "Actor Values/Perk Tree Graphics" }, { "BPTD", "Body Part Data" }, { "CAMS", "Cameras" },
+			{ "COBJ", "Constructible Object (recipes)" }, { "CPTH", "Camera Path" }, { "DEBR", "Debris" },
+			{ "DOBJ", "Default Object Manager" }, { "ECZN", "Encounter Zone" }, { "EXPL", "Explosion" },
+			{ "FLST", "Form List (non-leveled list)" }, { "HDPT", "Head Part" }, { "IDLM", "Idle Marker" },
+			{ "IMAD", "Image Space Modifier" }, { "IMGS", "Image Space" }, { "IPCT", "Impact" }, { "IPDS", "Impact Data Set" },
+			{ "LVLN", "LeveledCharacter" }, { "LGTM", "Lighting Template" }, { "MESG", "Message" }, { "MICN", "Menu Icon" }, // Not in Skyrim
+			{ "MSTT", "Movable Static" }, { "MUSC", "Music" }, { "NAVI", "Navigation" }, { "NOTE", "Notes" }, // Not in Skyrim
+			{ "PERK", "Perk" }, { "PROJ", "Projectile" }, { "PWAT", "Placeable Water" }, // Not in Skyrim
+			{ "RADS", "Unknown RADS ?" }, // Not in Skyrim
+			{ "RGDL", "Ragdoll" }, // Not in Skyrim
+			{ "SCOL", "Static Collection" }, // Not in Skyrim
+			{ "TACT", "Talking Activator" }, { "TERM", "Terminal" }, // Not in Skyrim
+			{ "TXST", "Texture Set" }, { "VTYP", "Voice Type" },
 
 			// new in Skyrim
-			{ "AACT", "Action" },
-			{ "ARTO", "Art Object" },
-			{ "ASTP", "Association Type" },
-			{ "COLL", "Collision Layer" },
-			{ "CLFM", "Color" },
-			{ "DLVW", "Dialog View" },
-			{ "DLBR", "Dialog Branch" },
-			{ "DUAL", "Dual Cast Data" },// (possibly unused)
-			{ "EQUP", "Equip Slot" },// (flag-type values)
-			{ "FSTP", "Footstep" },
-			{ "FSTS", "Footstep Set" },
-			{ "HAZD", "Hazard" },
-			{ "KYWD", "Keyword" },
-			{ "LCRT", "Location Reference Type" },
-			{ "LCTN", "Location" },
-			{ "MATT", "Material Type" },
-			{ "MUST", "Music Track" },
-			{ "MATO", "Material Object" },
-			{ "MOVT", "Movement Type" },
-			{ "OTFT", "Outfit" },
-			{ "RELA", "Relationship" },
-			{ "RFCT", "Visual Effect" },
-			{ "REVB", "Reverb Parameters" },
-			{ "SPGD", "Shader Particle Geometry" },
-			{ "SCRL", "Scroll" },
-			{ "SMBN", "Story Manager Branch Node" },
-			{ "SMQN", "Story Manager Quest Node" },
-			{ "SMEN", "Story Manager Event Node" },
-			{ "SHOU", "Shout" },
-			{ "SCEN", "Scene" },
-			{ "SNCT", "Sound Category" },
-			{ "SOPM", "Sound Output Marker" },
-			{ "SNDR", "Sound Reference" },
-			{ "WOOP", "Word Of Power" },
+			{ "AACT", "Action" }, { "ARTO", "Art Object" }, { "ASTP", "Association Type" }, { "COLL", "Collision Layer" },
+			{ "CLFM", "Color" }, { "DLVW", "Dialog View" }, { "DLBR", "Dialog Branch" }, { "DUAL", "Dual Cast Data" }, // (possibly unused)
+			{ "EQUP", "Equip Slot" }, // (flag-type values)
+			{ "FSTP", "Footstep" }, { "FSTS", "Footstep Set" }, { "HAZD", "Hazard" }, { "KYWD", "Keyword" },
+			{ "LCRT", "Location Reference Type" }, { "LCTN", "Location" }, { "MATT", "Material Type" }, { "MUST", "Music Track" },
+			{ "MATO", "Material Object" }, { "MOVT", "Movement Type" }, { "OTFT", "Outfit" }, { "RELA", "Relationship" },
+			{ "RFCT", "Visual Effect" }, { "REVB", "Reverb Parameters" }, { "SPGD", "Shader Particle Geometry" }, { "SCRL", "Scroll" },
+			{ "SMBN", "Story Manager Branch Node" }, { "SMQN", "Story Manager Quest Node" }, { "SMEN", "Story Manager Event Node" },
+			{ "SHOU", "Shout" }, { "SCEN", "Scene" }, { "SNCT", "Sound Category" }, { "SOPM", "Sound Output Marker" },
+			{ "SNDR", "Sound Reference" }, { "WOOP", "Word Of Power" },
 
 	};
 

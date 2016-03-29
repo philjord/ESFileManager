@@ -231,9 +231,9 @@ public class ESMManager implements IESMManager
 	}
 
 	@Override
-	public Set<Integer> getAllInteriorCELLFormIds()
+	public List<CELLPointer> getAllInteriorCELLFormIds()
 	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
+		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
 		for (IMaster m : masters)
 		{
 			ret.addAll(m.getAllInteriorCELLFormIds());
@@ -251,6 +251,12 @@ public class ESMManager implements IESMManager
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
 		return getMasterForId(formID).getInteriorCELLChildren(formID);
+	}
+	
+	@Override
+	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
+	{
+		return getMasterForId(formID).getInteriorCELLPersistentChildren(formID);
 	}
 
 	@Override

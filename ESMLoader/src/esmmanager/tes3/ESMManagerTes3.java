@@ -16,6 +16,7 @@ import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginGroup;
 import esmmanager.common.data.record.Record;
+import esmmanager.loader.CELLPointer;
 import esmmanager.loader.IESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
@@ -198,9 +199,9 @@ public class ESMManagerTes3 implements IESMManager
 	}
 
 	@Override
-	public Set<Integer> getAllInteriorCELLFormIds()
+	public List<CELLPointer> getAllInteriorCELLFormIds()
 	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
+		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
 		for (IMaster m : masters)
 		{
 			ret.addAll(m.getAllInteriorCELLFormIds());
@@ -218,6 +219,12 @@ public class ESMManagerTes3 implements IESMManager
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
 		return getMasterForId(formID).getInteriorCELLChildren(formID);
+	}
+	
+	@Override
+	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
+	{
+		return getMasterForId(formID).getInteriorCELLPersistentChildren(formID);
 	}
 
 	@Override

@@ -12,8 +12,8 @@ import tools.io.ESMByteConvert;
 
 public class WRLDExtBlock extends PluginGroup
 {
-	public long fileOffset;
-	public int length;
+	private long fileOffset;
+	private int length;
 	public int x;
 	public int y;
 

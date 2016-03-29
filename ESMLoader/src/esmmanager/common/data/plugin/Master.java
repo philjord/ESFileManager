@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -120,7 +119,7 @@ public class Master implements IMaster
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
 			PluginRecord cellRecord = new PluginRecord(prefix);
-			
+
 			//cellRecord.load(masterFile.getName(), in, length);
 			cellRecord.load("", in, length);
 
@@ -145,6 +144,48 @@ public class Master implements IMaster
 
 			return childrenGroup;
 		}
+	}
+
+	/**
+	 * To use this the pointer MUST be a "children" group of a CELL interior or exterior, if not death
+	 * @param pointer
+	 * @return
+	 * @throws PluginException
+	 * @throws IOException
+	 * @throws DataFormatException
+	 */
+
+	private PluginGroup getChildrenFromFile(long pointer, int childGroupType) throws PluginException, IOException, DataFormatException
+	{
+		synchronized (in)
+		{
+			in.seek(pointer);
+
+			byte prefix[] = new byte[headerByteCount];
+			in.read(prefix);
+
+			int length = ESMByteConvert.extractInt(prefix, 4);
+			length -= headerByteCount;
+			PluginGroup childrenGroup = new PluginGroup(prefix);
+			//Dear god this String fileName appears to do something magical without it failures!
+			childrenGroup.load("", in, length, childGroupType);
+
+			// Now pull out the right type like the persister guy and return it
+			if (childrenGroup.getRecordList() != null)
+			{
+				for (PluginRecord pgr : childrenGroup.getRecordList())
+				{
+					PluginGroup pg = (PluginGroup) pgr;
+					if (pg.getGroupType() == childGroupType)
+					{
+						return pg;
+					}
+				}
+			}
+
+		}
+
+		return null;
 	}
 
 	public WRLDTopGroup getWRLDTopGroup()
@@ -221,19 +262,19 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public Set<Integer> getAllInteriorCELLFormIds()
+	public List<CELLPointer> getAllInteriorCELLFormIds()
 	{
 		//just for hunter sneaker cut down esm
 		if (interiorCELLTopGroup != null)
-			return interiorCELLTopGroup.interiorCELLByFormId.keySet();
+			return interiorCELLTopGroup.getAllInteriorCELLFormIds();
 		else
-			return new HashSet<Integer>();
+			return new ArrayList<CELLPointer>();
 	}
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
-		CELLPointer cellPointer = interiorCELLTopGroup.interiorCELLByFormId.get(new Integer(formID));
+		CELLPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellFilePointer == -1)
 		{
 			return null;
@@ -253,7 +294,7 @@ public class Master implements IMaster
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		CELLPointer cellPointer = interiorCELLTopGroup.interiorCELLByFormId.get(new Integer(formID));
+		CELLPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
 		{
 			return null;
@@ -268,6 +309,18 @@ public class Master implements IMaster
 
 		return childrenGroup;
 
+	}
+
+	@Override
+	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
+	{
+		CELLPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
+		{
+			return null;
+		}
+
+		return getChildrenFromFile(cellPointer.cellChildrenFilePointer, PluginGroup.CELL_PERSISTENT);
 	}
 
 	@Override
@@ -293,7 +346,7 @@ public class Master implements IMaster
 			in = new RandomAccessFile(masterFile, "r");
 		else
 			in = new MappedByteBufferRAF(masterFile, "r");
-		
+
 		synchronized (in)
 		{
 			long fp = in.getFilePointer();
@@ -426,8 +479,9 @@ public class Master implements IMaster
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
-			for (Integer formId : getAllInteriorCELLFormIds())
+			for (CELLPointer cp : getAllInteriorCELLFormIds())
 			{
+				int formId = cp.formId;
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}

@@ -11,4 +11,6 @@ public interface IESMManager extends IMaster, IRecordStore
 
 	void clearMasters();
 
+
+
 }

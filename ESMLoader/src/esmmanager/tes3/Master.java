@@ -17,6 +17,7 @@ import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginSubrecord;
+import esmmanager.loader.CELLPointer;
 import esmmanager.loader.ESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
@@ -135,9 +136,9 @@ public class Master implements IMaster
 
 	public synchronized void load() throws PluginException, IOException
 	{
-		
+
 		//TODO: implement a extblock sub block system for much faster loading! just like the others
-		
+
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
@@ -366,13 +367,19 @@ public class Master implements IMaster
 		return cell;
 
 	}
+	@Override
+	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
+	{
+		//To my knowledge these don't exist in any real manner
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
-	public Set<Integer> getAllInteriorCELLFormIds()
+	public List<CELLPointer> getAllInteriorCELLFormIds()
 	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
+		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
 		List<Integer> cells = typeToFormIdMap.get("CELL");
-		// only those marked interor
+		// only those marked interior
 		for (int id : cells)
 		{
 			try
@@ -384,7 +391,7 @@ public class Master implements IMaster
 				// interior marker
 				if ((flags & 0x1) != 0)
 				{
-					ret.add(id);
+					ret.add(new CELLPointer(id, -1));
 				}
 			}
 			catch (DataFormatException e)

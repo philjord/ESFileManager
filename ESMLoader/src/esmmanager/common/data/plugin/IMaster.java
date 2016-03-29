@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import esmmanager.common.PluginException;
+import esmmanager.loader.CELLPointer;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
@@ -29,6 +30,8 @@ public interface IMaster
 
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException;
 
+	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException;
+
 	public PluginRecord getPluginRecord(int formID) throws PluginException;
 
 	public Map<Integer, FormInfo> getFormMap();
@@ -41,7 +44,7 @@ public interface IMaster
 
 	public Set<String> getAllEdids();
 
-	public Set<Integer> getAllInteriorCELLFormIds();
+	public List<CELLPointer> getAllInteriorCELLFormIds();
 
 	public Set<Integer> getAllWRLDTopGroupFormIds();
 
