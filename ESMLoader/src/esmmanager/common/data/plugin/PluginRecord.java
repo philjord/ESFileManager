@@ -2,6 +2,8 @@ package esmmanager.common.data.plugin;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.DataFormatException;
@@ -9,9 +11,11 @@ import java.util.zip.Inflater;
 
 import tools.io.ESMByteConvert;
 import esmmanager.common.PluginException;
+import esmmanager.loader.ESMManager;
 
 public class PluginRecord
 {
+
 	protected int headerByteCount = -1;
 
 	protected String recordType;
@@ -37,8 +41,9 @@ public class PluginRecord
 	//for tes3 version
 	protected PluginRecord()
 	{
-		
+
 	}
+
 	/**
 	 * prefix MUST have length of  either 20 (oblivion) or 24 (fallout) headerbyte count
 	 * @param prefix
@@ -127,7 +132,7 @@ public class PluginRecord
 	{
 		return editorID;
 	}
-	
+
 	//Dear god this String fileName appears to do something magical without it failures!	
 	public void load(String fileName, RandomAccessFile in, int recordLength) throws PluginException, IOException, DataFormatException
 	{
@@ -136,9 +141,26 @@ public class PluginRecord
 		int overrideLength = 0;
 		recordData = new byte[recordLength];
 
-		int count = in.read(recordData);
-		if (count != recordLength)
-			throw new PluginException(fileName + ": " + recordType + " record is incomplete");
+		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE)
+		{
+			//Oddly this is hugely slow
+			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;
+			FileChannel ch = in.getChannel();
+			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
+			mappedByteBuffer.get(recordData, 0, recordLength);
+
+			//manually move the pointer forward (someone else is readin from this file)
+			in.seek(filePositionPointer + recordLength);
+		}
+		else
+		{
+			synchronized (in)
+			{
+				int count = in.read(recordData);
+				if (count != recordLength)
+					throw new PluginException(fileName + ": " + recordType + " record is incomplete");
+			}
+		}
 
 		// now uncompress the recordData
 		uncompressRecordData();
@@ -196,18 +218,33 @@ public class PluginRecord
 			throw new PluginException("Compressed data prefix is not valid");
 		int length = ESMByteConvert.extractInt(recordData, 0);
 		byte buffer[] = new byte[length];
-		Inflater expand = new Inflater();
-		expand.setInput(recordData, 4, recordData.length - 4);
-		int count = expand.inflate(buffer);
-		if (count != length)
+
+		if (ESMManager.USE_NON_NATIVE_ZIP)
 		{
-			throw new PluginException("Expanded data less than data length");
+			//JCraft version slower - though I wonder about android? seems real slow too
+			com.jcraft.jzlib.Inflater inflater = new com.jcraft.jzlib.Inflater();
+			inflater.setInput(recordData, 4, recordData.length - 4, false);
+			inflater.setOutput(buffer);
+			inflater.inflate(4);//Z_FINISH
+			inflater.end();
+			recordData = buffer;
 		}
 		else
 		{
-			expand.end();
-			recordData = buffer;
+			Inflater expand = new Inflater();
+			expand.setInput(recordData, 4, recordData.length - 4);
+			int count = expand.inflate(buffer);
+			if (count != length)
+			{
+				throw new PluginException("Expanded data less than data length");
+			}
+			else
+			{
+				expand.end();
+				recordData = buffer;
+			}
 		}
+
 	}
 
 	public List<PluginSubrecord> getSubrecords()
@@ -241,18 +278,18 @@ public class PluginRecord
 							overrideLength = 0;
 						}
 						byte subrecordData[] = new byte[subrecordLength];
-						
+
 						// bad decompress can happen (LAND record in falloutNV)
 						if (offset + 6 + subrecordLength <= rd.length)
 							System.arraycopy(rd, offset + 6, subrecordData, 0, subrecordLength);
-						
+
 						subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
 
 						offset += 6 + subrecordLength;
 					}
 				}
 				//TODO: can I discard the raw data now? does this improve memory usage at all? 
-				recordData=null;
+				recordData = null;
 			}
 			return subrecordList;
 		}

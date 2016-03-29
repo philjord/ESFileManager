@@ -29,9 +29,9 @@ import esmmanager.tes3.ESMManagerTes3;
 // also the multi master part ( and cacher)  is really very seperate from the ensuremaster and get esm manager bit so perhaps time for 2?
 public class ESMManager implements IESMManager
 {
-
 	public static boolean USE_FILE_MAPS = true;
-	public static boolean USE_MINI_CHANNEL_MAPS = false;//TODO: but requires a bit of an overhaul
+	public static boolean USE_MINI_CHANNEL_MAPS = false;
+	public static boolean USE_NON_NATIVE_ZIP = false;// true=slower but no native calls
 
 	private ArrayList<IMaster> masters = new ArrayList<IMaster>();
 
@@ -252,7 +252,7 @@ public class ESMManager implements IESMManager
 	{
 		return getMasterForId(formID).getInteriorCELLChildren(formID);
 	}
-	
+
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
