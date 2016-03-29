@@ -303,8 +303,9 @@ public class Master implements IMaster
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
 		Integer formID = extCellXYToFormIdMap.get(new Point(x, y));
-
-		return getPluginRecord(formID);
+		if (formID != null)
+			return getPluginRecord(formID);
+		return null;
 	}
 
 	@Override
@@ -367,6 +368,7 @@ public class Master implements IMaster
 		return cell;
 
 	}
+
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
