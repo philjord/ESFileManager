@@ -254,7 +254,6 @@ public class PluginRecord
 		{
 			if (subrecordList == null)
 			{
-
 				subrecordList = new ArrayList<PluginSubrecord>();
 				int offset = 0;
 				int overrideLength = 0;

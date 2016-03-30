@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
-import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
@@ -22,7 +20,6 @@ import esmmanager.loader.ESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
-import tools.WeakValueHashMap;
 import tools.io.ESMByteConvert;
 import tools.io.MappedByteBufferRAF;
 
@@ -42,20 +39,17 @@ public class Master implements IMaster
 
 	private PluginHeader masterHeader;
 
-	// attmpting to index cells and only load when requested
-	//private ArrayList<PluginRecord> records = new ArrayList<PluginRecord>();
-
+	//Note NO CELLs in the following 3 all CELLs in the Cells sets below
 	private LinkedHashMap<Integer, FormInfo> idToFormMap;
 
-	private HashMap<String, Integer> edidToFormIdMap;
+	private LinkedHashMap<String, Integer> edidToFormIdMap;
 
-	private HashMap<String, List<Integer>> typeToFormIdMap;
+	private LinkedHashMap<String, List<Integer>> typeToFormIdMap;
 
-	private HashMap<Point, Integer> extCellXYToFormIdMap;
-	private HashMap<Point, Integer> extLandXYToFormIdMap;
+	private CELLPluginGroup[][] exteriorCells = new CELLPluginGroup[50][50];
 
-	// each cellRecord will have a faked up set of children refrs attached to it, must record
-	private WeakValueHashMap<Integer, CELLPluginGroup> cellChildren = new WeakValueHashMap<Integer, CELLPluginGroup>();
+	private LinkedHashMap<String, CELLPluginGroup> interiorCellsByEdid = new LinkedHashMap<String, CELLPluginGroup>();
+	private LinkedHashMap<Integer, CELLPluginGroup> interiorCellsByFormId = new LinkedHashMap<Integer, CELLPluginGroup>();
 
 	private static int currentFormId = 0;
 
@@ -129,15 +123,8 @@ public class Master implements IMaster
 		return typeToFormIdMap;
 	}
 
-	/*	public ArrayList<PluginRecord> getRecords()
-		{
-			return records;
-		}*/
-
 	public synchronized void load() throws PluginException, IOException
 	{
-
-		//TODO: implement a extblock sub block system for much faster loading! just like the others
 
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
@@ -152,11 +139,8 @@ public class Master implements IMaster
 			masterHeader.load(masterFile.getName(), in);
 
 			idToFormMap = new LinkedHashMap<Integer, FormInfo>();
-			edidToFormIdMap = new HashMap<String, Integer>();
-			typeToFormIdMap = new HashMap<String, List<Integer>>();
-
-			extCellXYToFormIdMap = new HashMap<Point, Integer>();
-			extLandXYToFormIdMap = new HashMap<Point, Integer>();
+			edidToFormIdMap = new LinkedHashMap<String, Integer>();
+			typeToFormIdMap = new LinkedHashMap<String, List<Integer>>();
 
 			//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
 			PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
@@ -165,54 +149,60 @@ public class Master implements IMaster
 
 			while (in.getFilePointer() < in.length())
 			{
+				// pull the prefix data so we know what sort of record we need to load
+				byte[] prefix = new byte[16];
+				int count = in.read(prefix);
+				if (count != 16)
+					throw new PluginException(": record prefix is incomplete");
+
+				String recordType = new String(prefix, 0, 4);
+				//recordSize = ESMByteConvert.extractInt(prefix, 4);
+				//unknownInt = ESMByteConvert.extractInt(prefix, 8);
+				//recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
+
 				int formID = getNextFormId();
-				long pointerToStart = in.getFilePointer();// needed later
-				PluginRecord record = new PluginRecord(formID);
-				record.load(masterFile.getName(), in);
-				// 1 length are single 0's
-				if (record.getEditorID() != null && record.getEditorID().length() > 1)
-				{
-					edidToFormIdMap.put(record.getEditorID(), formID);
-				}
 
-				List<Integer> typeList = typeToFormIdMap.get(record.getRecordType());
-				if (typeList == null)
+				if (recordType.equals("CELL"))
 				{
-					typeList = new ArrayList<Integer>();
-					typeToFormIdMap.put(record.getRecordType(), typeList);
-				}
-				typeList.add(formID);
+					//	looks like x = 23 to -18 y is 27 to -17  so 50 wide with an x off of +25 and y of +20
+					CELLPluginGroup cellPluginGroup = new CELLPluginGroup(prefix, in);
 
-				if (record.getRecordType().equals("CELL"))
-				{
-					// cells get pointers not records
-					PluginSubrecord data = record.getSubrecords().get(1);
-					long flags = getDATAFlags(data);
-					// not interior marker
-					if ((flags & 0x1) == 0)
+					if (cellPluginGroup.isExterior)
 					{
-						Point xy = new Point(getDATAx(data), getDATAy(data));
-						extCellXYToFormIdMap.put(xy, record.getFormID());
+						int xIdx = cellPluginGroup.cellX + 25;
+						int yIdx = cellPluginGroup.cellY + 20;
+						exteriorCells[xIdx][yIdx] = cellPluginGroup;
 					}
-
-					FormInfo info = new FormInfo(record.getRecordType(), formID, record.getEditorID(), pointerToStart);
-					idToFormMap.put(new Integer(formID), info);
+					else
+					{
+						interiorCellsByEdid.put(cellPluginGroup.getEditorID(), cellPluginGroup);
+						interiorCellsByFormId.put(cellPluginGroup.getFormID(), cellPluginGroup);
+					}
 				}
-				// In fact I notice that LAND records always follow the cell they are for
-				else if (record.getRecordType().equals("LAND"))
+				else if (recordType.equals("LAND"))
 				{
-					PluginSubrecord intv = record.getSubrecords().get(0);
-
-					int cellX = ESMByteConvert.extractInt(intv.getSubrecordData(), 0);
-					int cellY = ESMByteConvert.extractInt(intv.getSubrecordData(), 4);
-					Point xy = new Point(cellX, cellY);
-					extLandXYToFormIdMap.put(xy, formID);
-
-					FormInfo info = new FormInfo(record.getRecordType(), formID, record.getEditorID(), pointerToStart);
-					idToFormMap.put(new Integer(formID), info);
+					//land are fully skipped as they get loaded with the owner cell at cell load time later
+					int recordSize = ESMByteConvert.extractInt(prefix, 4);
+					in.skipBytes(recordSize);
 				}
 				else
 				{
+					PluginRecord record = new PluginRecord(formID, prefix);
+					record.load(masterFile.getName(), in);
+
+					// 1 length are single 0's
+					if (record.getEditorID() != null && record.getEditorID().length() > 1)
+					{
+						edidToFormIdMap.put(record.getEditorID(), formID);
+					}
+
+					List<Integer> typeList = typeToFormIdMap.get(record.getRecordType());
+					if (typeList == null)
+					{
+						typeList = new ArrayList<Integer>();
+						typeToFormIdMap.put(record.getRecordType(), typeList);
+					}
+					typeList.add(formID);
 					// every thing else gets stored as a record
 					FormInfo info = new FormInfo(record.getRecordType(), formID, record.getEditorID(), record);
 					idToFormMap.put(new Integer(formID), info);
@@ -226,6 +216,9 @@ public class Master implements IMaster
 		}
 	}
 
+	/**
+	 * Not for CELLs
+	 */
 	@Override
 	public PluginRecord getPluginRecord(int formID) throws PluginException
 	{
@@ -235,31 +228,7 @@ public class Master implements IMaster
 		{
 			throw new PluginException("" + masterFile.getName() + ": Record " + formID + " not found, it may be a CELL or WRLD record");
 		}
-
-		if (formInfo.isPointerOnly())
-		{
-			synchronized (in)
-			{
-				try
-				{
-					in.seek(formInfo.getPointer());
-
-					PluginRecord record = new PluginRecord(formInfo.getFormID());
-					record.load(masterFile.getName(), in);
-
-					return record;
-				}
-				catch (IOException e)
-				{
-					e.printStackTrace();
-					return null;
-				}
-			}
-		}
-		else
-		{
-			return (PluginRecord) formInfo.getPluginRecord();
-		}
+		return (PluginRecord) formInfo.getPluginRecord();
 	}
 
 	@Override
@@ -302,10 +271,20 @@ public class Master implements IMaster
 		{
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
-		Integer formID = extCellXYToFormIdMap.get(new Point(x, y));
-		if (formID != null)
-			return getPluginRecord(formID);
-		return null;
+		int xIdx = x + 25;
+		int yIdx = y + 20;
+		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
+		// make sure no one else asks for it while we check load state
+		synchronized (cellPluginGroup)
+		{
+			if (!cellPluginGroup.isLoaded())
+			{
+				cellPluginGroup.load(in);
+			}
+		}
+
+		return cellPluginGroup.createPluginRecord();
+
 	}
 
 	@Override
@@ -315,57 +294,49 @@ public class Master implements IMaster
 		{
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
-		Integer formID = extCellXYToFormIdMap.get(new Point(x, y));
-		CELLPluginGroup cell = cellChildren.get(formID);
-		if (cell == null)
+		int xIdx = x + 25;
+		int yIdx = y + 20;
+		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
+		// make sure no one else asks for it while we check load state
+		synchronized (cellPluginGroup)
 		{
-			// make up a fake group and add all children from the cell
-			PluginRecord cellRecord = getPluginRecord(formID);
-			cell = new CELLPluginGroup(cellRecord);
-
-			PluginSubrecord data = cellRecord.getSubrecords().get(1);
-
-			long flags = getDATAFlags(data);
-			// not interior marker
-			if ((flags & 0x1) == 0)
+			if (!cellPluginGroup.isLoaded())
 			{
-				Point xy = new Point(getDATAx(data), getDATAy(data));
-				Integer landId = extLandXYToFormIdMap.get(xy);
-				if (landId != null)
-				{
-					PluginRecord land = getPluginRecord(landId);
-					cell.addPluginRecord(land);
-				}
-				cellChildren.put(formID, cell);
-			}
-			else
-			{
-				System.out.println("why the hell is an interior being asked for? " + formID);
+				cellPluginGroup.load(in);
 			}
 		}
 
-		return cell;
+		return cellPluginGroup;
 	}
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
-		return getPluginRecord(formID);
+		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
+		// make sure no one else asks for it while we check load state
+		synchronized (cellPluginGroup)
+		{
+			if (!cellPluginGroup.isLoaded())
+			{
+				cellPluginGroup.load(in);
+			}
+		}
+		return cellPluginGroup.createPluginRecord();
 	}
 
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		CELLPluginGroup cell = cellChildren.get(formID);
-
-		if (cell == null)
+		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
+		// make sure no one else asks for it while we check load state
+		synchronized (cellPluginGroup)
 		{
-			// make up a fake group and add all children from the cell
-			PluginRecord cellRecord = getPluginRecord(formID);
-			cell = new CELLPluginGroup(cellRecord);
-			cellChildren.put(formID, cell);
+			if (!cellPluginGroup.isLoaded())
+			{
+				cellPluginGroup.load(in);
+			}
 		}
-		return cell;
+		return cellPluginGroup;
 
 	}
 
@@ -380,34 +351,9 @@ public class Master implements IMaster
 	public List<CELLPointer> getAllInteriorCELLFormIds()
 	{
 		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
-		List<Integer> cells = typeToFormIdMap.get("CELL");
-		// only those marked interior
-		for (int id : cells)
+		for (Integer formId : interiorCellsByFormId.keySet())
 		{
-			try
-			{
-				PluginRecord cell = getInteriorCELL(id);
-
-				PluginSubrecord data = cell.getSubrecords().get(1);
-				long flags = getDATAFlags(data);
-				// interior marker
-				if ((flags & 0x1) != 0)
-				{
-					ret.add(new CELLPointer(id, -1));
-				}
-			}
-			catch (DataFormatException e)
-			{
-				e.printStackTrace();
-			}
-			catch (IOException e)
-			{
-				e.printStackTrace();
-			}
-			catch (PluginException e)
-			{
-				e.printStackTrace();
-			}
+			ret.add(new CELLPointer(formId, -1));
 		}
 
 		return ret;
@@ -423,24 +369,9 @@ public class Master implements IMaster
 
 	public int convertNameRefToId(String key)
 	{
-		if (edidToFormIdMap.containsKey(key))
-			return edidToFormIdMap.get(key);
+		if (interiorCellsByEdid.containsKey(key))
+			return interiorCellsByEdid.get(key).getFormID();
 		return -1;
-	}
-
-	private static long getDATAFlags(PluginSubrecord data)
-	{
-		return ESMByteConvert.extractInt(data.getSubrecordData(), 0);
-	}
-
-	private static int getDATAx(PluginSubrecord data)
-	{
-		return ESMByteConvert.extractInt(data.getSubrecordData(), 4);
-	}
-
-	private static int getDATAy(PluginSubrecord data)
-	{
-		return ESMByteConvert.extractInt(data.getSubrecordData(), 8);
 	}
 
 }

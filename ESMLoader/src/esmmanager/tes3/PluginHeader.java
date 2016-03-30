@@ -23,11 +23,22 @@ public class PluginHeader extends PluginRecord
 
 	public PluginHeader()
 	{
-		super(-1);
+		super(-1, "HEDR", "The header");
 	}
 
 	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
 	{
+		// pull the prefix data so we know what sort of record we need to load
+		byte[] prefix = new byte[16];
+		int count = in.read(prefix);
+		if (count != 16)
+			throw new PluginException(": record prefix is incomplete");
+
+		recordType = new String(prefix, 0, 4);
+		recordSize = ESMByteConvert.extractInt(prefix, 4);
+		unknownInt = ESMByteConvert.extractInt(prefix, 8);
+		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
+
 		super.load(fileName, in);
 		pluginFileName = fileName;
 		for (esmmanager.common.data.plugin.PluginSubrecord sub : getSubrecords())

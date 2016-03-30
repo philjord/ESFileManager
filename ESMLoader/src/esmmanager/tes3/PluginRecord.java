@@ -6,21 +6,26 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import tools.io.ESMByteConvert;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginSubrecord;
+import tools.io.ESMByteConvert;
 
 public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 {
-	private int recordSize;
+	protected int recordSize;
 
 	/**
 	 * FormId is auto generated at load, to simulate form ids in the esm
 	 * @param formId
 	 */
-	public PluginRecord(int formId)
+	public PluginRecord(int formId, byte[] prefix)
 	{
 		this.formID = formId;
+
+		recordType = new String(prefix, 0, 4);
+		recordSize = ESMByteConvert.extractInt(prefix, 4);
+		unknownInt = ESMByteConvert.extractInt(prefix, 8);
+		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
 	}
 
 	/**
@@ -38,72 +43,47 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
 	{
 		filePositionPointer = in.getFilePointer();
-		byte[] prefix = new byte[16];
-		int count = in.read(prefix);
-		if (count != 16)
-			throw new PluginException(fileName + ": record prefix is incomplete");
-
-		recordType = new String(prefix, 0, 4);
-		recordSize = ESMByteConvert.extractInt(prefix, 4);
-		unknownInt = ESMByteConvert.extractInt(prefix, 8);
-		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
-
 		recordData = new byte[recordSize];
 
-		count = in.read(recordData);
+		int count = in.read(recordData);
 		if (count != recordSize)
 			throw new PluginException(fileName + ": " + recordType + " record bad length, asked for " + recordSize + " got " + count);
 
 		//attempt to find and set editor id
-
-		if (edidRecordSet.contains(recordType))
+		if (!nonEdidRecordSet.contains(recordType))
 		{
-			for (PluginSubrecord sub : getSubrecords())
+			PluginSubrecord s0 = getSubrecords().get(0);
+			if (s0.getSubrecordType().equals("NAME"))
 			{
-				if (sub.getSubrecordType().equals("NAME"))
-				{
-					byte[] bs = sub.getSubrecordData();
-					int len = bs.length - 1;
+				byte[] bs = s0.getSubrecordData();
+				int len = bs.length - 1;
 
-					// GMST are not null terminated!!
-					if (recordType.equals("GMST"))
-						len = bs.length;
+				// GMST are not null terminated!!
+				if (recordType.equals("GMST"))
+					len = bs.length;
 
-					editorID = new String(bs, 0, len);
-
-					break;
-				}
+				editorID = new String(bs, 0, len);
+			}
+			else
+			{
+				new Throwable("sub record 0 is not NAME! " + s0.getRecordType()).printStackTrace();
 			}
 		}
 
 		// exterior cells have the x and y as the name (some are blank some are region name)
-		if (recordType.equals("CELL"))
-		{
-			PluginSubrecord data = getSubrecords().get(1);
-
-			byte[] bs = data.getSubrecordData();
-			int flags = ESMByteConvert.extractInt(bs, 0);
-
-			// is it exterior
-			if ((flags & 0x1) == 0)
-			{
-				int x = ESMByteConvert.extractInt(bs, 4);
-				int y = ESMByteConvert.extractInt(bs, 8);
-
-				editorID = "X" + x + "Y" + y;
-			}
-		}
-		else if (recordType.equals("LTEX"))
+		if (recordType.equals("LTEX"))
 		{
 			//LTEX must have edid swapped to unique key system
-			for (PluginSubrecord sub : getSubrecords())
+			PluginSubrecord s1 = getSubrecords().get(1);
+			if (s1.getSubrecordType().equals("INTV"))
 			{
-				if (sub.getSubrecordType().equals("INTV"))
-				{
-					byte[] bs = sub.getSubrecordData();
-					editorID = "LTEX_" + ESMByteConvert.extractInt(bs, 0);
-					break;
-				}
+				byte[] bs = s1.getSubrecordData();
+				editorID = "LTEX_" + ESMByteConvert.extractInt(bs, 0);
+
+			}
+			else
+			{
+				new Throwable("LTEX sub record 1 is not INTV! " + s1.getRecordType()).printStackTrace();
 			}
 
 		}
@@ -119,28 +99,33 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 			if (subrecordList == null)
 			{
 				subrecordList = new ArrayList<PluginSubrecord>();
-				int offset = 0;
-
-				if (recordData != null)
-				{
-					while (offset < recordData.length)
-					{
-						String subrecordType = new String(recordData, offset + 0, 4);
-						int subrecordLength = ESMByteConvert.extractInt(recordData, offset + 4);
-						byte subrecordData[] = new byte[subrecordLength];
-						System.arraycopy(recordData, offset + 8, subrecordData, 0, subrecordLength);
-
-						subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
-
-						offset += 8 + subrecordLength;
-					}
-					// TODO: can I discard the raw data now?
-					recordData = null;
-				}
-
+				getFillSubrecords(recordType, subrecordList, recordData);
+				// TODO: can I discard the raw data now?
+				recordData = null;
 			}
 			return subrecordList;
 		}
+	}
+
+	public static void getFillSubrecords(String recordType, List<PluginSubrecord> subrecordList, byte[] recordData)
+	{
+		int offset = 0;
+
+		if (recordData != null)
+		{
+			while (offset < recordData.length)
+			{
+				String subrecordType = new String(recordData, offset + 0, 4);
+				int subrecordLength = ESMByteConvert.extractInt(recordData, offset + 4);
+				byte subrecordData[] = new byte[subrecordLength];
+				System.arraycopy(recordData, offset + 8, subrecordData, 0, subrecordLength);
+
+				subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
+
+				offset += 8 + subrecordLength;
+			}
+		}
+
 	}
 
 	/**
@@ -161,22 +146,31 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		return 0;
 	}
 
-	private static String[] edidRecords = new String[]
-	{ "GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN", "REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY",
-			"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", "INGR", "BOOK", "ALCH", "LEVI", "LEVC", "SNDG",
-			"CELL" };
+	private static String[] edidRecords = new String[] { "GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN", //1-6
+			"REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY", //10-20
+			"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", //21-30
+			"INGR", "BOOK", "ALCH", "LEVI", "LEVC", //
+			"SNDG" };
+
+	private static String[] nonEdidRecords = new String[] { "TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND", //
+			"PGRD", "DIAL" };
 
 	private static HashSet<String> edidRecordSet = new HashSet<String>();
+	private static HashSet<String> nonEdidRecordSet = new HashSet<String>();
+
 	static
 	{
 		for (String edidRecord : edidRecords)
 			edidRecordSet.add(edidRecord);
+
+		for (String nonEdidRecord : nonEdidRecords)
+			nonEdidRecordSet.add(nonEdidRecord);
 	}
 	//"PGRD", "DIAL", over lap with other names
 	//LTEX has to be swapped out to use INTV int
 
 	/*	
-	 * 1: GMST NAME = Setting ID string			
+	    1: GMST NAME = Setting ID string			
 		2: GLOB NAME = Global ID string		
 		3: CLAS NAME = Class ID string
 		4: FACT NAME = Faction ID string
@@ -207,12 +201,12 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		31: INGR NAME = Item ID, required		
 		32: BOOK NAME = Item ID, required			
 		33: ALCH NAME = Item ID, required			
-		34: LEVI NAME = levelled list ID string		
-		35: LEVC NAME = levelled list ID string
+		34: LEVI NAME = leveled list ID string		
+		35: LEVC NAME = leveled list ID string
 		
-		38: PGRD NAME = Path Grid ID string
+		38: PGRD NAME = Path Grid ID string - ???
 		39: SNDG NAME = Sound Generator ID string  *
-		40: DIAL NAME = Dialogue ID string		
+		40: DIAL NAME = Dialogue ID string - ???
 		
 			
 		7: SKIL INDX = Skill ID (4 bytes, long)	The Skill ID (0 to 26) since skills are hardcoded in the game	
