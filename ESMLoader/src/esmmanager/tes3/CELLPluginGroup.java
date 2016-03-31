@@ -174,7 +174,8 @@ public class CELLPluginGroup extends PluginGroup
 				}
 				else
 				{
-					new Throwable("Record following exterior cell is not LAND!").printStackTrace();
+					// sometimes there is no land, this is fine
+					//new Throwable("Record following exterior cell is not LAND! it is " + record.getRecordType()).printStackTrace();
 				}
 			}
 		}

@@ -274,16 +274,20 @@ public class Master implements IMaster
 		int xIdx = x + 25;
 		int yIdx = y + 20;
 		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
-		// make sure no one else asks for it while we check load state
-		synchronized (cellPluginGroup)
+		if (cellPluginGroup != null)
 		{
-			if (!cellPluginGroup.isLoaded())
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup)
 			{
-				cellPluginGroup.load(in);
+				if (!cellPluginGroup.isLoaded())
+				{
+					cellPluginGroup.load(in);
+				}
 			}
-		}
 
-		return cellPluginGroup.createPluginRecord();
+			return cellPluginGroup.createPluginRecord();
+		}
+		return null;
 
 	}
 
@@ -297,46 +301,58 @@ public class Master implements IMaster
 		int xIdx = x + 25;
 		int yIdx = y + 20;
 		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
-		// make sure no one else asks for it while we check load state
-		synchronized (cellPluginGroup)
+		if (cellPluginGroup != null)
 		{
-			if (!cellPluginGroup.isLoaded())
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup)
 			{
-				cellPluginGroup.load(in);
+				if (!cellPluginGroup.isLoaded())
+				{
+					cellPluginGroup.load(in);
+				}
 			}
-		}
 
-		return cellPluginGroup;
+			return cellPluginGroup;
+		}
+		return null;
 	}
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
 		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
-		// make sure no one else asks for it while we check load state
-		synchronized (cellPluginGroup)
+		if (cellPluginGroup != null)
 		{
-			if (!cellPluginGroup.isLoaded())
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup)
 			{
-				cellPluginGroup.load(in);
+				if (!cellPluginGroup.isLoaded())
+				{
+					cellPluginGroup.load(in);
+				}
 			}
+			return cellPluginGroup.createPluginRecord();
 		}
-		return cellPluginGroup.createPluginRecord();
+		return null;
 	}
 
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
 		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
-		// make sure no one else asks for it while we check load state
-		synchronized (cellPluginGroup)
+		if (cellPluginGroup != null)
 		{
-			if (!cellPluginGroup.isLoaded())
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup)
 			{
-				cellPluginGroup.load(in);
+				if (!cellPluginGroup.isLoaded())
+				{
+					cellPluginGroup.load(in);
+				}
 			}
+			return cellPluginGroup;
 		}
-		return cellPluginGroup;
+		return null;
 
 	}
 
