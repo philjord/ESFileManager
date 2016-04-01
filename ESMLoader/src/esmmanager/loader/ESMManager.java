@@ -5,16 +5,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
-import tools.WeakValueHashMap;
-import tools.io.MappedByteBufferRAF;
+import com.frostwire.util.SparseArray;
+
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
@@ -26,7 +23,9 @@ import esmmanager.tes3.ESMManagerTes3;
 
 //TODO: this is really an ESMMaster manager (or master plus plugin? esp? for morrowind)
 
-// also the multi master part ( and cacher)  is really very seperate from the ensuremaster and get esm manager bit so perhaps time for 2?
+// also the multi master part ( and cacher)  is really very seperate from the ensuremaster
+//and get esm manager bit so perhaps time for 2?
+
 public class ESMManager implements IESMManager
 {
 	public static boolean USE_FILE_MAPS = true;
@@ -35,22 +34,9 @@ public class ESMManager implements IESMManager
 
 	private ArrayList<IMaster> masters = new ArrayList<IMaster>();
 
-	private static WeakValueHashMap<Integer, Record> loadedRecordsCache = new WeakValueHashMap<Integer, Record>();
-
-	private LinkedHashMap<Integer, FormInfo> idToFormMap = new LinkedHashMap<Integer, FormInfo>();
-
-	private HashMap<String, Integer> edidToFormIdMap = new HashMap<String, Integer>();
-
-	private HashMap<String, List<Integer>> typeToFormIdMap = new HashMap<String, List<Integer>>();
-
 	private float pluginVersion = -1;
 
 	private String pluginName = "";
-
-	public ESMManager()
-	{
-
-	}
 
 	public ESMManager(String fileName)
 	{
@@ -96,9 +82,6 @@ public class ESMManager implements IESMManager
 		if (!masters.contains(master))
 		{
 			masters.add(master);
-			idToFormMap.putAll(master.getFormMap());
-			edidToFormIdMap.putAll(master.getEdidToFormIdMap());
-			typeToFormIdMap.putAll(master.getTypeToFormIdMap());
 		}
 		else
 		{
@@ -119,83 +102,57 @@ public class ESMManager implements IESMManager
 	}
 
 	/**
-	 * This is a caching call that will hang on to a weak reference of whatever is handed out, it should really be the only
-	 * access to records from an esm that is used at all.
-	 * @see esmmanager.common.data.record.IRecordStore#getRecord(int)
+	 * No more cache!!! duplicates happily handed out
 	 */
+	//TODO: is this bad? should a PluinRecord be instantly swapped to a Record somehow?
+	// should I dump Record completely now?
 	@Override
 	public Record getRecord(int formID)
 	{
-		//Check the cache for an instance first
-		Integer key = new Integer(formID);
 
-		Record ret_val = loadedRecordsCache.get(key);
-
-		if (ret_val == null)
+		try
 		{
-			try
+			PluginRecord pr = getPluginRecord(formID);
+			if (pr != null)
 			{
-				PluginRecord pr = getPluginRecord(formID);
-				if (pr != null)
-				{
-					// TODO: do I need to give a real cell id here?
-					Record record = new Record(pr);
-					loadedRecordsCache.put(key, record);
-					return record;
-				}
+				// TODO: do I need to give a real cell id here?
+				Record record = new Record(pr);
+				return record;
 			}
-			catch (PluginException e)
-			{
-				e.printStackTrace();
-			}
-			return null;
 		}
-		return ret_val;
-
-	}
-
-	@Override
-	public Record getRecord(String edidId)
-	{
-		Integer formId = edidToFormIdMap.get(edidId);
-		if (formId != null)
+		catch (PluginException e)
 		{
-			return getRecord(formId);
+			e.printStackTrace();
 		}
-		else
+		return null;
+
+	}
+
+	/** 
+	 * Note very slow, but not used often
+	 */
+	@Override
+	public int[] getAllFormIds()
+	{
+		SparseArray<FormInfo> idToFormMap = new SparseArray<FormInfo>();
+		for (IMaster m : masters)
 		{
-			System.out.println("null form for " + edidId);
-			return null;
+			idToFormMap.putAll(m.getFormMap());
 		}
-	}
-
-	@Override
-	public Set<String> getAllEdids()
-	{
-		return edidToFormIdMap.keySet();
-	}
-
-	@Override
-	public Set<Integer> getAllFormIds()
-	{
 		return idToFormMap.keySet();
 	}
 
+	/** 
+	 * Note very slow, but not used often
+	 */
 	@Override
-	public Map<String, Integer> getEdidToFormIdMap()
+	public SparseArray<FormInfo> getFormMap()
 	{
-		return edidToFormIdMap;
-	}
-
-	@Override
-	public Map<String, List<Integer>> getTypeToFormIdMap()
-	{
-		return typeToFormIdMap;
-	}
-
-	@Override
-	public Map<Integer, FormInfo> getFormMap()
-	{
+		SparseArray<FormInfo> idToFormMap = new SparseArray<FormInfo>();
+		for (IMaster m : masters)
+		{
+			idToFormMap.putAll(m.getFormMap());
+		}
 		return idToFormMap;
 	}
 
@@ -353,15 +310,7 @@ public class ESMManager implements IESMManager
 	public void clearMasters()
 	{
 		masters.clear();
-
-		loadedRecordsCache.clear();
-
-		idToFormMap.clear();
-
-		edidToFormIdMap.clear();
-
 		pluginVersion = -1;
-
 	}
 
 	public static IESMManager getESMManager(String esmFile)
@@ -376,8 +325,9 @@ public class ESMManager implements IESMManager
 		{
 			try
 			{
-				//RandomAccessFile in = new RandomAccessFile(testFile, "r");
-				RandomAccessFile in = new MappedByteBufferRAF(testFile, "r");
+				RandomAccessFile in = new RandomAccessFile(testFile, "r");
+				// Notice as I'm only pulling 16 bytes the mapped byte buffer is a bad idea
+				//RandomAccessFile in = new MappedByteBufferRAF(testFile, "r");
 				try
 				{
 					byte[] prefix = new byte[16];
@@ -404,10 +354,6 @@ public class ESMManager implements IESMManager
 			catch (FileNotFoundException e)
 			{
 				e.printStackTrace();
-			}
-			catch (IOException e1)
-			{
-				e1.printStackTrace();
 			}
 		}
 

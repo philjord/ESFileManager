@@ -2,9 +2,10 @@ package esmmanager.common.data.plugin;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
+
+import com.frostwire.util.SparseArray;
 
 import esmmanager.common.PluginException;
 import esmmanager.loader.CELLDIALPointer;
@@ -34,15 +35,9 @@ public interface IMaster
 
 	public PluginRecord getPluginRecord(int formID) throws PluginException;
 
-	public Map<Integer, FormInfo> getFormMap();
+	public SparseArray<FormInfo> getFormMap();
 
-	public Map<String, Integer> getEdidToFormIdMap();
-
-	public Map<String, List<Integer>> getTypeToFormIdMap();
-
-	public Set<Integer> getAllFormIds();
-
-	public Set<String> getAllEdids();
+	public int[] getAllFormIds();
 
 	public List<CELLDIALPointer> getAllInteriorCELLFormIds();
 

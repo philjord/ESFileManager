@@ -3,13 +3,12 @@ package esmmanager.tes3;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
+
+import com.frostwire.util.SparseArray;
 
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
@@ -17,32 +16,15 @@ import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginGroup;
 import esmmanager.common.data.record.Record;
 import esmmanager.loader.CELLDIALPointer;
-import esmmanager.loader.IESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
-import tools.WeakValueHashMap;
 
-public class ESMManagerTes3 implements IESMManager
+public class ESMManagerTes3 implements IESMManagerTes3
 {
-	private ArrayList<Master> masters = new ArrayList<Master>();
-
-	private static WeakValueHashMap<Integer, Record> loadedRecordsCache = new WeakValueHashMap<Integer, Record>();
-
-	private LinkedHashMap<Integer, FormInfo> idToFormMap = new LinkedHashMap<Integer, FormInfo>();
-
-	private HashMap<String, Integer> edidToFormIdMap = new HashMap<String, Integer>();
-
-	private HashMap<String, List<Integer>> typeToFormIdMap = new HashMap<String, List<Integer>>();
-
+	private ArrayList<IMasterTes3> masters = new ArrayList<IMasterTes3>();
 	private float pluginVersion = -1;
-
 	private String pluginName = "";
-
-	public ESMManagerTes3()
-	{
-
-	}
 
 	public ESMManagerTes3(String fileName)
 	{
@@ -83,10 +65,7 @@ public class ESMManagerTes3 implements IESMManager
 
 		if (!masters.contains(master))
 		{
-			masters.add((Master) master);
-			idToFormMap.putAll(master.getFormMap());
-			edidToFormIdMap.putAll(master.getEdidToFormIdMap());
-			typeToFormIdMap.putAll(master.getTypeToFormIdMap());
+			masters.add((IMasterTes3) master);
 		}
 		else
 		{
@@ -107,83 +86,70 @@ public class ESMManagerTes3 implements IESMManager
 	}
 
 	/**
-	 * This is a caching call that will hang on to a weak reference of whatever is handed out, it should really be the only
-	 * access to records from an esm that is used at all.
-	 * @see esmmanager.common.data.record.IRecordStore#getRecord(int)
+	 * No more cache!!! duplicates happily handed out
 	 */
+	//TODO: is this bad? should a PluinRecord be instantly swapped to a Record somehow?
+	// should I dump Record completely now?
 	@Override
 	public Record getRecord(int formID)
 	{
-		//Check the cache for an instance first
-		Integer key = new Integer(formID);
 
-		Record ret_val = loadedRecordsCache.get(key);
-
-		if (ret_val == null)
+		try
 		{
-			try
+			esmmanager.common.data.plugin.PluginRecord pr = getPluginRecord(formID);
+			if (pr != null)
 			{
-				esmmanager.common.data.plugin.PluginRecord pr = getPluginRecord(formID);
-				if (pr != null)
-				{
-					// TODO: do I need to give a real cell id here?
-					Record record = new Record(pr);
-					loadedRecordsCache.put(key, record);
-					return record;
-				}
+				Record record = new Record(pr);
+				return record;
 			}
-			catch (PluginException e)
-			{
-				e.printStackTrace();
-			}
-			return null;
 		}
-		return ret_val;
-
+		catch (PluginException e)
+		{
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	@Override
 	public Record getRecord(String edidId)
 	{
-		Integer formId = edidToFormIdMap.get(edidId);
-		if (formId != null)
+		int formId = convertNameRefToId(edidId);
+		if (formId != -1)
 		{
 			return getRecord(formId);
 		}
 		else
 		{
-			System.out.println("null form for " + edidId);
+			System.out.println("-1 form id for " + edidId);
 			return null;
 		}
 	}
 
+	/** 
+	 * Note very slow, but not used often
+	 */
 	@Override
-	public Set<String> getAllEdids()
+	public int[] getAllFormIds()
 	{
-		return edidToFormIdMap.keySet();
-	}
-
-	@Override
-	public Set<Integer> getAllFormIds()
-	{
+		SparseArray<FormInfo> idToFormMap = new SparseArray<FormInfo>();
+		for (IMaster m : masters)
+		{
+			idToFormMap.putAll(m.getFormMap());
+		}
 		return idToFormMap.keySet();
 	}
 
+	/** 
+	 * Note very slow, but not used often
+	 */
 	@Override
-	public Map<String, Integer> getEdidToFormIdMap()
+	public SparseArray<FormInfo> getFormMap()
 	{
-		return edidToFormIdMap;
-	}
-
-	@Override
-	public Map<String, List<Integer>> getTypeToFormIdMap()
-	{
-		return typeToFormIdMap;
-	}
-
-	@Override
-	public Map<Integer, FormInfo> getFormMap()
-	{
+		SparseArray<FormInfo> idToFormMap = new SparseArray<FormInfo>();
+		for (IMaster m : masters)
+		{
+			idToFormMap.putAll(m.getFormMap());
+		}
 		return idToFormMap;
 	}
 
@@ -220,7 +186,7 @@ public class ESMManagerTes3 implements IESMManager
 	{
 		return getMasterForId(formID).getInteriorCELLChildren(formID);
 	}
-	
+
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
@@ -299,6 +265,7 @@ public class ESMManagerTes3 implements IESMManager
 		return null;
 	}
 
+	@Override
 	public synchronized void addMaster(String fileNameToAdd)
 	{
 		try
@@ -318,23 +285,17 @@ public class ESMManagerTes3 implements IESMManager
 		}
 	}
 
+	@Override
 	public void clearMasters()
 	{
 		masters.clear();
-
-		loadedRecordsCache.clear();
-
-		idToFormMap.clear();
-
-		edidToFormIdMap.clear();
-
 		pluginVersion = -1;
-
 	}
 
+	@Override
 	public int convertNameRefToId(String str)
 	{
-		for (Master m : masters)
+		for (IMasterTes3 m : masters)
 		{
 			int id = m.convertNameRefToId(str);
 			if (id != -1)

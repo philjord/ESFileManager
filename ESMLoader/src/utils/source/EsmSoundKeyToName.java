@@ -13,8 +13,8 @@ public class EsmSoundKeyToName implements SoundKeyToName
 
 	public EsmSoundKeyToName(IESMManager esmManager)
 	{
-		//TODO: I very much to to traverse only the SOUN GRUP records here
-		for (Integer formId : esmManager.getTypeToFormIdMap().get("SOUN"))
+
+		for (int formId : esmManager.getAllFormIds())
 		{
 			Record rec = esmManager.getRecord(formId);
 			if (rec.getRecordType().equals("SOUN"))

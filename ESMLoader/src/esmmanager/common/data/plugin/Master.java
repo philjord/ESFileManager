@@ -4,12 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.zip.DataFormatException;
+
+import com.frostwire.util.SparseArray;
 
 import esmmanager.Point;
 import esmmanager.common.PluginException;
@@ -40,11 +39,7 @@ public class Master implements IMaster
 
 	private PluginHeader masterHeader;
 
-	private LinkedHashMap<Integer, FormInfo> idToFormMap;
-
-	private HashMap<String, Integer> edidToFormIdMap;
-
-	private HashMap<String, List<Integer>> typeToFormIdMap;
+	private SparseArray<FormInfo> idToFormMap;
 
 	private int minFormId = Integer.MAX_VALUE;
 
@@ -81,33 +76,15 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public Set<String> getAllEdids()
-	{
-		return edidToFormIdMap.keySet();
-	}
-
-	@Override
-	public Set<Integer> getAllFormIds()
+	public int[] getAllFormIds()
 	{
 		return idToFormMap.keySet();
 	}
 
 	@Override
-	public Map<Integer, FormInfo> getFormMap()
+	public SparseArray<FormInfo> getFormMap()
 	{
 		return idToFormMap;
-	}
-
-	@Override
-	public Map<String, Integer> getEdidToFormIdMap()
-	{
-		return edidToFormIdMap;
-	}
-
-	@Override
-	public Map<String, List<Integer>> getTypeToFormIdMap()
-	{
-		return typeToFormIdMap;
 	}
 
 	private PluginRecord getRecordFromFile(long pointer) throws PluginException, IOException, DataFormatException
@@ -331,7 +308,7 @@ public class Master implements IMaster
 	{
 		//TODO: sort out the multiple esm file form id pointers properly, recall it is paretn pointers only, no cross references
 		int masterFormID = formID & 0xffffff | masterID << 24;
-		FormInfo formInfo = idToFormMap.get(new Integer(masterFormID));
+		FormInfo formInfo = idToFormMap.get(masterFormID);
 
 		if (formInfo != null)
 			return formInfo.getPluginRecord();
@@ -456,29 +433,13 @@ public class Master implements IMaster
 			addGeckDefaultObjects(formList);
 
 			recordCount = formList.size();
-			idToFormMap = new LinkedHashMap<Integer, FormInfo>(recordCount);
-			edidToFormIdMap = new HashMap<String, Integer>();
-			typeToFormIdMap = new HashMap<String, List<Integer>>();
+			idToFormMap = new SparseArray<FormInfo>(recordCount);
 
 			for (FormInfo info : formList)
 			{
 				int formID = info.getFormID();
 				formID = formID & 0xffffff | masterID << 24;
-				idToFormMap.put(new Integer(formID), info);
-
-				if (info.getEditorID() != null && info.getEditorID().length() > 0)
-				{
-					edidToFormIdMap.put(info.getEditorID(), formID);
-				}
-
-				List<Integer> typeList = typeToFormIdMap.get(info.getRecordType());
-				if (typeList == null)
-				{
-					typeList = new ArrayList<Integer>();
-					typeToFormIdMap.put(info.getRecordType(), typeList);
-				}
-				typeList.add(info.getFormID());
-
+				idToFormMap.put(formID, info);
 			}
 
 			// now establish min and max form id range

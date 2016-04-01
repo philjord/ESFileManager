@@ -6,14 +6,14 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
+import com.frostwire.util.SparseArray;
+
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
-import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginSubrecord;
 import esmmanager.loader.CELLDIALPointer;
 import esmmanager.loader.ESMManager;
@@ -31,7 +31,7 @@ import tools.io.MappedByteBufferRAF;
  * @author Administrator
  *
  */
-public class Master implements IMaster
+public class Master implements IMasterTes3
 {
 	private File masterFile;
 
@@ -39,12 +39,10 @@ public class Master implements IMaster
 
 	private PluginHeader masterHeader;
 
-	//Note NO CELLs in the following 3 all CELLs in the Cells sets below
-	private LinkedHashMap<Integer, FormInfo> idToFormMap;
+	//Note NO CELLs or DIALs in the following 3 all CELLs in the Cells sets below
+	private SparseArray<FormInfo> idToFormMap;
 
 	private LinkedHashMap<String, Integer> edidToFormIdMap;
-
-	private LinkedHashMap<String, List<Integer>> typeToFormIdMap;
 
 	private CELLPluginGroup[][] exteriorCells = new CELLPluginGroup[50][50];
 
@@ -96,33 +94,15 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public Set<String> getAllEdids()
-	{
-		return edidToFormIdMap.keySet();
-	}
-
-	@Override
-	public Set<Integer> getAllFormIds()
+	public int[] getAllFormIds()
 	{
 		return idToFormMap.keySet();
 	}
 
 	@Override
-	public Map<Integer, FormInfo> getFormMap()
+	public SparseArray<FormInfo> getFormMap()
 	{
 		return idToFormMap;
-	}
-
-	@Override
-	public Map<String, Integer> getEdidToFormIdMap()
-	{
-		return edidToFormIdMap;
-	}
-
-	@Override
-	public Map<String, List<Integer>> getTypeToFormIdMap()
-	{
-		return typeToFormIdMap;
 	}
 
 	public synchronized void load() throws PluginException, IOException
@@ -140,14 +120,13 @@ public class Master implements IMaster
 		{
 			masterHeader.load(masterFile.getName(), in);
 
-			idToFormMap = new LinkedHashMap<Integer, FormInfo>();
+			idToFormMap = new SparseArray<FormInfo>();
 			edidToFormIdMap = new LinkedHashMap<String, Integer>();
-			typeToFormIdMap = new LinkedHashMap<String, List<Integer>>();
 			dials = new LinkedHashMap<String, DIALRecord>();
 
 			//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
 			PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
-			idToFormMap.put(new Integer(wrldRecord.getFormID()),
+			idToFormMap.put(wrldRecord.getFormID(),
 					new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord.getEditorID(), wrldRecord));
 
 			while (in.getFilePointer() < in.length())
@@ -204,16 +183,9 @@ public class Master implements IMaster
 						edidToFormIdMap.put(record.getEditorID(), formID);
 					}
 
-					List<Integer> typeList = typeToFormIdMap.get(record.getRecordType());
-					if (typeList == null)
-					{
-						typeList = new ArrayList<Integer>();
-						typeToFormIdMap.put(record.getRecordType(), typeList);
-					}
-					typeList.add(formID);
 					// every thing else gets stored as a record
 					FormInfo info = new FormInfo(record.getRecordType(), formID, record.getEditorID(), record);
-					idToFormMap.put(new Integer(formID), info);
+					idToFormMap.put(formID, info);
 				}
 
 			}
@@ -230,7 +202,7 @@ public class Master implements IMaster
 	@Override
 	public PluginRecord getPluginRecord(int formID) throws PluginException
 	{
-		FormInfo formInfo = idToFormMap.get(new Integer(formID));
+		FormInfo formInfo = idToFormMap.get(formID);
 
 		if (formInfo == null)
 		{
@@ -393,9 +365,19 @@ public class Master implements IMaster
 
 	public int convertNameRefToId(String key)
 	{
-		if (interiorCellsByEdid.containsKey(key))
-			return interiorCellsByEdid.get(key).getFormID();
-		return -1;
+		Integer id = edidToFormIdMap.get(key);
+		if (id != null)
+		{
+			return id.intValue();
+		}
+		else
+		{
+			CELLPluginGroup cpg = interiorCellsByEdid.get(key);
+			if (cpg != null)
+				return cpg.getFormID();
+			else
+				return -1;
+		}
 	}
 
 }
