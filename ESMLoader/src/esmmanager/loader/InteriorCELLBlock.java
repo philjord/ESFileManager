@@ -25,7 +25,7 @@ public class InteriorCELLBlock extends PluginGroup
 		lastDigit = ESMByteConvert.extractInt(groupLabel, 0);
 	}
 
-	public CELLPointer getInteriorCELL(int cellId, RandomAccessFile in) throws IOException, PluginException
+	public CELLDIALPointer getInteriorCELL(int cellId, RandomAccessFile in) throws IOException, PluginException
 	{
 		if (interiorCELLSubblocks == null)
 			loadAndIndex(in);
@@ -39,7 +39,7 @@ public class InteriorCELLBlock extends PluginGroup
 		return null;
 	}
 
-	public void getAllInteriorCELLFormIds(ArrayList<CELLPointer> ret, RandomAccessFile in) throws IOException, PluginException
+	public void getAllInteriorCELLFormIds(ArrayList<CELLDIALPointer> ret, RandomAccessFile in) throws IOException, PluginException
 	{
 		if (interiorCELLSubblocks == null)
 			loadAndIndex(in);

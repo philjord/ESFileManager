@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import esmmanager.common.PluginException;
-import esmmanager.loader.CELLPointer;
+import esmmanager.loader.CELLDIALPointer;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
 import esmmanager.loader.WRLDTopGroup;
@@ -44,7 +44,7 @@ public interface IMaster
 
 	public Set<String> getAllEdids();
 
-	public List<CELLPointer> getAllInteriorCELLFormIds();
+	public List<CELLDIALPointer> getAllInteriorCELLFormIds();
 
 	public Set<Integer> getAllWRLDTopGroupFormIds();
 

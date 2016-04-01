@@ -231,9 +231,9 @@ public class ESMManager implements IESMManager
 	}
 
 	@Override
-	public List<CELLPointer> getAllInteriorCELLFormIds()
+	public List<CELLDIALPointer> getAllInteriorCELLFormIds()
 	{
-		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
+		ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
 		for (IMaster m : masters)
 		{
 			ret.addAll(m.getAllInteriorCELLFormIds());

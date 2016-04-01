@@ -21,7 +21,7 @@ public class WRLDExtSubblock extends PluginGroup
 	public int x;
 	public int y;
 
-	private Map<Point, CELLPointer> CELLByXY = null;
+	private Map<Point, CELLDIALPointer> CELLByXY = null;
 
 	public WRLDExtSubblock(byte[] prefix, long fileOffset, int length)
 	{
@@ -38,7 +38,7 @@ public class WRLDExtSubblock extends PluginGroup
 			y |= 0xffff0000;
 	}
 
-	public CELLPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
 	{
 		if (CELLByXY == null)
 			loadAndIndex(in);
@@ -48,12 +48,12 @@ public class WRLDExtSubblock extends PluginGroup
 
 	private void loadAndIndex(RandomAccessFile in) throws IOException, DataFormatException, PluginException
 	{
-		CELLByXY = new HashMap<Point, CELLPointer>();
+		CELLByXY = new HashMap<Point, CELLDIALPointer>();
 		in.seek(fileOffset);
 		int dataLength = length;
 		byte prefix[] = new byte[headerByteCount];
 
-		CELLPointer cellPointer = null;
+		CELLDIALPointer cellPointer = null;
 
 		while (dataLength >= headerByteCount)
 		{
@@ -86,7 +86,7 @@ public class WRLDExtSubblock extends PluginGroup
 			{
 				int formID = ESMByteConvert.extractInt(prefix, 12);
 
-				cellPointer = new CELLPointer(formID, filePositionPointer);
+				cellPointer = new CELLDIALPointer(formID, filePositionPointer);
 
 				PluginRecord rec = new PluginRecord(prefix);
 				rec.load("", in, length);

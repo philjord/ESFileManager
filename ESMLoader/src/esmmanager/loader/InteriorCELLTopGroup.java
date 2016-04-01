@@ -29,7 +29,7 @@ public class InteriorCELLTopGroup extends PluginGroup
 
 	}
 
-	public CELLPointer getInteriorCELL(int cellId)
+	public CELLDIALPointer getInteriorCELL(int cellId)
 	{
 		// notice Exception catching here
 		try
@@ -51,11 +51,11 @@ public class InteriorCELLTopGroup extends PluginGroup
 		return null;
 	}
 
-	public ArrayList<CELLPointer> getAllInteriorCELLFormIds()
+	public ArrayList<CELLDIALPointer> getAllInteriorCELLFormIds()
 	{
 		try
 		{
-			ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
+			ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
 			for (InteriorCELLBlock interiorCELLBlock : interiorCELLBlocks)
 			{
 				interiorCELLBlock.getAllInteriorCELLFormIds(ret, in);

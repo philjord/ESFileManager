@@ -15,7 +15,7 @@ import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginSubrecord;
-import esmmanager.loader.CELLPointer;
+import esmmanager.loader.CELLDIALPointer;
 import esmmanager.loader.ESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
@@ -47,6 +47,8 @@ public class Master implements IMaster
 	private LinkedHashMap<String, List<Integer>> typeToFormIdMap;
 
 	private CELLPluginGroup[][] exteriorCells = new CELLPluginGroup[50][50];
+
+	private LinkedHashMap<String, DIALRecord> dials;
 
 	private LinkedHashMap<String, CELLPluginGroup> interiorCellsByEdid = new LinkedHashMap<String, CELLPluginGroup>();
 	private LinkedHashMap<Integer, CELLPluginGroup> interiorCellsByFormId = new LinkedHashMap<Integer, CELLPluginGroup>();
@@ -141,6 +143,7 @@ public class Master implements IMaster
 			idToFormMap = new LinkedHashMap<Integer, FormInfo>();
 			edidToFormIdMap = new LinkedHashMap<String, Integer>();
 			typeToFormIdMap = new LinkedHashMap<String, List<Integer>>();
+			dials = new LinkedHashMap<String, DIALRecord>();
 
 			//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
 			PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
@@ -185,10 +188,15 @@ public class Master implements IMaster
 					int recordSize = ESMByteConvert.extractInt(prefix, 4);
 					in.skipBytes(recordSize);
 				}
+				else if (recordType.equals("DIAL"))
+				{
+					DIALRecord dial = new DIALRecord(formID, prefix, in);
+					dials.put(dial.getEditorID(), dial);
+				}
 				else
 				{
 					PluginRecord record = new PluginRecord(formID, prefix);
-					record.load(masterFile.getName(), in);
+					record.load("", in);
 
 					// 1 length are single 0's
 					if (record.getEditorID() != null && record.getEditorID().length() > 1)
@@ -364,12 +372,12 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public List<CELLPointer> getAllInteriorCELLFormIds()
+	public List<CELLDIALPointer> getAllInteriorCELLFormIds()
 	{
-		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
+		ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
 		for (Integer formId : interiorCellsByFormId.keySet())
 		{
-			ret.add(new CELLPointer(formId, -1));
+			ret.add(new CELLDIALPointer(formId, -1));
 		}
 
 		return ret;

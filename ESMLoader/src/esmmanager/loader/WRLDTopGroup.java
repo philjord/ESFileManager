@@ -24,7 +24,7 @@ public class WRLDTopGroup extends PluginGroup
 		super(prefix);
 	}
 
-	public CELLPointer getWRLDExtBlockCELLByXY(int wrldFormId, Point point)
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(int wrldFormId, Point point)
 	{
 		WRLDChildren wrldChildren = WRLDChildrenByFormId.get(wrldFormId);
 		if (wrldChildren != null)

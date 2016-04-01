@@ -13,7 +13,8 @@ import java.util.zip.DataFormatException;
 
 import esmmanager.Point;
 import esmmanager.common.PluginException;
-import esmmanager.loader.CELLPointer;
+import esmmanager.loader.CELLDIALPointer;
+import esmmanager.loader.DIALTopGroup;
 import esmmanager.loader.ESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
@@ -52,6 +53,8 @@ public class Master implements IMaster
 	private WRLDTopGroup wRLDTopGroup;
 
 	private InteriorCELLTopGroup interiorCELLTopGroup;
+
+	private DIALTopGroup dIALTopGroup;
 
 	private int masterID = 0;
 
@@ -216,7 +219,7 @@ public class Master implements IMaster
 		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
 		if (children != null)
 		{
-			CELLPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
+			CELLDIALPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
 
 			if (cellPointer == null || cellPointer.cellFilePointer == -1)
 			{
@@ -242,7 +245,7 @@ public class Master implements IMaster
 		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
 		if (children != null)
 		{
-			CELLPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
+			CELLDIALPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
 
 			if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
 			{
@@ -262,19 +265,19 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public List<CELLPointer> getAllInteriorCELLFormIds()
+	public List<CELLDIALPointer> getAllInteriorCELLFormIds()
 	{
 		//just for hunter sneaker cut down esm
 		if (interiorCELLTopGroup != null)
 			return interiorCELLTopGroup.getAllInteriorCELLFormIds();
 		else
-			return new ArrayList<CELLPointer>();
+			return new ArrayList<CELLDIALPointer>();
 	}
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException
 	{
-		CELLPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		CELLDIALPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellFilePointer == -1)
 		{
 			return null;
@@ -294,7 +297,7 @@ public class Master implements IMaster
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		CELLPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		CELLDIALPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
 		{
 			return null;
@@ -314,7 +317,7 @@ public class Master implements IMaster
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException
 	{
-		CELLPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		CELLDIALPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1)
 		{
 			return null;
@@ -398,6 +401,11 @@ public class Master implements IMaster
 						interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
 						interiorCELLTopGroup.loadAndIndex(masterFile.getName(), in, groupLength);
 					}
+					else if (groupRecordType.equals("DIAL"))
+					{
+						dIALTopGroup = new DIALTopGroup(prefix);
+						dIALTopGroup.loadAndIndex(in, groupLength);
+					}
 					else
 					{
 						while (groupLength >= headerByteCount)
@@ -479,7 +487,7 @@ public class Master implements IMaster
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
-			for (CELLPointer cp : getAllInteriorCELLFormIds())
+			for (CELLDIALPointer cp : getAllInteriorCELLFormIds())
 			{
 				int formId = cp.formId;
 				minFormId = formId < minFormId ? formId : minFormId;

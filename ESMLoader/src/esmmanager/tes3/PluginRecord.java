@@ -150,10 +150,10 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 			"REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY", //10-20
 			"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", //21-30
 			"INGR", "BOOK", "ALCH", "LEVI", "LEVC", //
-			"SNDG" };
+			"SNDG", "DIAL" };
 
 	private static String[] nonEdidRecords = new String[] { "TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND", //
-			"PGRD", "DIAL" };
+			"PGRD" };
 
 	private static HashSet<String> edidRecordSet = new HashSet<String>();
 	private static HashSet<String> nonEdidRecordSet = new HashSet<String>();

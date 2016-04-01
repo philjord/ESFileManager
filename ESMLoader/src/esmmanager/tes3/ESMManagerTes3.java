@@ -16,7 +16,7 @@ import esmmanager.common.data.plugin.FormInfo;
 import esmmanager.common.data.plugin.IMaster;
 import esmmanager.common.data.plugin.PluginGroup;
 import esmmanager.common.data.record.Record;
-import esmmanager.loader.CELLPointer;
+import esmmanager.loader.CELLDIALPointer;
 import esmmanager.loader.IESMManager;
 import esmmanager.loader.InteriorCELLTopGroup;
 import esmmanager.loader.WRLDChildren;
@@ -199,9 +199,9 @@ public class ESMManagerTes3 implements IESMManager
 	}
 
 	@Override
-	public List<CELLPointer> getAllInteriorCELLFormIds()
+	public List<CELLDIALPointer> getAllInteriorCELLFormIds()
 	{
-		ArrayList<CELLPointer> ret = new ArrayList<CELLPointer>();
+		ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
 		for (IMaster m : masters)
 		{
 			ret.addAll(m.getAllInteriorCELLFormIds());

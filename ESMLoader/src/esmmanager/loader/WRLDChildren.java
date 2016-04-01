@@ -40,7 +40,7 @@ public class WRLDChildren extends PluginGroup
 		super(prefix);
 	}
 
-	public CELLPointer getWRLDExtBlockCELLByXY(Point point)
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point)
 	{
 		// notice children already loaded at construct time
 		// notice Exception catching here

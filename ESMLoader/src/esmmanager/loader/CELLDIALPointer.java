@@ -1,6 +1,6 @@
 package esmmanager.loader;
 
-public class CELLPointer
+public class CELLDIALPointer
 {
 	public int formId = -1;
 
@@ -8,7 +8,7 @@ public class CELLPointer
 
 	public long cellChildrenFilePointer = -1;
 
-	public CELLPointer(int formId, long cellFilePointer)
+	public CELLDIALPointer(int formId, long cellFilePointer)
 	{
 		this.formId = formId;
 		this.cellFilePointer = cellFilePointer;

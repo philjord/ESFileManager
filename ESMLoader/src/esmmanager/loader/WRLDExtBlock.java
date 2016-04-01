@@ -34,7 +34,7 @@ public class WRLDExtBlock extends PluginGroup
 			y |= 0xffff0000;
 	}
 
-	public CELLPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
 	{
 		if (WRLDExtSubblockChildren == null)
 			loadAndIndex(in);
