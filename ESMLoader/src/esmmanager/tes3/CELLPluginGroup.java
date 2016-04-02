@@ -166,7 +166,7 @@ public class CELLPluginGroup extends PluginGroup
 
 				// must have an id too
 				PluginRecord record = new PluginRecord(Master.getNextFormId(), prefix);
-				record.load("", in);
+				record.load("", in, -1);
 				if (record.getRecordType().equals("LAND"))
 				{
 					temps.getRecordList().add(record);

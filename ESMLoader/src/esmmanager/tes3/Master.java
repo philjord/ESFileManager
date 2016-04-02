@@ -126,8 +126,7 @@ public class Master implements IMasterTes3
 
 			//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
 			PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
-			idToFormMap.put(wrldRecord.getFormID(),
-					new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord.getEditorID(), wrldRecord));
+			idToFormMap.put(wrldRecord.getFormID(), new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord));
 
 			while (in.getFilePointer() < in.length())
 			{
@@ -175,7 +174,7 @@ public class Master implements IMasterTes3
 				else
 				{
 					PluginRecord record = new PluginRecord(formID, prefix);
-					record.load("", in);
+					record.load("", in, -1);
 
 					// 1 length are single 0's
 					if (record.getEditorID() != null && record.getEditorID().length() > 1)
@@ -184,7 +183,7 @@ public class Master implements IMasterTes3
 					}
 
 					// every thing else gets stored as a record
-					FormInfo info = new FormInfo(record.getRecordType(), formID, record.getEditorID(), record);
+					FormInfo info = new FormInfo(record.getRecordType(), formID, record);
 					idToFormMap.put(formID, info);
 				}
 

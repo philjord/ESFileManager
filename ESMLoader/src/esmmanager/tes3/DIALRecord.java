@@ -35,7 +35,7 @@ public class DIALRecord extends PluginRecord
 	public DIALRecord(int formId, byte[] thisPrefix, RandomAccessFile in) throws PluginException, IOException
 	{
 		super(formId, thisPrefix);
-		super.load("", in);
+		super.load("", in, -1);
 		INFOOffset = in.getFilePointer();
 	}
 
@@ -67,7 +67,7 @@ public class DIALRecord extends PluginRecord
 				if (recordType.equals("INFO"))
 				{
 					PluginRecord record = new PluginRecord(-1, prefix);
-					record.load("", in);
+					record.load("", in, -1);
 					infos.add(record);
 				}
 				else

@@ -156,9 +156,7 @@ public class Plugin implements PluginInterface
 			PluginRecord record = (PluginRecord) r;
 			if (!record.isIgnored() || (record instanceof PluginGroup))
 			{
-				record.setParent(pg);
-				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(), record);
-				formInfo.setParentFormID(pg.getGroupParentID());
+				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record);
 				formList.add(formInfo);
 
 				if (record instanceof PluginGroup)
@@ -177,9 +175,7 @@ public class Plugin implements PluginInterface
 			if (!record.isIgnored() || (record instanceof PluginGroup))
 			{
 				//record.setParent(this);
-				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(),
-						record.getFilePositionPointer());
-				formInfo.setParentFormID(pg.getGroupParentID());
+				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record.getFilePositionPointer());
 				formList.add(formInfo);
 				if (record instanceof PluginGroup)
 				{

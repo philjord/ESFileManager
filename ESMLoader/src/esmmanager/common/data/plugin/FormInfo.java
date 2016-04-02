@@ -6,29 +6,23 @@ public class FormInfo
 
 	private int formID;
 
-	private int parentFormID;
-
-	private String editorID;
-
 	private PluginRecord pluginRecord;
 
 	private boolean pointerOnly = false;
 
 	private long pointer;
 
-	public FormInfo(String recordType, int formID, String editorID, PluginRecord pluginRecord)
+	public FormInfo(String recordType, int formID, PluginRecord pluginRecord)
 	{
 		this.recordType = recordType;
 		this.formID = formID;
-		this.editorID = editorID;
 		this.pluginRecord = pluginRecord;
 	}
 
-	public FormInfo(String recordType, int formID, String editorID, long pointer)
+	public FormInfo(String recordType, int formID, long pointer)
 	{
 		this.recordType = recordType;
 		this.formID = formID;
-		this.editorID = editorID;
 		this.pointer = pointer;
 		this.pointerOnly = true;
 	}
@@ -53,30 +47,14 @@ public class FormInfo
 		return formID;
 	}
 
-	public void setParentFormID(int formID)
-	{
-		parentFormID = formID;
-	}
-
-	public String getEditorID()
-	{
-		return editorID;
-	}
-
 	public boolean isPointerOnly()
 	{
 		return pointerOnly;
 	}
 
-	public int getParentFormID()
-	{
-		return parentFormID;
-	}
-
 	public String toString()
 	{
-		return "recordType:" + recordType + " formID:" + formID + " editorID:" + editorID + " pointer:" + pointer + " pointerOnly:"
-				+ pointerOnly;
+		return "recordType:" + recordType + " formID:" + formID + " pointer:" + pointer + " pointerOnly:" + pointerOnly;
 	}
 
 }

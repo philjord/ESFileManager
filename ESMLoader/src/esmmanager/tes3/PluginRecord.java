@@ -13,6 +13,7 @@ import tools.io.ESMByteConvert;
 
 public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 {
+	protected String editorID = "";
 	protected int recordSize;
 
 	/**
@@ -41,7 +42,13 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		subrecordList = new ArrayList<Subrecord>();
 	}
 
-	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
+	public String getEditorID()
+	{
+		return editorID;
+	}
+
+	//Note recordLength is not used for tes3 (we have record size already in constructor
+	public void load(String fileName, RandomAccessFile in, int recordLength) throws PluginException, IOException
 	{
 		filePositionPointer = in.getFilePointer();
 		recordData = new byte[recordSize];

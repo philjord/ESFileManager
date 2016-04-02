@@ -342,7 +342,7 @@ public class Master implements IMaster
 			byte prefix[] = new byte[headerByteCount];
 			masterID = masterHeader.getMasterList().size();
 			int recordCount = masterHeader.getRecordCount();
-			List<FormInfo> formList = new ArrayList<FormInfo>(recordCount);
+			idToFormMap = new SparseArray<FormInfo>(recordCount);
 
 			int count = in.read(prefix);
 			while (count != -1)
@@ -352,8 +352,6 @@ public class Master implements IMaster
 
 				String recordType = new String(prefix, 0, 4);
 				int groupLength = ESMByteConvert.extractInt(prefix, 4);
-
-				//String groupRecordType2 = new String(prefix, 8, 4);
 
 				if (recordType.equals("TES4"))
 				{
@@ -413,7 +411,8 @@ public class Master implements IMaster
 								else
 								{
 									record.load("", in, recordLength);
-									formList.add(new FormInfo(recordType, formID, record.getEditorID(), record));
+									formID = formID & 0xffffff | masterID << 24;
+									idToFormMap.put(formID, new FormInfo(recordType, formID, record));
 
 								}
 								groupLength -= recordLength + headerByteCount;
@@ -431,17 +430,7 @@ public class Master implements IMaster
 				count = in.read(prefix);
 			}
 
-			addGeckDefaultObjects(formList);
-
-			recordCount = formList.size();
-			idToFormMap = new SparseArray<FormInfo>(recordCount);
-
-			for (FormInfo info : formList)
-			{
-				int formID = info.getFormID();
-				formID = formID & 0xffffff | masterID << 24;
-				idToFormMap.put(formID, info);
-			}
+			addGeckDefaultObjects();
 
 			// now establish min and max form id range
 			for (Integer formId : idToFormMap.keySet())
@@ -480,17 +469,17 @@ public class Master implements IMaster
 	 *  The STATs RoomMarker and PortalMarker are in the magic list, but Fallout3.esm only loads the RoomMarker
 	 *  If I find any others (usually by a request to get PluginRecord returning null), I should work out what they are and add them here
 	 *  
-	 * @param formList
+	 * @param idToFormMap2
 	 */
-	private void addGeckDefaultObjects(List<FormInfo> formList)
+	private void addGeckDefaultObjects()
 	{
 		//fallout3 formId 32 stat PortalMarker
 		if (masterFile.getName().equals("Fallout3.esm"))
 		{
-			PluginRecord pr = new PluginRecord(24, "STAT", 32, "PortalMarker");
+			PluginRecord pr = new PluginRecord(24, "STAT", 32);
 			PluginSubrecord psr = new PluginSubrecord("STAT", "EDID", "PortalMarkerZ".getBytes()); //note the null termination padding
 			pr.getSubrecords().add(psr);
-			formList.add(new FormInfo("STAT", 32, "PortalMarker", pr));
+			idToFormMap.put(32, new FormInfo("STAT", 32, pr));
 		}
 	}
 

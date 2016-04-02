@@ -7,6 +7,8 @@ package esmmanager.tes3;
  */
 public class PluginGroup extends esmmanager.common.data.plugin.PluginGroup
 {
+	protected String editorID = "";
+
 	public PluginGroup(int groupType)
 	{
 		this.recordType = "GRUP";
@@ -15,4 +17,8 @@ public class PluginGroup extends esmmanager.common.data.plugin.PluginGroup
 		groupLabel = new byte[4];
 	}
 
+	public String getEditorID()
+	{
+		return editorID;
+	}
 }

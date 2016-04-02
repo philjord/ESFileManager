@@ -21,10 +21,6 @@ public class PluginRecord extends Record
 
 	protected int unknownInt;
 
-	protected String editorID = "";
-
-	private PluginRecord parentRecord;
-
 	protected byte[] recordData;
 
 	protected long filePositionPointer = -1;
@@ -60,14 +56,13 @@ public class PluginRecord extends Record
 	/**
 	 * For forcibly creating these things not from file	 
 	 */
-	public PluginRecord(int headerByteCount, String recordType, int formID, String editorID)
+	public PluginRecord(int headerByteCount, String recordType, int formID)
 	{
 		this.headerByteCount = headerByteCount;
 		this.recordType = recordType;
 		this.formID = formID;
 		this.recordFlags1 = 0;
 		this.recordFlags2 = 0;
-		this.editorID = editorID;
 		subrecordList = new ArrayList<Subrecord>();
 	}
 
@@ -84,29 +79,21 @@ public class PluginRecord extends Record
 		}
 	}
 
-	public PluginRecord getParent()
-	{
-		return parentRecord;
-	}
-
-	public void setParent(PluginRecord parent)
-	{
-		parentRecord = parent;
-	}
-
-	//TODO: If I can avoid this except for display activity then I can keep data compressed for a long time,
-	//save space save load time
 	public String getEditorID()
 	{
-		return editorID;
+		for (Subrecord sr : getSubrecords())
+		{
+			if (sr.getSubrecordType().equals("EDID"))
+				return new String(sr.getSubrecordData(), 0, sr.getSubrecordData().length - 1);
+		}
+		return "";
 	}
 
 	//Dear god this String fileName appears to do something magical without it failures!	
 	public void load(String fileName, RandomAccessFile in, int recordLength) throws PluginException, IOException, DataFormatException
 	{
 		filePositionPointer = in.getFilePointer();
-		int offset = 0;
-		int overrideLength = 0;
+
 		recordData = new byte[recordLength];
 
 		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE)
@@ -129,62 +116,12 @@ public class PluginRecord extends Record
 					throw new PluginException(fileName + ": " + recordType + " record is incomplete");
 			}
 		}
-
-		// now uncompress the recordData
-		uncompressRecordData();
-
-		int dataLength = recordData.length;
-		while (dataLength >= 6)
-		{
-			String subrecordType = new String(recordData, offset, 4);
-
-			int length = ESMByteConvert.extractShort(recordData, offset + 4);
-			if (length == 0)
-			{
-				length = overrideLength;
-				overrideLength = 0;
-			}
-
-			if (length > dataLength)
-				throw new PluginException(fileName + ": " + subrecordType + " subrecord is incomplete");
-
-			if (length > 0)
-			{
-				if (subrecordType.equals("XXXX"))
-				{
-					if (length != 4)
-					{
-						throw new PluginException(fileName + ": XXXX subrecord data length is not 4");
-					}
-					overrideLength = ESMByteConvert.extractInt(recordData, offset + 6);
-				}
-				else if (subrecordType.equals("EDID") && length > 1)
-				{
-					editorID = new String(recordData, offset + 6, length - 1);
-				}
-			}
-			offset += 6 + length;
-			dataLength -= 6 + length;
-		}
-
-		if (dataLength != 0)
-			throw new PluginException(fileName + ": " + recordType + " record is incomplete");
-		else
-			return;
 	}
 
-	public byte[] getRecordData()
-	{
-		return recordData;
-	}
-
-	//TODO: I only need to uncompress so I can find the EDID in the load above
-	// if I didn't need that (and I don't generally) I could leave these bytes compressed until requested
-	// by the load statement below
-	private void uncompressRecordData() throws DataFormatException, PluginException
+	private boolean uncompressRecordData() throws DataFormatException, PluginException
 	{
 		if (!isCompressed())
-			return;
+			return false;
 		if (recordData.length < 5 || recordData[3] >= 32)
 			throw new PluginException("Compressed data prefix is not valid");
 		int length = ESMByteConvert.extractInt(recordData, 0);
@@ -216,6 +153,7 @@ public class PluginRecord extends Record
 			}
 		}
 
+		return true;
 	}
 
 	@Override
@@ -242,40 +180,53 @@ public class PluginRecord extends Record
 			if (subrecordList == null)
 			{
 				subrecordList = new ArrayList<Subrecord>();
-				int offset = 0;
-				int overrideLength = 0;
-
-				byte[] rd = getRecordData();
-				if (rd != null)
+				try
 				{
-					while (offset < rd.length)
+					uncompressRecordData();
+
+					int offset = 0;
+					int overrideLength = 0;
+
+					if (recordData != null)
 					{
-						String subrecordType = new String(rd, offset, 4);
-						int subrecordLength = rd[offset + 4] & 0xff | (rd[offset + 5] & 0xff) << 8;
-						if (subrecordType.equals("XXXX"))
+						while (offset < recordData.length)
 						{
-							overrideLength = ESMByteConvert.extractInt(rd, offset + 6);
-							offset += 6 + 4;
-							continue;
+							String subrecordType = new String(recordData, offset, 4);
+							int subrecordLength = recordData[offset + 4] & 0xff | (recordData[offset + 5] & 0xff) << 8;
+							if (subrecordType.equals("XXXX"))
+							{
+								overrideLength = ESMByteConvert.extractInt(recordData, offset + 6);
+								offset += 6 + 4;
+								continue;
+							}
+							if (subrecordLength == 0)
+							{
+								subrecordLength = overrideLength;
+								overrideLength = 0;
+							}
+							byte subrecordData[] = new byte[subrecordLength];
+
+							// bad decompress can happen (LAND record in falloutNV)
+							if (offset + 6 + subrecordLength <= recordData.length)
+								System.arraycopy(recordData, offset + 6, subrecordData, 0, subrecordLength);
+
+							subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
+
+							offset += 6 + subrecordLength;
 						}
-						if (subrecordLength == 0)
-						{
-							subrecordLength = overrideLength;
-							overrideLength = 0;
-						}
-						byte subrecordData[] = new byte[subrecordLength];
-
-						// bad decompress can happen (LAND record in falloutNV)
-						if (offset + 6 + subrecordLength <= rd.length)
-							System.arraycopy(rd, offset + 6, subrecordData, 0, subrecordLength);
-
-						subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
-
-						offset += 6 + subrecordLength;
 					}
+
+					// discard the raw data as used now
+					recordData = null;
 				}
-				//TODO: can I discard the raw data now? does this improve memory usage at all? 
-				recordData = null;
+				catch (DataFormatException e)
+				{
+					e.printStackTrace();
+				}
+				catch (PluginException e)
+				{
+					e.printStackTrace();
+				}
 			}
 		}
 
@@ -283,7 +234,7 @@ public class PluginRecord extends Record
 
 	public String toString()
 	{
-		String text = "" + recordType + " record: " + editorID + " (" + formID + ")";
+		String text = "" + recordType + " record: " + getEditorID() + " (" + formID + ")";
 		if (isIgnored())
 		{
 			text = "(Ignore) " + text;

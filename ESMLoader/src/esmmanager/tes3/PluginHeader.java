@@ -40,7 +40,7 @@ public class PluginHeader extends PluginRecord
 		unknownInt = ESMByteConvert.extractInt(prefix, 8);
 		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
 
-		super.load(fileName, in);
+		super.load(fileName, in, -1);
 		pluginFileName = fileName;
 		for (Subrecord sub : getSubrecords())
 		{
