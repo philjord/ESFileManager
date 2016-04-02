@@ -1,30 +1,23 @@
 package esmmanager.common.data.record;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-
-import esmmanager.common.data.plugin.PluginRecord;
-import esmmanager.common.data.plugin.PluginSubrecord;
 
 public class Record
 {
-	private String recordType;
+	protected String recordType;
 
-	private int formID;
+	protected int formID;
 
-	private int recordFlags1;
+	protected int recordFlags1;
 
-	private int recordFlags2;
+	protected int recordFlags2;
 
-	private boolean updated = false;
+	protected boolean updated = false;
 
-	private ArrayList<Subrecord> subrecordList = new ArrayList<Subrecord>();
+	protected List<Subrecord> subrecordList;
 
-	public Record(PluginRecord pluginRecord)
+	public Record()
 	{
-		this(pluginRecord.getRecordType(), pluginRecord.getFormID(), -1, pluginRecord.getRecordFlags1(), pluginRecord.getRecordFlags2(),
-				pluginRecord.getSubrecords());
 	}
 
 	public Record(String recordType, int formID, int cellFormID, int recordFlags1, int recordFlags2)
@@ -36,15 +29,10 @@ public class Record
 		this.recordFlags2 = recordFlags2;
 	}
 
-	public Record(String recordType, int formID, int cellFormID, int recordFlags1, int recordFlags2, List<PluginSubrecord> subs)//, byte[] recordData)
+	public Record(String recordType, int formID, int cellFormID, int recordFlags1, int recordFlags2, List<Subrecord> subs)//, byte[] recordData)
 	{
 		this(recordType, formID, cellFormID, recordFlags1, recordFlags2);
-		//	if (recordData != null)
-		//		decodeSubrecords(recordData);
-		for (PluginSubrecord sub : subs)
-		{
-			subrecordList.add(new Subrecord(recordType, sub.getSubrecordType(), sub.getSubrecordData()));
-		}
+		subrecordList = subs;
 	}
 
 	public boolean isDeleted()
@@ -55,6 +43,11 @@ public class Record
 	public boolean isIgnored()
 	{
 		return (recordFlags1 & 0x1000) != 0;
+	}
+	
+	public boolean isCompressed()
+	{
+		return (recordFlags1 & 0x40000) != 0;
 	}
 
 	public String getRecordType()
@@ -75,10 +68,10 @@ public class Record
 
 	public void displaySubs()
 	{
-		for (Iterator<Subrecord> i$ = subrecordList.iterator(); i$.hasNext();)
+		List<Subrecord> subrecords = getSubrecords();
+		for (Subrecord subrec : subrecords)
 		{
-			Subrecord subrec = i$.next();
-			System.out.println("subrec " + subrec);
+			System.out.println("Subrecord " + subrec);
 		}
 	}
 
@@ -92,7 +85,7 @@ public class Record
 		return recordFlags2;
 	}
 
-	public ArrayList<Subrecord> getSubrecords()
+	public List<Subrecord> getSubrecords()
 	{
 		return subrecordList;
 	}
@@ -126,9 +119,9 @@ public class Record
 		for (int i = 0; i < subrecordList.size(); i++)
 		{
 			Subrecord sub = subrecordList.get(i);
-			if (sub.getType().equals(newSubrecord.getType()))
+			if (sub.getSubrecordType().equals(newSubrecord.getSubrecordType()))
 			{
-				sub.setSubrecordData(newSubrecord.getData());
+				sub.setSubrecordData(newSubrecord.getSubrecordData());
 			}
 		}
 		updated = true;

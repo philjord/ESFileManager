@@ -9,24 +9,17 @@ import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-import tools.io.ESMByteConvert;
 import esmmanager.common.PluginException;
+import esmmanager.common.data.record.Record;
+import esmmanager.common.data.record.Subrecord;
 import esmmanager.loader.ESMManager;
+import tools.io.ESMByteConvert;
 
-public class PluginRecord
+public class PluginRecord extends Record
 {
-
 	protected int headerByteCount = -1;
 
-	protected String recordType;
-
-	protected int recordFlags1;
-
-	private int recordFlags2;
-
 	protected int unknownInt;
-
-	protected int formID;
 
 	protected String editorID = "";
 
@@ -35,8 +28,6 @@ public class PluginRecord
 	protected byte[] recordData;
 
 	protected long filePositionPointer = -1;
-
-	protected List<PluginSubrecord> subrecordList;
 
 	//for tes3 version
 	protected PluginRecord()
@@ -67,7 +58,7 @@ public class PluginRecord
 	}
 
 	/**
-	 * For forcably creating these things not from file	 
+	 * For forcibly creating these things not from file	 
 	 */
 	public PluginRecord(int headerByteCount, String recordType, int formID, String editorID)
 	{
@@ -77,7 +68,7 @@ public class PluginRecord
 		this.recordFlags1 = 0;
 		this.recordFlags2 = 0;
 		this.editorID = editorID;
-		subrecordList = new ArrayList<PluginSubrecord>();
+		subrecordList = new ArrayList<Subrecord>();
 	}
 
 	protected PluginRecord(String recordType, byte prefix[])
@@ -103,31 +94,8 @@ public class PluginRecord
 		parentRecord = parent;
 	}
 
-	public boolean isDeleted()
-	{
-		return (recordFlags1 & 0x20) != 0;
-	}
-
-	public boolean isIgnored()
-	{
-		return (recordFlags1 & 0x1000) != 0;
-	}
-
-	public boolean isCompressed()
-	{
-		return (recordFlags1 & 0x40000) != 0;
-	}
-
-	public String getRecordType()
-	{
-		return recordType;
-	}
-
-	public int getFormID()
-	{
-		return formID;
-	}
-
+	//TODO: If I can avoid this except for display activity then I can keep data compressed for a long time,
+	//save space save load time
 	public String getEditorID()
 	{
 		return editorID;
@@ -210,6 +178,9 @@ public class PluginRecord
 		return recordData;
 	}
 
+	//TODO: I only need to uncompress so I can find the EDID in the load above
+	// if I didn't need that (and I don't generally) I could leave these bytes compressed until requested
+	// by the load statement below
 	private void uncompressRecordData() throws DataFormatException, PluginException
 	{
 		if (!isCompressed())
@@ -247,14 +218,30 @@ public class PluginRecord
 
 	}
 
-	public List<PluginSubrecord> getSubrecords()
+	@Override
+	public List<Subrecord> getSubrecords()
 	{
 		// must fill it up before anyone can get it asynch!
 		synchronized (this)
 		{
 			if (subrecordList == null)
 			{
-				subrecordList = new ArrayList<PluginSubrecord>();
+				loadSubRecords();
+			}
+			return subrecordList;
+		}
+	}
+
+	/**
+	 * pulls the sub records from the raw byte array if required, and dumps the bytes
+	 */
+	private void loadSubRecords()
+	{
+		synchronized (this)
+		{
+			if (subrecordList == null)
+			{
+				subrecordList = new ArrayList<Subrecord>();
 				int offset = 0;
 				int overrideLength = 0;
 
@@ -290,8 +277,8 @@ public class PluginRecord
 				//TODO: can I discard the raw data now? does this improve memory usage at all? 
 				recordData = null;
 			}
-			return subrecordList;
 		}
+
 	}
 
 	public String toString()
@@ -308,29 +295,9 @@ public class PluginRecord
 		return text;
 	}
 
-	public void displaySubs()
-	{
-		List<PluginSubrecord> subrecords = getSubrecords();
-
-		for (PluginSubrecord subrec : subrecords)
-		{
-			System.out.println("subrec " + subrec);
-		}
-	}
-
 	public long getFilePositionPointer()
 	{
 		return filePositionPointer;
-	}
-
-	public int getRecordFlags1()
-	{
-		return recordFlags1;
-	}
-
-	public int getRecordFlags2()
-	{
-		return recordFlags2;
 	}
 
 	public int getUnknownInt()

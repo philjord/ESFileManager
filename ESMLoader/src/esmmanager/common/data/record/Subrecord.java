@@ -2,12 +2,17 @@ package esmmanager.common.data.record;
 
 public class Subrecord
 {
-	private String recordType;
+	protected String recordType;
 
-	private String subrecordType;
+	protected String subrecordType;
 
-	private byte subrecordData[];
+	protected byte subrecordData[];
 
+	public Subrecord()
+	{
+		
+	}
+	
 	public Subrecord(String recordType, String subrecordType, byte subrecordData[])
 	{
 		this.recordType = recordType;
@@ -20,12 +25,12 @@ public class Subrecord
 		return recordType;
 	}
 
-	public String getType()
+	public String getSubrecordType()
 	{
 		return subrecordType;
 	}
 
-	public byte[] getData()
+	public byte[] getSubrecordData()
 	{
 		return subrecordData;
 	}

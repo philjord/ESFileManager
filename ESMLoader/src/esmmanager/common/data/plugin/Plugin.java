@@ -9,9 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
+import esmmanager.common.PluginException;
+import esmmanager.common.data.record.Record;
 import tools.io.ESMByteConvert;
 import tools.io.MappedByteBufferRAF;
-import esmmanager.common.PluginException;
 
 public class Plugin implements PluginInterface
 {
@@ -150,8 +151,9 @@ public class Plugin implements PluginInterface
 
 	public static void updateFormList(PluginGroup pg, List<FormInfo> formList)
 	{
-		for (PluginRecord record : pg.getRecordList())
+		for (Record r : pg.getRecordList())
 		{
+			PluginRecord record = (PluginRecord) r;
 			if (!record.isIgnored() || (record instanceof PluginGroup))
 			{
 				record.setParent(pg);
@@ -169,12 +171,14 @@ public class Plugin implements PluginInterface
 
 	public static void updateFormListPointersOnly(PluginGroup pg, List<FormInfo> formList)
 	{
-		for (PluginRecord record : pg.getRecordList())
+		for (Record r : pg.getRecordList())
 		{
+			PluginRecord record = (PluginRecord) r;
 			if (!record.isIgnored() || (record instanceof PluginGroup))
 			{
 				//record.setParent(this);
-				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(), record.getFilePositionPointer());
+				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record.getEditorID(),
+						record.getFilePositionPointer());
 				formInfo.setParentFormID(pg.getGroupParentID());
 				formList.add(formInfo);
 				if (record instanceof PluginGroup)

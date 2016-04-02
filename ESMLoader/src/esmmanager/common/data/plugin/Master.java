@@ -12,6 +12,7 @@ import com.frostwire.util.SparseArray;
 
 import esmmanager.Point;
 import esmmanager.common.PluginException;
+import esmmanager.common.data.record.Record;
 import esmmanager.loader.CELLDIALPointer;
 import esmmanager.loader.DIALTopGroup;
 import esmmanager.loader.ESMManager;
@@ -153,7 +154,7 @@ public class Master implements IMaster
 			// Now pull out the right type like the persister guy and return it
 			if (childrenGroup.getRecordList() != null)
 			{
-				for (PluginRecord pgr : childrenGroup.getRecordList())
+				for (Record pgr : childrenGroup.getRecordList())
 				{
 					PluginGroup pg = (PluginGroup) pgr;
 					if (pg.getGroupType() == childGroupType)

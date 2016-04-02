@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import tools.io.ESMByteConvert;
 import esmmanager.common.PluginException;
+import esmmanager.common.data.record.Record;
+import tools.io.ESMByteConvert;
 
 public class PluginGroup extends PluginRecord
 {
@@ -47,7 +47,7 @@ public class PluginGroup extends PluginRecord
 
 	public static Map<String, String> typeMap;
 
-	protected List<PluginRecord> recordList = new ArrayList<PluginRecord>();
+	protected List<Record> recordList = new ArrayList<Record>();
 
 	//for tes3 version
 	protected PluginGroup()
@@ -82,7 +82,7 @@ public class PluginGroup extends PluginRecord
 
 	}
 
-	public List<PluginRecord> getRecordList()
+	public List<Record> getRecordList()
 	{
 		return recordList;
 	}
@@ -91,9 +91,8 @@ public class PluginGroup extends PluginRecord
 	{
 		int recordCount = 0;
 
-		for (Iterator<PluginRecord> i$ = recordList.iterator(); i$.hasNext();)
+		for (Record record : recordList)
 		{
-			PluginRecord record = i$.next();
 			recordCount++;
 			if (record instanceof PluginGroup)
 				recordCount += ((PluginGroup) record).getRecordCount();

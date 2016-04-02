@@ -3,15 +3,11 @@ package esmmanager.common.data.plugin;
 import java.util.HashMap;
 import java.util.Map;
 
+import esmmanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 
-public class PluginSubrecord
+public class PluginSubrecord extends Subrecord
 {
-	protected String recordType;
-
-	protected String subrecordType;
-
-	protected byte subrecordData[];
 
 	//for tes3 version
 	protected PluginSubrecord()
@@ -21,29 +17,7 @@ public class PluginSubrecord
 
 	public PluginSubrecord(String recordType, String subrecordType, byte subrecordData[])
 	{
-		this.recordType = recordType;
-		this.subrecordType = subrecordType;
-		this.subrecordData = subrecordData;
-	}
-
-	public String getRecordType()
-	{
-		return recordType;
-	}
-
-	public String getSubrecordType()
-	{
-		return subrecordType;
-	}
-
-	public byte[] getSubrecordData()
-	{
-		return subrecordData;
-	}
-
-	public void setSubrecordData(byte subrecordData[])
-	{
-		this.subrecordData = subrecordData;
+		super(recordType, subrecordType, subrecordData);
 	}
 
 	public int[][] getReferences()
@@ -73,8 +47,7 @@ public class PluginSubrecord
 		}
 		else if (subrecordType.equals("DATA") && recordType.equals("MGEF"))
 		{
-			int mgefOffsets[] =
-			{ 24, 32, 36, 40, 44, 48, 52 };
+			int mgefOffsets[] = { 24, 32, 36, 40, 44, 48, 52 };
 			references = new int[mgefOffsets.length][2];
 			int index = 0;
 			do
@@ -183,11 +156,6 @@ public class PluginSubrecord
 		return references;
 	}
 
-	public String toString()
-	{
-		return subrecordType + " subrecord";
-	}
-
 	public String displaySubrecord()
 	{
 		StringBuffer dumpData = new StringBuffer(128 + 3 * subrecordData.length + 6 * (subrecordData.length / 16));
@@ -233,100 +201,83 @@ public class PluginSubrecord
 
 	private static Map<Integer, FunctionInfo> functionMap;
 
-	private static final int offsetRepeating4[] =
-	{ -4 };
+	private static final int offsetRepeating4[] = { -4 };
 
-	private static final int offsetRepeating8[] =
-	{ -8 };
+	private static final int offsetRepeating8[] = { -8 };
 
-	private static final int offsetRepeating12[] =
-	{ -12 };
+	private static final int offsetRepeating12[] = { -12 };
 
-	private static final int offsetRepeating52[] =
-	{ -52 };
+	private static final int offsetRepeating52[] = { -52 };
 
-	private static final int offsetZero[] =
-	{ 0 };
+	private static final int offsetZero[] = { 0 };
 
-	private static final int offsetFour[] =
-	{ 4 };
+	private static final int offsetFour[] = { 4 };
 
-	private static final int offsetZeroFour[] =
-	{ 0, 4 };
+	private static final int offsetZeroFour[] = { 0, 4 };
 
 	//	private static final int offsetTwelveSixteen[] = { 12, 16 };
-	private static final SubrecordInfo subrecordInfo[] =
-	{ new SubrecordInfo("ANAM", offsetZero, new String[]
-	{ "DOOR" }), new SubrecordInfo("BNAM", offsetZero, new String[]
-	{ "DOOR" }), new SubrecordInfo("BTXT", offsetZero, new String[]
-	{ "LAND" }), new SubrecordInfo("CNAM", offsetZero, new String[]
-	{ "NPC_", "WRLD" }), new SubrecordInfo("CNTO", offsetZero), new SubrecordInfo("CSCR", offsetZero, new String[]
-	{ "CREA" }), new SubrecordInfo("CSDI", offsetZero, new String[]
-	{ "CREA" }), new SubrecordInfo("DATA", offsetZero, new String[]
-	{ "ANIO" }), new SubrecordInfo("DNAM", offsetZeroFour, new String[]
-	{ "RACE" }), new SubrecordInfo("ENAM", offsetRepeating4, new String[]
-	{ "AMMO", "ARMO", "BOOK", "CLOT", "NPC_", "RACE", "WEAP" }), new SubrecordInfo("GNAM", offsetZero, new String[]
-	{ "LTEX" }), new SubrecordInfo("HNAM", offsetRepeating4, new String[]
-	{ "NPC_", "RACE" }), new SubrecordInfo("INAM", offsetZero, new String[]
-	{ "CREA", "NPC_" }), new SubrecordInfo("LVLO", offsetFour, new String[]
-	{ "LVLC", "LVLI", "LVSP" }), new SubrecordInfo("NAME", offsetZero), new SubrecordInfo("NAM2", offsetZero, new String[]
-	{ "WRLD" }), new SubrecordInfo("PFIG", offsetZero, new String[]
-	{ "FLOR" }), new SubrecordInfo("PKID", offsetZero), new SubrecordInfo("PNAM", offsetZero, new String[]
-	{ "INFO" }), new SubrecordInfo("QNAM", offsetZero, new String[]
-	{ "CONT" }), new SubrecordInfo("QSTA", offsetZero, new String[]
-	{ "QUST" }), new SubrecordInfo("QSTI", offsetZero), new SubrecordInfo("RDSD", offsetRepeating12, new String[]
-	{ "REGN" }), new SubrecordInfo("RDOT", offsetRepeating52, new String[]
-	{ "REGN" }), new SubrecordInfo("RDWT", offsetRepeating8, new String[]
-	{ "REGN" }), new SubrecordInfo("RNAM", offsetZero, new String[]
-	{ "NPC_" }), new SubrecordInfo("SCIT", offsetZero, new String[]
-	{ "ENCH", "INGR", "SPEL" }), new SubrecordInfo("SCRI", offsetZero), new SubrecordInfo("SCRO", offsetZero),
-			new SubrecordInfo("SNAM", offsetZero, new String[]
-			{ "ACTI", "CONT", "CREA", "DOOR", "LIGH", "NPC_", "WATR", "WRLD" }), new SubrecordInfo("SPLO", offsetZero),
-			new SubrecordInfo("TCLF", offsetZero, new String[]
-			{ "INFO" }), new SubrecordInfo("TCLT", offsetZero, new String[]
-			{ "INFO" }), new SubrecordInfo("TNAM", offsetZero, new String[]
-			{ "DOOR", "LVLC" }), new SubrecordInfo("VNAM", offsetZeroFour, new String[]
-			{ "RACE" }), new SubrecordInfo("WNAM", offsetZero, new String[]
-			{ "REGN", "WRLD" }), new SubrecordInfo("XCCM", offsetZero, new String[]
-			{ "CELL" }), new SubrecordInfo("XCLR", offsetRepeating4, new String[]
-			{ "CELL" }), new SubrecordInfo("XCWT", offsetZero, new String[]
-			{ "CELL" }), new SubrecordInfo("XESP", offsetZero), new SubrecordInfo("XGLB", offsetZero),
-			new SubrecordInfo("XHRS", offsetZero, new String[]
-			{ "ACHR" }), new SubrecordInfo("XLOC", offsetFour, new String[]
-			{ "REFR" }), new SubrecordInfo("XMRC", offsetZero, new String[]
-			{ "ACHR" }), new SubrecordInfo("XNAM", offsetZero, new String[]
-			{ "FACT", "RACE" }), new SubrecordInfo("XOWN", offsetZero), new SubrecordInfo("XPCI", offsetZero),
-			new SubrecordInfo("XRTM", offsetZero, new String[]
-			{ "REFR" }), new SubrecordInfo("XTEL", offsetZero, new String[]
-			{ "REFR" }), new SubrecordInfo("ZNAM", offsetZero) };
+	private static final SubrecordInfo subrecordInfo[] = { new SubrecordInfo("ANAM", offsetZero, new String[] { "DOOR" }),
+			new SubrecordInfo("BNAM", offsetZero, new String[] { "DOOR" }), new SubrecordInfo("BTXT", offsetZero, new String[] { "LAND" }),
+			new SubrecordInfo("CNAM", offsetZero, new String[] { "NPC_", "WRLD" }), new SubrecordInfo("CNTO", offsetZero),
+			new SubrecordInfo("CSCR", offsetZero, new String[] { "CREA" }), new SubrecordInfo("CSDI", offsetZero, new String[] { "CREA" }),
+			new SubrecordInfo("DATA", offsetZero, new String[] { "ANIO" }),
+			new SubrecordInfo("DNAM", offsetZeroFour, new String[] { "RACE" }),
+			new SubrecordInfo("ENAM", offsetRepeating4, new String[] { "AMMO", "ARMO", "BOOK", "CLOT", "NPC_", "RACE", "WEAP" }),
+			new SubrecordInfo("GNAM", offsetZero, new String[] { "LTEX" }),
+			new SubrecordInfo("HNAM", offsetRepeating4, new String[] { "NPC_", "RACE" }),
+			new SubrecordInfo("INAM", offsetZero, new String[] { "CREA", "NPC_" }),
+			new SubrecordInfo("LVLO", offsetFour, new String[] { "LVLC", "LVLI", "LVSP" }), new SubrecordInfo("NAME", offsetZero),
+			new SubrecordInfo("NAM2", offsetZero, new String[] { "WRLD" }), new SubrecordInfo("PFIG", offsetZero, new String[] { "FLOR" }),
+			new SubrecordInfo("PKID", offsetZero), new SubrecordInfo("PNAM", offsetZero, new String[] { "INFO" }),
+			new SubrecordInfo("QNAM", offsetZero, new String[] { "CONT" }), new SubrecordInfo("QSTA", offsetZero, new String[] { "QUST" }),
+			new SubrecordInfo("QSTI", offsetZero), new SubrecordInfo("RDSD", offsetRepeating12, new String[] { "REGN" }),
+			new SubrecordInfo("RDOT", offsetRepeating52, new String[] { "REGN" }),
+			new SubrecordInfo("RDWT", offsetRepeating8, new String[] { "REGN" }),
+			new SubrecordInfo("RNAM", offsetZero, new String[] { "NPC_" }),
+			new SubrecordInfo("SCIT", offsetZero, new String[] { "ENCH", "INGR", "SPEL" }), new SubrecordInfo("SCRI", offsetZero),
+			new SubrecordInfo("SCRO", offsetZero),
+			new SubrecordInfo("SNAM", offsetZero, new String[] { "ACTI", "CONT", "CREA", "DOOR", "LIGH", "NPC_", "WATR", "WRLD" }),
+			new SubrecordInfo("SPLO", offsetZero), new SubrecordInfo("TCLF", offsetZero, new String[] { "INFO" }),
+			new SubrecordInfo("TCLT", offsetZero, new String[] { "INFO" }),
+			new SubrecordInfo("TNAM", offsetZero, new String[] { "DOOR", "LVLC" }),
+			new SubrecordInfo("VNAM", offsetZeroFour, new String[] { "RACE" }),
+			new SubrecordInfo("WNAM", offsetZero, new String[] { "REGN", "WRLD" }),
+			new SubrecordInfo("XCCM", offsetZero, new String[] { "CELL" }),
+			new SubrecordInfo("XCLR", offsetRepeating4, new String[] { "CELL" }),
+			new SubrecordInfo("XCWT", offsetZero, new String[] { "CELL" }), new SubrecordInfo("XESP", offsetZero),
+			new SubrecordInfo("XGLB", offsetZero), new SubrecordInfo("XHRS", offsetZero, new String[] { "ACHR" }),
+			new SubrecordInfo("XLOC", offsetFour, new String[] { "REFR" }), new SubrecordInfo("XMRC", offsetZero, new String[] { "ACHR" }),
+			new SubrecordInfo("XNAM", offsetZero, new String[] { "FACT", "RACE" }), new SubrecordInfo("XOWN", offsetZero),
+			new SubrecordInfo("XPCI", offsetZero), new SubrecordInfo("XRTM", offsetZero, new String[] { "REFR" }),
+			new SubrecordInfo("XTEL", offsetZero, new String[] { "REFR" }), new SubrecordInfo("ZNAM", offsetZero) };
 
-	private static final FunctionInfo functionInfo[] =
-	{ new FunctionInfo("GetCrime", 122, true, false), new FunctionInfo("GetDeadCount", 84, true, false),
-			new FunctionInfo("GetDetected", 45, true, false), new FunctionInfo("GetDetectionLevel", 180, true, false),
-			new FunctionInfo("GetDisposition", 76, true, false), new FunctionInfo("GetDistance", 1, true, false),
-			new FunctionInfo("GetEquipped", 182, true, false), new FunctionInfo("GetFactionRank", 73, true, false),
-			new FunctionInfo("GetFactionRankDifference", 60, true, true), new FunctionInfo("GetFriendHit", 288, true, false),
-			new FunctionInfo("GetGlobalValue", 74, true, false), new FunctionInfo("GetHeadingAngle", 99, true, false),
-			new FunctionInfo("GetInCell", 67, true, false), new FunctionInfo("GetInCellParam", 230, true, true),
-			new FunctionInfo("GetInFaction", 71, true, false), new FunctionInfo("GetInSameCell", 32, true, false),
-			new FunctionInfo("GetInWorldspace", 310, true, false), new FunctionInfo("GetIsClass", 68, true, false),
-			new FunctionInfo("GetIsClassDefault", 228, true, false), new FunctionInfo("GetIsCurrentPackage", 161, true, false),
-			new FunctionInfo("GetIsCurrentWeather", 149, true, false), new FunctionInfo("GetIsID", 72, true, false),
-			new FunctionInfo("GetIsPlayerBirthsign", 224, true, false), new FunctionInfo("GetIsRace", 69, true, false),
-			new FunctionInfo("GetIsReference", 136, true, false), new FunctionInfo("GetIsUsedItem", 246, true, false),
-			new FunctionInfo("GetItemCount", 47, true, false), new FunctionInfo("GetLineOfSight", 27, true, false),
-			new FunctionInfo("GetPCExpelled", 193, true, false), new FunctionInfo("GetPCFactionAttack", 199, true, false),
-			new FunctionInfo("GetPCFactionMurder", 195, true, false), new FunctionInfo("GetPCFactionSteal", 197, true, false),
-			new FunctionInfo("GetPCFactionSubmitAuthority", 201, true, false), new FunctionInfo("GetPCInFaction", 132, true, false),
-			new FunctionInfo("GetPCIsClass", 129, true, false), new FunctionInfo("GetPCIsRace", 130, true, false),
-			new FunctionInfo("GetQuestRunning", 56, true, false), new FunctionInfo("GetQuestVariable", 79, true, false),
-			new FunctionInfo("GetScriptVariable", 53, true, false), new FunctionInfo("GetShouldAttack", 66, true, false),
-			new FunctionInfo("GetStage", 58, true, false), new FunctionInfo("GetStageDone", 59, true, false),
-			new FunctionInfo("GetTalkedToPCParam", 172, true, false), new FunctionInfo("HasMagicEffect", 214, true, false),
-			new FunctionInfo("IsCellOwner", 280, true, true), new FunctionInfo("IsCurrentFurnitureObj", 163, true, false),
-			new FunctionInfo("IsCurrentFurnitureRef", 162, true, false), new FunctionInfo("IsOwner", 278, true, false),
-			new FunctionInfo("IsSpellTarget", 223, true, false), new FunctionInfo("SameFaction", 42, true, false),
-			new FunctionInfo("SameRace", 43, true, false), new FunctionInfo("SameSex", 44, true, false) };
+	private static final FunctionInfo functionInfo[] = { new FunctionInfo("GetCrime", 122, true, false),
+			new FunctionInfo("GetDeadCount", 84, true, false), new FunctionInfo("GetDetected", 45, true, false),
+			new FunctionInfo("GetDetectionLevel", 180, true, false), new FunctionInfo("GetDisposition", 76, true, false),
+			new FunctionInfo("GetDistance", 1, true, false), new FunctionInfo("GetEquipped", 182, true, false),
+			new FunctionInfo("GetFactionRank", 73, true, false), new FunctionInfo("GetFactionRankDifference", 60, true, true),
+			new FunctionInfo("GetFriendHit", 288, true, false), new FunctionInfo("GetGlobalValue", 74, true, false),
+			new FunctionInfo("GetHeadingAngle", 99, true, false), new FunctionInfo("GetInCell", 67, true, false),
+			new FunctionInfo("GetInCellParam", 230, true, true), new FunctionInfo("GetInFaction", 71, true, false),
+			new FunctionInfo("GetInSameCell", 32, true, false), new FunctionInfo("GetInWorldspace", 310, true, false),
+			new FunctionInfo("GetIsClass", 68, true, false), new FunctionInfo("GetIsClassDefault", 228, true, false),
+			new FunctionInfo("GetIsCurrentPackage", 161, true, false), new FunctionInfo("GetIsCurrentWeather", 149, true, false),
+			new FunctionInfo("GetIsID", 72, true, false), new FunctionInfo("GetIsPlayerBirthsign", 224, true, false),
+			new FunctionInfo("GetIsRace", 69, true, false), new FunctionInfo("GetIsReference", 136, true, false),
+			new FunctionInfo("GetIsUsedItem", 246, true, false), new FunctionInfo("GetItemCount", 47, true, false),
+			new FunctionInfo("GetLineOfSight", 27, true, false), new FunctionInfo("GetPCExpelled", 193, true, false),
+			new FunctionInfo("GetPCFactionAttack", 199, true, false), new FunctionInfo("GetPCFactionMurder", 195, true, false),
+			new FunctionInfo("GetPCFactionSteal", 197, true, false), new FunctionInfo("GetPCFactionSubmitAuthority", 201, true, false),
+			new FunctionInfo("GetPCInFaction", 132, true, false), new FunctionInfo("GetPCIsClass", 129, true, false),
+			new FunctionInfo("GetPCIsRace", 130, true, false), new FunctionInfo("GetQuestRunning", 56, true, false),
+			new FunctionInfo("GetQuestVariable", 79, true, false), new FunctionInfo("GetScriptVariable", 53, true, false),
+			new FunctionInfo("GetShouldAttack", 66, true, false), new FunctionInfo("GetStage", 58, true, false),
+			new FunctionInfo("GetStageDone", 59, true, false), new FunctionInfo("GetTalkedToPCParam", 172, true, false),
+			new FunctionInfo("HasMagicEffect", 214, true, false), new FunctionInfo("IsCellOwner", 280, true, true),
+			new FunctionInfo("IsCurrentFurnitureObj", 163, true, false), new FunctionInfo("IsCurrentFurnitureRef", 162, true, false),
+			new FunctionInfo("IsOwner", 278, true, false), new FunctionInfo("IsSpellTarget", 223, true, false),
+			new FunctionInfo("SameFaction", 42, true, false), new FunctionInfo("SameRace", 43, true, false),
+			new FunctionInfo("SameSex", 44, true, false) };
 
 	static
 	{

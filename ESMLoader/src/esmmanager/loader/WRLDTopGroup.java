@@ -6,11 +6,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import tools.io.ESMByteConvert;
 import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginGroup;
 import esmmanager.common.data.plugin.PluginRecord;
+import tools.io.ESMByteConvert;
 
 public class WRLDTopGroup extends PluginGroup
 {

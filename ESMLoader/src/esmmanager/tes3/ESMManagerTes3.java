@@ -88,20 +88,12 @@ public class ESMManagerTes3 implements IESMManagerTes3
 	/**
 	 * No more cache!!! duplicates happily handed out
 	 */
-	//TODO: is this bad? should a PluinRecord be instantly swapped to a Record somehow?
-	// should I dump Record completely now?
 	@Override
 	public Record getRecord(int formID)
 	{
-
 		try
 		{
-			esmmanager.common.data.plugin.PluginRecord pr = getPluginRecord(formID);
-			if (pr != null)
-			{
-				Record record = new Record(pr);
-				return record;
-			}
+			return getPluginRecord(formID);
 		}
 		catch (PluginException e)
 		{

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import esmmanager.common.data.plugin.PluginGroup;
-import esmmanager.common.data.plugin.PluginRecord;
 import esmmanager.common.data.record.Record;
 
 public class ESMUtils
@@ -19,23 +18,19 @@ public class ESMUtils
 	 */
 	public static List<Record> getChildren(PluginGroup cellChildren, int type)
 	{
-		List<Record> ret = new ArrayList<Record>();
 		if (cellChildren != null && cellChildren.getRecordList() != null)
 		{
-			for (PluginRecord pgr : cellChildren.getRecordList())
+			for (Record pgr : cellChildren.getRecordList())
 			{
 				PluginGroup pg = (PluginGroup) pgr;
 
 				if (pg.getGroupType() == type)
 				{
-					for (PluginRecord pr : pg.getRecordList())
-					{
-						Record record = new Record(pr);
-						ret.add(record);
-					}
+					return pg.getRecordList();
 				}
 			}
 		}
-		return ret;
+		// can't return null here, just empty is fine
+		return new ArrayList<Record>();
 	}
 }

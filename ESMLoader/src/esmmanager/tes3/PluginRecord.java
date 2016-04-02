@@ -8,6 +8,7 @@ import java.util.List;
 
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginSubrecord;
+import esmmanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 
 public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
@@ -37,7 +38,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		this.formID = formId;
 		this.recordType = recordType;
 		this.editorID = name;
-		subrecordList = new ArrayList<PluginSubrecord>();
+		subrecordList = new ArrayList<Subrecord>();
 	}
 
 	public void load(String fileName, RandomAccessFile in) throws PluginException, IOException
@@ -52,7 +53,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		//attempt to find and set editor id
 		if (!nonEdidRecordSet.contains(recordType))
 		{
-			PluginSubrecord s0 = getSubrecords().get(0);
+			Subrecord s0 = getSubrecords().get(0);
 			if (s0.getSubrecordType().equals("NAME"))
 			{
 				byte[] bs = s0.getSubrecordData();
@@ -74,7 +75,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		if (recordType.equals("LTEX"))
 		{
 			//LTEX must have edid swapped to unique key system
-			PluginSubrecord s1 = getSubrecords().get(1);
+			Subrecord s1 = getSubrecords().get(1);
 			if (s1.getSubrecordType().equals("INTV"))
 			{
 				byte[] bs = s1.getSubrecordData();
@@ -91,23 +92,22 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 	}
 
 	@Override
-	public List<PluginSubrecord> getSubrecords()
+	public List<Subrecord> getSubrecords()
 	{
 		// must fill it up before anyone can get it asynch!
 		synchronized (this)
 		{
 			if (subrecordList == null)
 			{
-				subrecordList = new ArrayList<PluginSubrecord>();
+				subrecordList = new ArrayList<Subrecord>();
 				getFillSubrecords(recordType, subrecordList, recordData);
-				// TODO: can I discard the raw data now?
 				recordData = null;
 			}
 			return subrecordList;
 		}
 	}
 
-	public static void getFillSubrecords(String recordType, List<PluginSubrecord> subrecordList, byte[] recordData)
+	public static void getFillSubrecords(String recordType, List<Subrecord> subrecordList, byte[] recordData)
 	{
 		int offset = 0;
 

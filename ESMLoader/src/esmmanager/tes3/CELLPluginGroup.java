@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import esmmanager.common.PluginException;
-import esmmanager.common.data.plugin.PluginSubrecord;
+import esmmanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 
 // so land cells are in order with each land after the previous CELL
@@ -131,13 +131,13 @@ public class CELLPluginGroup extends PluginGroup
 				throw new PluginException("" + recordType + " record bad length, asked for " + recordSize + " got " + count);
 
 			//NOTE!!! we do not use our parent as we are a newer type, must use tes3 style	
-			subrecordList = new ArrayList<PluginSubrecord>();
+			subrecordList = new ArrayList<Subrecord>();
 			PluginRecord.getFillSubrecords(recordType, subrecordList, recordData);
 
 			PluginRecord refr = null;
 			for (int i = 0; i < subrecordList.size(); i++)
 			{
-				PluginSubrecord sub = subrecordList.get(i);
+				Subrecord sub = subrecordList.get(i);
 				if (sub.getSubrecordType().equals("FRMR"))
 				{
 					// have we finished a prior now?
@@ -186,10 +186,10 @@ public class CELLPluginGroup extends PluginGroup
 	{
 		PluginRecord pr = new PluginRecord(getFormID(), "CELL", getEditorID());
 
-		List<PluginSubrecord> subrecords = getSubrecords();
+		List<Subrecord> subrecords = getSubrecords();
 		for (int i = 0; i < subrecords.size() && i < 6; i++)
 		{
-			PluginSubrecord sr = subrecords.get(i);
+			Subrecord sr = subrecords.get(i);
 			if (sr.getSubrecordType().equals("NAME") || sr.getSubrecordType().equals("DATA") //
 					|| sr.getSubrecordType().equals("RGNN") || sr.getSubrecordType().equals("NAM0") //
 					|| sr.getSubrecordType().equals("NAM5") || sr.getSubrecordType().equals("WHGT") //

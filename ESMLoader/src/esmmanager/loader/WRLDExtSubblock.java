@@ -11,7 +11,7 @@ import esmmanager.Point;
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginGroup;
 import esmmanager.common.data.plugin.PluginRecord;
-import esmmanager.common.data.plugin.PluginSubrecord;
+import esmmanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 
 public class WRLDExtSubblock extends PluginGroup
@@ -38,7 +38,8 @@ public class WRLDExtSubblock extends PluginGroup
 			y |= 0xffff0000;
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in)
+			throws IOException, DataFormatException, PluginException
 	{
 		if (CELLByXY == null)
 			loadAndIndex(in);
@@ -91,12 +92,12 @@ public class WRLDExtSubblock extends PluginGroup
 				PluginRecord rec = new PluginRecord(prefix);
 				rec.load("", in, length);
 				// find the x and y
-				List<PluginSubrecord> subrecords = rec.getSubrecords();
+				List<Subrecord> subrecords = rec.getSubrecords();
 				int x = 0;
 				int y = 0;
 				for (int i = 0; i < subrecords.size(); i++)
 				{
-					PluginSubrecord sr = subrecords.get(i);
+					Subrecord sr = subrecords.get(i);
 					byte[] bs = sr.getSubrecordData();
 
 					if (sr.getSubrecordType().equals("XCLC"))
@@ -106,7 +107,7 @@ public class WRLDExtSubblock extends PluginGroup
 					}
 				}
 				//we do index now
-				Point p = new Point(x, y);				
+				Point p = new Point(x, y);
 				CELLByXY.put(p, cellPointer);
 			}
 			else

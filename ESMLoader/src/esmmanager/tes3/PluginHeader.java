@@ -3,8 +3,9 @@ package esmmanager.tes3;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import tools.io.ESMByteConvert;
 import esmmanager.common.PluginException;
+import esmmanager.common.data.record.Subrecord;
+import tools.io.ESMByteConvert;
 
 public class PluginHeader extends PluginRecord
 {
@@ -41,7 +42,7 @@ public class PluginHeader extends PluginRecord
 
 		super.load(fileName, in);
 		pluginFileName = fileName;
-		for (esmmanager.common.data.plugin.PluginSubrecord sub : getSubrecords())
+		for (Subrecord sub : getSubrecords())
 		{
 			if (sub.getSubrecordType().equals("HEDR"))
 			{
