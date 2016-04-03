@@ -320,6 +320,7 @@ public class Master implements IMaster
 
 	public void load() throws PluginException, DataFormatException, IOException
 	{
+
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
@@ -327,6 +328,9 @@ public class Master implements IMaster
 			in = new RandomAccessFile(masterFile, "r");
 		else
 			in = new MappedByteBufferRAF(masterFile, "r");
+
+		System.out.println("Loading ESM file " + masterFile.getName());
+		long start = System.currentTimeMillis();
 
 		synchronized (in)
 		{
@@ -451,6 +455,8 @@ public class Master implements IMaster
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
 		}
+
+		System.out.println("Finished loading ESM file " + masterFile.getName() + " in " + (System.currentTimeMillis() - start));
 
 	}
 
