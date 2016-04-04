@@ -44,7 +44,8 @@ public class Master implements IMasterTes3
 
 	private LinkedHashMap<String, Integer> edidToFormIdMap;
 
-	private CELLPluginGroup[][] exteriorCells = new CELLPluginGroup[50][50];
+	// waay over sized just in case!
+	private CELLPluginGroup[][] exteriorCells = new CELLPluginGroup[100][100];
 
 	private LinkedHashMap<String, DIALRecord> dials;
 
@@ -150,8 +151,8 @@ public class Master implements IMasterTes3
 
 					if (cellPluginGroup.isExterior)
 					{
-						int xIdx = cellPluginGroup.cellX + 25;
-						int yIdx = cellPluginGroup.cellY + 20;
+						int xIdx = cellPluginGroup.cellX + 50;
+						int yIdx = cellPluginGroup.cellY + 50;
 						exteriorCells[xIdx][yIdx] = cellPluginGroup;
 					}
 					else
@@ -250,8 +251,8 @@ public class Master implements IMasterTes3
 		{
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
-		int xIdx = x + 25;
-		int yIdx = y + 20;
+		int xIdx = x + 50;
+		int yIdx = y + 50;
 		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
 		if (cellPluginGroup != null)
 		{
@@ -277,8 +278,8 @@ public class Master implements IMasterTes3
 		{
 			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
 		}
-		int xIdx = x + 25;
-		int yIdx = y + 20;
+		int xIdx = x + 50;
+		int yIdx = y + 50;
 		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
 		if (cellPluginGroup != null)
 		{
