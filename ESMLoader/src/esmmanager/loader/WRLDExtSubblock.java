@@ -41,8 +41,12 @@ public class WRLDExtSubblock extends PluginGroup
 	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in)
 			throws IOException, DataFormatException, PluginException
 	{
-		if (CELLByXY == null)
-			loadAndIndex(in);
+		// must hold everyone up so a single thread does the load if needed
+		synchronized (this)
+		{
+			if (CELLByXY == null)
+				loadAndIndex(in);
+		}
 
 		return CELLByXY.get(point);
 	}
@@ -50,81 +54,84 @@ public class WRLDExtSubblock extends PluginGroup
 	private void loadAndIndex(RandomAccessFile in) throws IOException, DataFormatException, PluginException
 	{
 		CELLByXY = new HashMap<Point, CELLDIALPointer>();
-		in.seek(fileOffset);
-		int dataLength = length;
-		byte prefix[] = new byte[headerByteCount];
-
-		CELLDIALPointer cellPointer = null;
-
-		while (dataLength >= headerByteCount)
+		synchronized (in)
 		{
-			long filePositionPointer = in.getFilePointer();
+			in.seek(fileOffset);
+			int dataLength = length;
+			byte prefix[] = new byte[headerByteCount];
 
-			int count = in.read(prefix);
-			if (count != headerByteCount)
-				throw new PluginException("Record prefix is incomplete");
-			dataLength -= headerByteCount;
-			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
+			CELLDIALPointer cellPointer = null;
 
-			if (type.equals("GRUP"))
+			while (dataLength >= headerByteCount)
 			{
-				length -= headerByteCount;
-				int gt = prefix[12] & 0xff;
+				long filePositionPointer = in.getFilePointer();
 
-				if (gt == PluginGroup.CELL)
+				int count = in.read(prefix);
+				if (count != headerByteCount)
+					throw new PluginException("Record prefix is incomplete");
+				dataLength -= headerByteCount;
+				String type = new String(prefix, 0, 4);
+				int length = ESMByteConvert.extractInt(prefix, 4);
+
+				if (type.equals("GRUP"))
 				{
-					cellPointer.cellChildrenFilePointer = filePositionPointer;
-					// now skip the group
-					in.skipBytes(length);
+					length -= headerByteCount;
+					int gt = prefix[12] & 0xff;
+
+					if (gt == PluginGroup.CELL)
+					{
+						cellPointer.cellChildrenFilePointer = filePositionPointer;
+						// now skip the group
+						in.skipBytes(length);
+					}
+					else
+					{
+						System.out.println("Group Type " + gt + " not allowed as child of WRLD ext sub block group");
+					}
+				}
+				else if (type.equals("CELL"))
+				{
+					int formID = ESMByteConvert.extractInt(prefix, 12);
+
+					cellPointer = new CELLDIALPointer(formID, filePositionPointer);
+
+					PluginRecord rec = new PluginRecord(prefix);
+					rec.load("", in, length);
+					// find the x and y
+					List<Subrecord> subrecords = rec.getSubrecords();
+					int x = 0;
+					int y = 0;
+					for (int i = 0; i < subrecords.size(); i++)
+					{
+						Subrecord sr = subrecords.get(i);
+						byte[] bs = sr.getSubrecordData();
+
+						if (sr.getSubrecordType().equals("XCLC"))
+						{
+							x = ESMByteConvert.extractInt(bs, 0);
+							y = ESMByteConvert.extractInt(bs, 4);
+						}
+					}
+					//we do index now
+					Point p = new Point(x, y);
+					CELLByXY.put(p, cellPointer);
 				}
 				else
 				{
-					System.out.println("Group Type " + gt + " not allowed as child of WRLD ext sub block group");
+					System.out.println("What the hell is a type " + type + " doing in the WRLD ext sub block group?");
 				}
+
+				//prep for next iter
+				dataLength -= length;
 			}
-			else if (type.equals("CELL"))
+
+			if (dataLength != 0)
 			{
-				int formID = ESMByteConvert.extractInt(prefix, 12);
-
-				cellPointer = new CELLDIALPointer(formID, filePositionPointer);
-
-				PluginRecord rec = new PluginRecord(prefix);
-				rec.load("", in, length);
-				// find the x and y
-				List<Subrecord> subrecords = rec.getSubrecords();
-				int x = 0;
-				int y = 0;
-				for (int i = 0; i < subrecords.size(); i++)
-				{
-					Subrecord sr = subrecords.get(i);
-					byte[] bs = sr.getSubrecordData();
-
-					if (sr.getSubrecordType().equals("XCLC"))
-					{
-						x = ESMByteConvert.extractInt(bs, 0);
-						y = ESMByteConvert.extractInt(bs, 4);
-					}
-				}
-				//we do index now
-				Point p = new Point(x, y);
-				CELLByXY.put(p, cellPointer);
+				if (getGroupType() == 0)
+					throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
+				else
+					throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
 			}
-			else
-			{
-				System.out.println("What the hell is a type " + type + " doing in the WRLD ext sub block group?");
-			}
-
-			//prep for next iter
-			dataLength -= length;
-		}
-
-		if (dataLength != 0)
-		{
-			if (getGroupType() == 0)
-				throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
-			else
-				throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
 		}
 
 	}

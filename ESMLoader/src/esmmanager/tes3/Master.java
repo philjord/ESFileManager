@@ -6,8 +6,6 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
@@ -106,7 +104,7 @@ public class Master implements IMasterTes3
 		return idToFormMap;
 	}
 
-	public synchronized void load() throws PluginException, IOException
+	public void load() throws PluginException, IOException
 	{
 
 		if (!masterFile.exists() || !masterFile.isFile())
@@ -356,11 +354,9 @@ public class Master implements IMasterTes3
 	}
 
 	@Override
-	public Set<Integer> getAllWRLDTopGroupFormIds()
+	public int[] getAllWRLDTopGroupFormIds()
 	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
-		ret.add(wrldFormId);
-		return ret;
+		return new int[] { wrldFormId };
 	}
 
 	public int convertNameRefToId(String key)

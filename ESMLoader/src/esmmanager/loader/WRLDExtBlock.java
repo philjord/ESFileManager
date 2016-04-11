@@ -34,10 +34,15 @@ public class WRLDExtBlock extends PluginGroup
 			y |= 0xffff0000;
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in) throws IOException, DataFormatException, PluginException
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in)
+			throws IOException, DataFormatException, PluginException
 	{
-		if (WRLDExtSubblockChildren == null)
-			loadAndIndex(in);
+		// must hold everyone up so a single thread does the load if needed
+		synchronized (this)
+		{
+			if (WRLDExtSubblockChildren == null)
+				loadAndIndex(in);
+		}
 
 		//pointy point here
 		Point extSubPoint = new Point((int) Math.floor(point.x / 8f), (int) Math.floor(point.y / 8f));
@@ -55,51 +60,54 @@ public class WRLDExtBlock extends PluginGroup
 	private void loadAndIndex(RandomAccessFile in) throws IOException, DataFormatException, PluginException
 	{
 		WRLDExtSubblockChildren = new HashMap<Point, WRLDExtSubblock>();
-		in.seek(fileOffset);
-		int dataLength = length;
-		byte prefix[] = new byte[headerByteCount];
-
-		while (dataLength >= headerByteCount)
+		synchronized (in)
 		{
-			int count = in.read(prefix);
-			if (count != headerByteCount)
-				throw new PluginException("Record prefix is incomplete");
-			dataLength -= headerByteCount;
-			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
+			in.seek(fileOffset);
+			int dataLength = length;
+			byte prefix[] = new byte[headerByteCount];
 
-			if (type.equals("GRUP"))
+			while (dataLength >= headerByteCount)
 			{
-				length -= headerByteCount;
-				int subGroupType = prefix[12] & 0xff;
+				int count = in.read(prefix);
+				if (count != headerByteCount)
+					throw new PluginException("Record prefix is incomplete");
+				dataLength -= headerByteCount;
+				String type = new String(prefix, 0, 4);
+				int length = ESMByteConvert.extractInt(prefix, 4);
 
-				if (subGroupType == PluginGroup.EXTERIOR_SUBBLOCK)
+				if (type.equals("GRUP"))
 				{
-					WRLDExtSubblock wrldExtSubblock = new WRLDExtSubblock(prefix, in.getFilePointer(), length);
-					WRLDExtSubblockChildren.put(new Point(wrldExtSubblock.x, wrldExtSubblock.y), wrldExtSubblock);
-					//we DO NOT index now, later
-					in.skipBytes(length);
+					length -= headerByteCount;
+					int subGroupType = prefix[12] & 0xff;
+
+					if (subGroupType == PluginGroup.EXTERIOR_SUBBLOCK)
+					{
+						WRLDExtSubblock wrldExtSubblock = new WRLDExtSubblock(prefix, in.getFilePointer(), length);
+						WRLDExtSubblockChildren.put(new Point(wrldExtSubblock.x, wrldExtSubblock.y), wrldExtSubblock);
+						//we DO NOT index now, later
+						in.skipBytes(length);
+					}
+					else
+					{
+						System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD ext block group");
+					}
 				}
 				else
 				{
-					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD ext block group");
+					System.out.println("What the hell is a type " + type + " doing in the WRLD ext block group?");
 				}
+
+				//prep for next iter
+				dataLength -= length;
 			}
-			else
+
+			if (dataLength != 0)
 			{
-				System.out.println("What the hell is a type " + type + " doing in the WRLD ext block group?");
+				if (getGroupType() == 0)
+					throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
+				else
+					throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
 			}
-
-			//prep for next iter
-			dataLength -= length;
-		}
-
-		if (dataLength != 0)
-		{
-			if (getGroupType() == 0)
-				throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
-			else
-				throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
 		}
 
 	}

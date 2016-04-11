@@ -2,7 +2,6 @@ package esmmanager.common.data.plugin;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
@@ -41,7 +40,7 @@ public interface IMaster
 
 	public List<CELLDIALPointer> getAllInteriorCELLFormIds();
 
-	public Set<Integer> getAllWRLDTopGroupFormIds();
+	public int[] getAllWRLDTopGroupFormIds();
 
 	public String getName();
 

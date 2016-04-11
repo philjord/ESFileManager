@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
@@ -194,13 +193,16 @@ public class Master implements IMaster
 	@Override
 	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException
 	{
-		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
+		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(wrldFormId);
 		if (children != null)
 		{
 			CELLDIALPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
 
 			if (cellPointer == null || cellPointer.cellFilePointer == -1)
 			{
+				// normally this is fine just means we are off the edge of the map
+				//System.out.println("null cellPointer! " + new Point(x, y) + " " + cellPointer);
+				children.getWRLDExtBlockCELLByXY(new Point(x, y));
 				return null;
 			}
 
@@ -214,13 +216,17 @@ public class Master implements IMaster
 
 			return cellRecord;
 		}
+		else
+		{
+			System.out.println("WRLDChildren == null, very suspicious, unlikely to be a good thing " + wrldFormId);
+		}
 		return null;
 	}
 
 	@Override
 	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException
 	{
-		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(new Integer(wrldFormId));
+		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(wrldFormId);
 		if (children != null)
 		{
 			CELLDIALPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
@@ -461,7 +467,7 @@ public class Master implements IMaster
 	}
 
 	@Override
-	public Set<Integer> getAllWRLDTopGroupFormIds()
+	public int[] getAllWRLDTopGroupFormIds()
 	{
 		return wRLDTopGroup.WRLDByFormId.keySet();
 	}

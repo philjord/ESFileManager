@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
@@ -146,12 +144,19 @@ public class ESMManagerTes3 implements IESMManagerTes3
 	}
 
 	@Override
-	public Set<Integer> getAllWRLDTopGroupFormIds()
+	public int[] getAllWRLDTopGroupFormIds()
 	{
-		TreeSet<Integer> ret = new TreeSet<Integer>();
+		int totalSize = 0;
+		for (IMaster m : masters)
+			totalSize += m.getAllWRLDTopGroupFormIds().length;
+
+		int[] ret = new int[totalSize];
+
+		int offset = 0;
 		for (IMaster m : masters)
 		{
-			ret.addAll(m.getAllWRLDTopGroupFormIds());
+			System.arraycopy(m.getAllWRLDTopGroupFormIds(), 0, ret, offset, m.getAllWRLDTopGroupFormIds().length);
+			offset += m.getAllWRLDTopGroupFormIds().length;
 		}
 		return ret;
 	}
@@ -258,7 +263,7 @@ public class ESMManagerTes3 implements IESMManagerTes3
 	}
 
 	@Override
-	public synchronized void addMaster(String fileNameToAdd)
+	public void addMaster(String fileNameToAdd)
 	{
 		try
 		{
