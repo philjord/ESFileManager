@@ -3,8 +3,8 @@ package esmmanager.loader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+
+import com.frostwire.util.SparseArray;
 
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginGroup;
@@ -12,7 +12,7 @@ import tools.io.ESMByteConvert;
 
 public class DIALTopGroup extends PluginGroup
 {
-	private Map<Integer, CELLDIALPointer> DIALByFormID = null;
+	private SparseArray<CELLDIALPointer> DIALByFormID = null;
 
 	public DIALTopGroup(byte[] prefix)
 	{
@@ -26,12 +26,13 @@ public class DIALTopGroup extends PluginGroup
 
 	public void getAllInteriorCELLFormIds(ArrayList<CELLDIALPointer> ret) throws IOException, PluginException
 	{
-		ret.addAll(DIALByFormID.values());
+		for (int i = 0; i < DIALByFormID.size(); i++)
+			ret.add(DIALByFormID.get(DIALByFormID.keyAt(i)));
 	}
 
 	public void loadAndIndex(RandomAccessFile in, int groupLength) throws IOException, PluginException
 	{
-		DIALByFormID = new HashMap<Integer, CELLDIALPointer>();
+		DIALByFormID = new SparseArray<CELLDIALPointer>();
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
 

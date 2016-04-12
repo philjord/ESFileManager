@@ -3,8 +3,8 @@ package esmmanager.loader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+
+import com.frostwire.util.SparseArray;
 
 import esmmanager.common.PluginException;
 import esmmanager.common.data.plugin.PluginGroup;
@@ -17,7 +17,7 @@ public class InteriorCELLSubblock extends PluginGroup
 	private int length;
 	public int secondLastDigit;
 
-	private Map<Integer, CELLDIALPointer> CELLByFormID = null;
+	private SparseArray<CELLDIALPointer> CELLByFormID = null;
 
 	public InteriorCELLSubblock(byte[] prefix, long fileOffset, int length)
 	{
@@ -41,12 +41,13 @@ public class InteriorCELLSubblock extends PluginGroup
 		if (CELLByFormID == null)
 			loadAndIndex(in);
 
-		ret.addAll(CELLByFormID.values());
+		for (int i = 0; i < CELLByFormID.size(); i++)
+			ret.add(CELLByFormID.get(CELLByFormID.keyAt(i)));
 	}
 
 	public void loadAndIndex(RandomAccessFile in) throws IOException, PluginException
 	{
-		CELLByFormID = new HashMap<Integer, CELLDIALPointer>();
+		CELLByFormID = new SparseArray<CELLDIALPointer>();
 		in.seek(fileOffset);
 		int dataLength = length;
 		byte prefix[] = new byte[headerByteCount];
