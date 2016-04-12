@@ -69,7 +69,7 @@ public class DIALTopGroup extends PluginGroup
 			{
 				int formID = ESMByteConvert.extractInt(prefix, 12);
 				cellPointer = new CELLDIALPointer(formID, filePositionPointer);
-				DIALByFormID.put(new Integer(formID), cellPointer);
+				DIALByFormID.put(formID, cellPointer);
 				in.skipBytes(length);
 			}
 			else
