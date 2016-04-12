@@ -86,7 +86,7 @@ public class InteriorCELLSubblock extends PluginGroup
 			{
 				int formID = ESMByteConvert.extractInt(prefix, 12);
 				cellPointer = new CELLDIALPointer(formID, filePositionPointer);
-				CELLByFormID.put(new Integer(formID), cellPointer);
+				CELLByFormID.put(formID, cellPointer);
 				in.skipBytes(length);
 			}
 			else
