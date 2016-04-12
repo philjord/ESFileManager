@@ -48,7 +48,7 @@ public class Master implements IMasterTes3
 	private LinkedHashMap<String, DIALRecord> dials;
 
 	private LinkedHashMap<String, CELLPluginGroup> interiorCellsByEdid = new LinkedHashMap<String, CELLPluginGroup>();
-	private LinkedHashMap<Integer, CELLPluginGroup> interiorCellsByFormId = new LinkedHashMap<Integer, CELLPluginGroup>();
+	private SparseArray<CELLPluginGroup> interiorCellsByFormId = new SparseArray<CELLPluginGroup>();
 
 	private static int currentFormId = 0;
 
