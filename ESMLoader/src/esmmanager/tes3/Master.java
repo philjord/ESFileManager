@@ -251,19 +251,22 @@ public class Master implements IMasterTes3
 		}
 		int xIdx = x + 50;
 		int yIdx = y + 50;
-		CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
-		if (cellPluginGroup != null)
+		if (xIdx > 0 && yIdx > 0 && xIdx < 100 && yIdx < 100)
 		{
-			// make sure no one else asks for it while we check load state
-			synchronized (cellPluginGroup)
+			CELLPluginGroup cellPluginGroup = exteriorCells[xIdx][yIdx];
+			if (cellPluginGroup != null)
 			{
-				if (!cellPluginGroup.isLoaded())
+				// make sure no one else asks for it while we check load state
+				synchronized (cellPluginGroup)
 				{
-					cellPluginGroup.load(in);
+					if (!cellPluginGroup.isLoaded())
+					{
+						cellPluginGroup.load(in);
+					}
 				}
-			}
 
-			return cellPluginGroup.createPluginRecord();
+				return cellPluginGroup.createPluginRecord();
+			}
 		}
 		return null;
 
