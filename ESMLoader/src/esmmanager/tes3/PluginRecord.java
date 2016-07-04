@@ -96,6 +96,43 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 
 		}
 
+		/*		if (recordType.equals("SNDG"))
+				{
+					System.out.println("SNDG " +editorID);
+				}
+				if (recordType.equals("CREA"))
+				{
+					System.out.println("CREA " +editorID);
+				}*/
+
+	/*	if (recordType.equals("SCPT"))
+		{
+			//System.out.print("SCPT ");
+			boolean outScript = false;
+			for (Subrecord sr : getSubrecords())
+			{
+				if (sr.getSubrecordType().equals("SCHD"))
+				{
+					//MoveAndTurn?
+					//Main
+					//Sound_Cave_Drip
+					//Startup
+					//CharGen*
+					String n = new String(sr.getSubrecordData(), 0, 32);					
+					if (n.trim().startsWith("CharGen"))
+					{
+						outScript = true;
+						System.out.println("Name = " + n);
+					}
+				}					
+				else if (sr.getSubrecordType().equals("SCTX") && outScript)
+				{
+					System.out.println(" " + new String(sr.getSubrecordData()));
+				}
+
+			}
+		}*/
+
 	}
 
 	@Override
