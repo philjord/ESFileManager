@@ -15,12 +15,12 @@ public class PluginSubrecord extends Subrecord
 
 	}
 
-	public PluginSubrecord(String recordType, String subrecordType, byte subrecordData[])
+	public PluginSubrecord( String subrecordType, byte subrecordData[])
 	{
-		super(recordType, subrecordType, subrecordData);
+		super(  subrecordType, subrecordData);
 	}
 
-	public int[][] getReferences()
+	public int[][] getReferences(String recordType)
 	{
 		int[][] references = null;
 		if (subrecordType.equals("CTDA"))

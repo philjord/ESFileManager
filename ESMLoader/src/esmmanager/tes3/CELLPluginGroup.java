@@ -172,12 +172,37 @@ public class CELLPluginGroup extends PluginGroup
 					temps.getRecordList().add(record);
 					dists.getRecordList().add(record);
 				}
+				else if (record.getRecordType().equals("PGRD"))
+				{
+					temps.getRecordList().add(record);
+				}
 				else
 				{
 					// sometimes there is no land, this is fine
 					//new Throwable("Record following exterior cell is not LAND! it is " + record.getRecordType()).printStackTrace();
 				}
 			}
+
+			//then the next record should be a PGRD 
+
+			byte[] prefix = new byte[16];
+			count = in.read(prefix);
+			if (count != 16)
+				throw new PluginException(": record prefix is incomplete");
+
+			// must have an id too
+			PluginRecord record = new PluginRecord(Master.getNextFormId(), prefix);
+			record.load("", in, -1);
+			if (record.getRecordType().equals("PGRD"))
+			{
+				temps.getRecordList().add(record);
+			}
+			else
+			{
+				// sometimes there is no pgrd, I should understand when this is true
+				//new Throwable("Record following exterior cell is not PGRD! it is " + record.getRecordType()).printStackTrace();
+			}
+
 		}
 		isLoaded = true;
 	}
@@ -199,6 +224,7 @@ public class CELLPluginGroup extends PluginGroup
 		return pr;
 	}
 
+	@Override
 	public String toString()
 	{
 		return "CELLPluginGroup exterior=" + this.isExterior + " " + this.editorID + " x " + this.cellX + " y " + this.cellY;

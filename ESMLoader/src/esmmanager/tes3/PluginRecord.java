@@ -42,12 +42,14 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		subrecordList = new ArrayList<Subrecord>();
 	}
 
+	@Override
 	public String getEditorID()
 	{
 		return editorID;
 	}
 
 	//Note recordLength is not used for tes3 (we have record size already in constructor
+	@Override
 	public void load(String fileName, RandomAccessFile in, int recordLength) throws PluginException, IOException
 	{
 		filePositionPointer = in.getFilePointer();
@@ -74,7 +76,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 			}
 			else
 			{
-				new Throwable("sub record 0 is not NAME! " + s0.getRecordType()).printStackTrace();
+				new Throwable("sub record 0 is not NAME! " + recordType + " " + s0.getSubrecordType()).printStackTrace();
 			}
 		}
 
@@ -91,7 +93,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 			}
 			else
 			{
-				new Throwable("LTEX sub record 1 is not INTV! " + s1.getRecordType()).printStackTrace();
+				new Throwable("LTEX sub record 1 is not INTV! " + recordType + " " + s1.getSubrecordType()).printStackTrace();
 			}
 
 		}
@@ -105,33 +107,33 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 					System.out.println("CREA " +editorID);
 				}*/
 
-	/*	if (recordType.equals("SCPT"))
-		{
-			//System.out.print("SCPT ");
-			boolean outScript = false;
-			for (Subrecord sr : getSubrecords())
+		/*	if (recordType.equals("SCPT"))
 			{
-				if (sr.getSubrecordType().equals("SCHD"))
+				//System.out.print("SCPT ");
+				boolean outScript = false;
+				for (Subrecord sr : getSubrecords())
 				{
-					//MoveAndTurn?
-					//Main
-					//Sound_Cave_Drip
-					//Startup
-					//CharGen*
-					String n = new String(sr.getSubrecordData(), 0, 32);					
-					if (n.trim().startsWith("CharGen"))
+					if (sr.getSubrecordType().equals("SCHD"))
 					{
-						outScript = true;
-						System.out.println("Name = " + n);
+						//MoveAndTurn?
+						//Main
+						//Sound_Cave_Drip
+						//Startup
+						//CharGen*
+						String n = new String(sr.getSubrecordData(), 0, 32);					
+						if (n.trim().startsWith("CharGen"))
+						{
+							outScript = true;
+							System.out.println("Name = " + n);
+						}
+					}					
+					else if (sr.getSubrecordType().equals("SCTX") && outScript)
+					{
+						System.out.println(" " + new String(sr.getSubrecordData()));
 					}
-				}					
-				else if (sr.getSubrecordType().equals("SCTX") && outScript)
-				{
-					System.out.println(" " + new String(sr.getSubrecordData()));
+		
 				}
-
-			}
-		}*/
+			}*/
 
 	}
 
@@ -164,7 +166,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 				byte subrecordData[] = new byte[subrecordLength];
 				System.arraycopy(recordData, offset + 8, subrecordData, 0, subrecordLength);
 
-				subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
+				subrecordList.add(new PluginSubrecord(subrecordType, subrecordData));
 
 				offset += 8 + subrecordLength;
 			}
@@ -176,6 +178,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 	 * Can't be compressed ever
 	 * @see esmmanager.common.data.plugin.PluginRecord#isCompressed()
 	 */
+	@Override
 	public boolean isCompressed()
 	{
 		return false;
@@ -185,6 +188,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 	 * just a dummy flags
 	 * @see esmmanager.common.data.plugin.PluginRecord#getRecordFlags2()
 	 */
+	@Override
 	public int getRecordFlags2()
 	{
 		return 0;
@@ -210,7 +214,8 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		for (String nonEdidRecord : nonEdidRecords)
 			nonEdidRecordSet.add(nonEdidRecord);
 	}
-	//"PGRD", "DIAL", over lap with other names
+	//"PGRD" is just the name of the cell it's in, but it's a 1 to 1 with prior cell
+	//"DIAL", over laps with other names
 	//LTEX has to be swapped out to use INTV int
 
 	/*	
@@ -248,7 +253,7 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 		34: LEVI NAME = leveled list ID string		
 		35: LEVC NAME = leveled list ID string
 		
-		38: PGRD NAME = Path Grid ID string - ???
+		38: PGRD NAME = Path Grid ID string - Name of cell it follows
 		39: SNDG NAME = Sound Generator ID string  *
 		40: DIAL NAME = Dialogue ID string - ???
 		

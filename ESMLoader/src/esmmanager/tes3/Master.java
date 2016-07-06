@@ -77,11 +77,13 @@ public class Master implements IMasterTes3
 		return masterHeader.getPluginVersion();
 	}
 
+	@Override
 	public int getMinFormId()
 	{
 		return minFormId;
 	}
 
+	@Override
 	public int getMaxFormId()
 	{
 		return maxFormId;
@@ -178,7 +180,7 @@ public class Master implements IMasterTes3
 					// 1 length are single 0's
 					if (record.getEditorID() != null && record.getEditorID().length() > 1)
 					{
-						edidToFormIdMap.put(record.getEditorID(), formID);
+						edidToFormIdMap.put(record.getEditorID(), new Integer(formID));
 					}
 
 					// every thing else gets stored as a record
@@ -228,8 +230,8 @@ public class Master implements IMasterTes3
 		{
 			PluginRecord wrld = getPluginRecord(formID);
 			// loaded as a cell so we'll fake it up
-			wrld.getSubrecords().add(new PluginSubrecord("CELL", "NAME", "Morrowind".getBytes()));
-			wrld.getSubrecords().add(new PluginSubrecord("CELL", "DATA", new byte[12]));
+			wrld.getSubrecords().add(new PluginSubrecord("NAME", "Morrowind".getBytes()));
+			wrld.getSubrecords().add(new PluginSubrecord("DATA", new byte[12]));
 			return wrld;
 		}
 		// no message as null indicates a non world formid
@@ -348,7 +350,7 @@ public class Master implements IMasterTes3
 	public List<CELLDIALPointer> getAllInteriorCELLFormIds()
 	{
 		ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
-		for (Integer formId : interiorCellsByFormId.keySet())
+		for (int formId : interiorCellsByFormId.keySet())
 		{
 			ret.add(new CELLDIALPointer(formId, -1));
 		}
@@ -362,6 +364,7 @@ public class Master implements IMasterTes3
 		return new int[] { wrldFormId };
 	}
 
+	@Override
 	public int convertNameRefToId(String key)
 	{
 		Integer id = edidToFormIdMap.get(key);

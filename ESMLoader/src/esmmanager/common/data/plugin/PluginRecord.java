@@ -210,7 +210,7 @@ public class PluginRecord extends Record
 							if (offset + 6 + subrecordLength <= recordData.length)
 								System.arraycopy(recordData, offset + 6, subrecordData, 0, subrecordLength);
 
-							subrecordList.add(new PluginSubrecord(recordType, subrecordType, subrecordData));
+							subrecordList.add(new PluginSubrecord(subrecordType, subrecordData));
 
 							offset += 6 + subrecordLength;
 						}
@@ -232,6 +232,7 @@ public class PluginRecord extends Record
 
 	}
 
+	@Override
 	public String toString()
 	{
 		String text = "" + recordType + " record: " + getEditorID() + " (" + formID + ")";

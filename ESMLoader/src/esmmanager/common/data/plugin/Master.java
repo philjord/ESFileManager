@@ -65,11 +65,13 @@ public class Master implements IMaster
 		masterHeader = new PluginHeader(masterFile.getName());
 	}
 
+	@Override
 	public int getMinFormId()
 	{
 		return minFormId;
 	}
 
+	@Override
 	public int getMaxFormId()
 	{
 		return maxFormId;
@@ -168,11 +170,13 @@ public class Master implements IMaster
 		return null;
 	}
 
+	@Override
 	public WRLDTopGroup getWRLDTopGroup()
 	{
 		return wRLDTopGroup;
 	}
 
+	@Override
 	public InteriorCELLTopGroup getInteriorCELLTopGroup()
 	{
 		return interiorCELLTopGroup;
@@ -443,7 +447,7 @@ public class Master implements IMaster
 			addGeckDefaultObjects();
 
 			// now establish min and max form id range
-			for (Integer formId : idToFormMap.keySet())
+			for (int formId : idToFormMap.keySet())
 			{
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
@@ -455,7 +459,7 @@ public class Master implements IMaster
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
 
-			for (Integer formId : getAllWRLDTopGroupFormIds())
+			for (int formId : getAllWRLDTopGroupFormIds())
 			{
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
@@ -489,7 +493,7 @@ public class Master implements IMaster
 		if (masterFile.getName().equals("Fallout3.esm"))
 		{
 			PluginRecord pr = new PluginRecord(24, "STAT", 32);
-			PluginSubrecord psr = new PluginSubrecord("STAT", "EDID", "PortalMarkerZ".getBytes()); //note the null termination padding
+			PluginSubrecord psr = new PluginSubrecord("EDID", "PortalMarkerZ".getBytes()); //note the null termination padding
 			pr.getSubrecords().add(psr);
 			idToFormMap.put(32, new FormInfo("STAT", 32, pr));
 		}

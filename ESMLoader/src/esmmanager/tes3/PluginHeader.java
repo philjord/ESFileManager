@@ -75,7 +75,7 @@ public class PluginHeader extends PluginRecord
 			}
 			else
 			{
-				throw new PluginException("Unknown subrecord in TES3 Record " + sub.getRecordType());
+				throw new PluginException("Unknown subrecord in TES3 Record " + recordType + " " + sub.getSubrecordType());
 			}
 		}
 	}
