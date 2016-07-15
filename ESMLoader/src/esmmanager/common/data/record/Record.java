@@ -140,12 +140,12 @@ public class Record
 	//ONLY for ESMConverter.ConverterFO3
 	private int cellFormID = -1;
 
-	public int getCellFormID()
+	public int getESMConverterCellFormID()
 	{
 		return cellFormID;
 	}
 
-	public void setCellFormID(int i)
+	public void setESMConverterCellFormID(int i)
 	{
 		cellFormID = i;
 	}
