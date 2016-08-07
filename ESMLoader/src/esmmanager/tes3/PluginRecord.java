@@ -107,33 +107,41 @@ public class PluginRecord extends esmmanager.common.data.plugin.PluginRecord
 					System.out.println("CREA " +editorID);
 				}*/
 
-		/*	if (recordType.equals("SCPT"))
-			{
-				//System.out.print("SCPT ");
-				boolean outScript = false;
-				for (Subrecord sr : getSubrecords())
-				{
-					if (sr.getSubrecordType().equals("SCHD"))
-					{
-						//MoveAndTurn?
-						//Main
-						//Sound_Cave_Drip
-						//Startup
-						//CharGen*
-						String n = new String(sr.getSubrecordData(), 0, 32);					
-						if (n.trim().startsWith("CharGen"))
-						{
-							outScript = true;
-							System.out.println("Name = " + n);
-						}
-					}					
-					else if (sr.getSubrecordType().equals("SCTX") && outScript)
-					{
-						System.out.println(" " + new String(sr.getSubrecordData()));
-					}
 		
+	/*	if (recordType.equals("SCPT"))
+		{
+			FileWriter fw = new FileWriter("C:\\temp\\MorrowindScriptsCharGen.txt", true);
+			String nl =System.getProperty("line.separator");
+			//System.out.print("SCPT ");
+			boolean outScript = false;
+			for (Subrecord sr : getSubrecords())
+			{
+				if (sr.getSubrecordType().equals("SCHD"))
+				{
+					//MoveAndTurn?
+					//Main
+					//Sound_Cave_Drip
+					//Startup
+					//CharGen*
+					String n = new String(sr.getSubrecordData(), 0, 32);
+					if (n.toLowerCase().contains("chargen"))
+					{
+						outScript = true;
+						//System.out.println("Name = " + n);
+						fw.write("Script: " + n + nl);
+					}
 				}
-			}*/
+				else if (sr.getSubrecordType().equals("SCTX") && outScript)
+				{
+					//System.out.println(" " + new String(sr.getSubrecordData()));
+					fw.write(new String(sr.getSubrecordData()) + nl);
+				}
+
+			}
+			fw.flush();
+			fw.close();
+		}
+		*/
 
 	}
 
