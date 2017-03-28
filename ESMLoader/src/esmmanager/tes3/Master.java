@@ -63,6 +63,9 @@ public class Master implements IMasterTes3
 	{
 		this.masterFile = masterFile;
 		masterHeader = new PluginHeader();
+		// in case we've loaded a master already and this is a new load, in that case start again
+		// so the form id's correctly start from 0 again
+		resetFormId();
 	}
 
 	@Override
@@ -89,6 +92,11 @@ public class Master implements IMasterTes3
 		return maxFormId;
 	}
 
+	public static void resetFormId()
+	{
+		currentFormId = 0;
+	}
+	
 	public static int getNextFormId()
 	{
 		return currentFormId++;
