@@ -1,7 +1,6 @@
 package esmio.loader;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.zip.DataFormatException;
 
@@ -10,9 +9,9 @@ import esmio.common.PluginException;
 import esmio.common.data.plugin.PluginGroup;
 import esmio.common.data.plugin.PluginRecord;
 import tools.io.ESMByteConvert;
+import tools.io.FileChannelRAF;
 
-public class WRLDChildren extends PluginGroup
-{
+public class WRLDChildren extends PluginGroup {
 	// x and y is by the WRLD area and is used by several wrlds again (eg tamriel and anvil)
 	// note extblock and extsubblock may not be in order
 	// extblock 0,0 has extsubblock 0-3 by 0-3 that is 16 sub blocks
@@ -23,59 +22,49 @@ public class WRLDChildren extends PluginGroup
 
 	//so incoming value of say 7,41 = extsub of x7/4*8 = 1 and y41/4*8 = 10 so sub of x1/8 = 0 and y10/8 = 2
 
-	private RandomAccessFile in;
+	private FileChannelRAF					in;
 
 	// should be a single road
-	private PluginRecord road;
+	private PluginRecord					road;
 
 	// should be a single cell
-	private PluginRecord wrldCell;
+	private PluginRecord					wrldCell;
 
-	private PluginGroup wrldCellChildren;
+	private PluginGroup						wrldCellChildren;
 
-	private HashMap<Point, WRLDExtBlock> WRLDExtBlockChildren = new HashMap<Point, WRLDExtBlock>();
+	private HashMap<Point, WRLDExtBlock>	WRLDExtBlockChildren	= new HashMap<Point, WRLDExtBlock>();
 
-	public WRLDChildren(byte[] prefix)
-	{
+	public WRLDChildren(byte[] prefix) {
 		super(prefix);
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point)
-	{
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point) {
 		// notice children already loaded at construct time
 		// notice Exception catching here
-		try
-		{
+		try {
 			//pointy point here
-			Point extPoint = new Point((int) Math.floor(point.x / 32f), (int) Math.floor(point.y / 32f));
+			Point extPoint = new Point((int)Math.floor(point.x / 32f), (int)Math.floor(point.y / 32f));
 			WRLDExtBlock wrldExtBlock = WRLDExtBlockChildren.get(extPoint);
 			if (wrldExtBlock != null)
 				return wrldExtBlock.getWRLDExtBlockCELLByXY(point, in);
-		}
-		catch (PluginException e)
-		{
+		} catch (PluginException e) {
 			e.printStackTrace();
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			e.printStackTrace();
-		}
-		catch (DataFormatException e)
-		{
+		} catch (DataFormatException e) {
 			e.printStackTrace();
 		}
 
 		return null;
 	}
 
-	public void loadAndIndex(RandomAccessFile in, int groupLength) throws IOException, DataFormatException, PluginException
-	{
+	public void loadAndIndex(FileChannelRAF in, int groupLength)
+			throws IOException, DataFormatException, PluginException {
 		this.in = in;
 
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
-		while (dataLength >= headerByteCount)
-		{
+		while (dataLength >= headerByteCount) {
 			int count = in.read(prefix);
 			if (count != headerByteCount)
 				throw new PluginException("Record prefix is incomplete");
@@ -83,43 +72,31 @@ public class WRLDChildren extends PluginGroup
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
-			if (type.equals("GRUP"))
-			{
+			if (type.equals("GRUP")) {
 				length -= headerByteCount;
 
-				int subGroupType = prefix[12] & 0xff;
+				int subGroupType = prefix [12] & 0xff;
 
-				if (subGroupType == PluginGroup.EXTERIOR_BLOCK)
-				{
+				if (subGroupType == PluginGroup.EXTERIOR_BLOCK) {
 					WRLDExtBlock wrldExtBlock = new WRLDExtBlock(prefix, in.getFilePointer(), length);
 					WRLDExtBlockChildren.put(new Point(wrldExtBlock.x, wrldExtBlock.y), wrldExtBlock);
 					//we DO NOT index now, later
 					in.skipBytes(length);
-				}
-				else if (subGroupType == PluginGroup.CELL)
-				{
+				} else if (subGroupType == PluginGroup.CELL) {
 					wrldCellChildren = new PluginGroup(prefix);
 					wrldCellChildren.load("", in, length);
-				}
-				else
-				{
+				} else {
 					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD children group");
 				}
-			}
-			else if (type.equals("ROAD"))
-			{
+			} else if (type.equals("ROAD")) {
 				PluginRecord record = new PluginRecord(prefix);
 				record.load("", in, length);
 				road = record;
-			}
-			else if (type.equals("CELL"))
-			{
+			} else if (type.equals("CELL")) {
 				PluginRecord record = new PluginRecord(prefix);
 				record.load("", in, length);
 				wrldCell = record;
-			}
-			else
-			{
+			} else {
 				System.out.println("What the hell is a type " + type + " doing in the WRLD children group?");
 			}
 
@@ -127,8 +104,7 @@ public class WRLDChildren extends PluginGroup
 			dataLength -= length;
 		}
 
-		if (dataLength != 0)
-		{
+		if (dataLength != 0) {
 			if (getGroupType() == 0)
 				throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
 			else
@@ -137,18 +113,15 @@ public class WRLDChildren extends PluginGroup
 
 	}
 
-	public PluginRecord getRoad()
-	{
+	public PluginRecord getRoad() {
 		return road;
 	}
 
-	public PluginRecord getCell()
-	{
+	public PluginRecord getCell() {
 		return wrldCell;
 	}
 
-	public PluginGroup getCellChildren()
-	{
+	public PluginGroup getCellChildren() {
 		return wrldCellChildren;
 	}
 

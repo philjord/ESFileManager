@@ -1,7 +1,6 @@
 package esmio.loader;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,18 +12,17 @@ import esmio.common.data.plugin.PluginGroup;
 import esmio.common.data.plugin.PluginRecord;
 import esmio.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
+import tools.io.FileChannelRAF;
 
-public class WRLDExtSubblock extends PluginGroup
-{
-	public long fileOffset;
-	public int length;
-	public int x;
-	public int y;
+public class WRLDExtSubblock extends PluginGroup {
+	public long							fileOffset;
+	public int							length;
+	public int							x;
+	public int							y;
 
-	private Map<Point, CELLDIALPointer> CELLByXY = null;
+	private Map<Point, CELLDIALPointer>	CELLByXY	= null;
 
-	public WRLDExtSubblock(byte[] prefix, long fileOffset, int length)
-	{
+	public WRLDExtSubblock(byte[] prefix, long fileOffset, int length) {
 		super(prefix);
 		this.fileOffset = fileOffset;
 		this.length = length;
@@ -38,12 +36,10 @@ public class WRLDExtSubblock extends PluginGroup
 			y |= 0xffff0000;
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, RandomAccessFile in)
-			throws IOException, DataFormatException, PluginException
-	{
+	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, FileChannelRAF in)
+			throws IOException, DataFormatException, PluginException {
 		// must hold everyone up so a single thread does the load if needed
-		synchronized (this)
-		{
+		synchronized (this) {
 			if (CELLByXY == null)
 				loadAndIndex(in);
 		}
@@ -51,19 +47,16 @@ public class WRLDExtSubblock extends PluginGroup
 		return CELLByXY.get(point);
 	}
 
-	private void loadAndIndex(RandomAccessFile in) throws IOException, DataFormatException, PluginException
-	{
+	private void loadAndIndex(FileChannelRAF in) throws IOException, DataFormatException, PluginException {
 		CELLByXY = new HashMap<Point, CELLDIALPointer>();
-		synchronized (in)
-		{
+		synchronized (in) {
 			in.seek(fileOffset);
 			int dataLength = length;
 			byte prefix[] = new byte[headerByteCount];
 
 			CELLDIALPointer cellPointer = null;
 
-			while (dataLength >= headerByteCount)
-			{
+			while (dataLength >= headerByteCount) {
 				long filePositionPointer = in.getFilePointer();
 
 				int count = in.read(prefix);
@@ -73,24 +66,18 @@ public class WRLDExtSubblock extends PluginGroup
 				String type = new String(prefix, 0, 4);
 				int length = ESMByteConvert.extractInt(prefix, 4);
 
-				if (type.equals("GRUP"))
-				{
+				if (type.equals("GRUP")) {
 					length -= headerByteCount;
-					int gt = prefix[12] & 0xff;
+					int gt = prefix [12] & 0xff;
 
-					if (gt == PluginGroup.CELL)
-					{
+					if (gt == PluginGroup.CELL) {
 						cellPointer.cellChildrenFilePointer = filePositionPointer;
 						// now skip the group
 						in.skipBytes(length);
-					}
-					else
-					{
+					} else {
 						System.out.println("Group Type " + gt + " not allowed as child of WRLD ext sub block group");
 					}
-				}
-				else if (type.equals("CELL"))
-				{
+				} else if (type.equals("CELL")) {
 					int formID = ESMByteConvert.extractInt(prefix, 12);
 
 					cellPointer = new CELLDIALPointer(formID, filePositionPointer);
@@ -101,13 +88,11 @@ public class WRLDExtSubblock extends PluginGroup
 					List<Subrecord> subrecords = rec.getSubrecords();
 					int x = 0;
 					int y = 0;
-					for (int i = 0; i < subrecords.size(); i++)
-					{
+					for (int i = 0; i < subrecords.size(); i++) {
 						Subrecord sr = subrecords.get(i);
 						byte[] bs = sr.getSubrecordData();
 
-						if (sr.getSubrecordType().equals("XCLC"))
-						{
+						if (sr.getSubrecordType().equals("XCLC")) {
 							x = ESMByteConvert.extractInt(bs, 0);
 							y = ESMByteConvert.extractInt(bs, 4);
 						}
@@ -115,9 +100,7 @@ public class WRLDExtSubblock extends PluginGroup
 					//we do index now
 					Point p = new Point(x, y);
 					CELLByXY.put(p, cellPointer);
-				}
-				else
-				{
+				} else {
 					System.out.println("What the hell is a type " + type + " doing in the WRLD ext sub block group?");
 				}
 
@@ -125,8 +108,7 @@ public class WRLDExtSubblock extends PluginGroup
 				dataLength -= length;
 			}
 
-			if (dataLength != 0)
-			{
+			if (dataLength != 0) {
 				if (getGroupType() == 0)
 					throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
 				else

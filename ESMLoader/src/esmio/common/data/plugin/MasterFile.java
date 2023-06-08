@@ -1,0 +1,39 @@
+package esmio.common.data.plugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.zip.DataFormatException;
+
+import esmio.common.PluginException;
+import esmio.loader.ESMManager;
+import tools.io.FileChannelRAF;
+
+/**
+ * For desktop to swap File path strings into ByteBuffer or randomaccessfile or io streams Android will have the same
+ * for SAF Uri starting points
+ */
+public class MasterFile extends Master {
+
+	private File masterFile;
+
+	public MasterFile(File masterFile) {
+		super(masterFile.getName());
+		this.masterFile = masterFile;
+	}
+
+	@Override
+	public void load() throws PluginException, DataFormatException, IOException {
+
+		if (!masterFile.exists() || !masterFile.isFile())
+			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
+
+		FileChannelRAF in;
+		if (masterFile.length() > Integer.MAX_VALUE || !ESMManager.USE_FILE_MAPS)
+			in = new FileChannelRAF(masterFile, "r");
+		else
+			in = new FileChannelRAF(masterFile, "r");
+
+		super.load(in);
+
+	}
+}

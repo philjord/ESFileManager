@@ -1,15 +1,14 @@
 package esmio.loader;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
 import esmio.common.PluginException;
 import esmio.common.data.plugin.PluginGroup;
 import tools.io.ESMByteConvert;
+import tools.io.FileChannelRAF;
 
-public class InteriorCELLTopGroup extends PluginGroup
-{
+public class InteriorCELLTopGroup extends PluginGroup {
 	//Interior Cells are index in a block and sub block system the block Id tells you the final digits of teh cells in it
 	// the sub block tell you the pent ultimate digit (there are exactly 10 at each level)
 	// e.g. block 4 sub 3 == *34 so 99634 is there and next to 99634 is it's children, with 2 groups 
@@ -18,72 +17,56 @@ public class InteriorCELLTopGroup extends PluginGroup
 	// which is very expensive as persistent need to be loaded up front but temp only at real load time
 	// so finding and loading persists goes through a separate system
 
-	private RandomAccessFile in;
-	private InteriorCELLBlock[] interiorCELLBlocks = new InteriorCELLBlock[10];
+	private FileChannelRAF		in;
+	private InteriorCELLBlock[]	interiorCELLBlocks	= new InteriorCELLBlock[10];
 
 	//public Map<Integer, CELLPointer> interiorCELLByFormId = new LinkedHashMap<Integer, CELLPointer>();
 
-	public InteriorCELLTopGroup(byte[] prefix)
-	{
+	public InteriorCELLTopGroup(byte[] prefix) {
 		super(prefix);
 
 	}
 
-	public CELLDIALPointer getInteriorCELL(int cellId)
-	{
+	public CELLDIALPointer getInteriorCELL(int cellId) {
 		// notice Exception catching here
-		try
-		{
+		try {
 			int lastDigit = cellId % 10;
-			InteriorCELLBlock interiorCELLBlock = interiorCELLBlocks[lastDigit];
+			InteriorCELLBlock interiorCELLBlock = interiorCELLBlocks [lastDigit];
 			return interiorCELLBlock.getInteriorCELL(cellId, in);
 
-		}
-		catch (PluginException e)
-		{
+		} catch (PluginException e) {
 			e.printStackTrace();
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		return null;
 	}
 
-	public ArrayList<CELLDIALPointer> getAllInteriorCELLFormIds()
-	{
-		try
-		{
+	public ArrayList<CELLDIALPointer> getAllInteriorCELLFormIds() {
+		try {
 			ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
-			for (InteriorCELLBlock interiorCELLBlock : interiorCELLBlocks)
-			{
+			for (InteriorCELLBlock interiorCELLBlock : interiorCELLBlocks) {
 				interiorCELLBlock.getAllInteriorCELLFormIds(ret, in);
 			}
 
 			return ret;
-		}
-		catch (PluginException e)
-		{
+		} catch (PluginException e) {
 			e.printStackTrace();
-		}
-		catch (IOException e)
-		{
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		return null;
 	}
 
-	public void loadAndIndex(String fileName, RandomAccessFile in, int groupLength) throws IOException, PluginException
-	{
+	public void loadAndIndex(String fileName, FileChannelRAF in, int groupLength) throws IOException, PluginException {
 
 		this.in = in;
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
 
-		while (dataLength >= headerByteCount)
-		{
+		while (dataLength >= headerByteCount) {
 			int count = in.read(prefix);
 			if (count != headerByteCount)
 				throw new PluginException(fileName + ": Record prefix is incomplete");
@@ -92,27 +75,21 @@ public class InteriorCELLTopGroup extends PluginGroup
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
-			if (type.equals("GRUP"))
-			{
+			if (type.equals("GRUP")) {
 				length -= headerByteCount;
-				int prefixGroupType = prefix[12] & 0xff;
+				int prefixGroupType = prefix [12] & 0xff;
 
-				if (prefixGroupType == PluginGroup.INTERIOR_BLOCK)
-				{
+				if (prefixGroupType == PluginGroup.INTERIOR_BLOCK) {
 					InteriorCELLBlock cellBlock = new InteriorCELLBlock(prefix, in.getFilePointer(), length);
-					interiorCELLBlocks[cellBlock.lastDigit] = cellBlock;
+					interiorCELLBlocks [cellBlock.lastDigit] = cellBlock;
 
 					//children.loadAndIndex(fileName, in, length, interiorCELLByFormId);
 					in.skipBytes(length);
 
-				}
-				else
-				{
+				} else {
 					System.out.println("Group Type " + prefixGroupType + " not allowed as child of Int CELL");
 				}
-			}
-			else
-			{
+			} else {
 				System.out.println("what the hell is a type " + type + " doing in the Int CELL group?");
 			}
 
@@ -120,8 +97,7 @@ public class InteriorCELLTopGroup extends PluginGroup
 			dataLength -= length;
 		}
 
-		if (dataLength != 0)
-		{
+		if (dataLength != 0) {
 			if (getGroupType() == 0)
 				throw new PluginException(fileName + ": Group " + getGroupRecordType() + " is incomplete");
 			else

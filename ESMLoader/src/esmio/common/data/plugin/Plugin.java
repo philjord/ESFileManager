@@ -1,8 +1,6 @@
 package esmio.common.data.plugin;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,56 +10,51 @@ import java.util.zip.DataFormatException;
 import esmio.common.PluginException;
 import esmio.common.data.record.Record;
 import tools.io.ESMByteConvert;
-import tools.io.MappedByteBufferRAF;
+import tools.io.FileChannelRAF;
 
-public class Plugin implements PluginInterface
-{
-	private File pluginFile;
+public abstract class Plugin implements PluginInterface {
+	protected FileChannelRAF		in;											//created by sub class
 
-	private RandomAccessFile in;
+	private PluginHeader			pluginHeader;
 
-	private PluginHeader pluginHeader;
+	private List<PluginGroup>		groupList	= new ArrayList<PluginGroup>();
 
-	private List<PluginGroup> groupList = new ArrayList<PluginGroup>();
+	private List<FormInfo>			formList;
 
-	private List<FormInfo> formList;
+	private Map<Integer, FormInfo>	formMap;
 
-	private Map<Integer, FormInfo> formMap;
-
-	public Plugin(File pluginFile)
-	{
-		this.pluginFile = pluginFile;
-		pluginHeader = new PluginHeader(pluginFile.getName());
+	protected Plugin(String pluginFileName) {
+		pluginHeader = new PluginHeader(pluginFileName);
 	}
 
-	public String getName()
-	{
-		return pluginFile.getName();
+	@Override
+	public String getName() {
+		return pluginHeader.getName();
 	}
 
-	public PluginHeader getPluginHeader()
-	{
+	@Override
+	public PluginHeader getPluginHeader() {
 		return pluginHeader;
 	}
 
-	public List<FormInfo> getFormList()
-	{
+	@Override
+	public List<FormInfo> getFormList() {
 		return formList;
 	}
 
-	public Map<Integer, FormInfo> getFormMap()
-	{
+	@Override
+	public Map<Integer, FormInfo> getFormMap() {
 		return formMap;
 	}
 
-	public List<PluginGroup> getGroupList()
-	{
+	@Override
+	public List<PluginGroup> getGroupList() {
 		return groupList;
 	}
 
-	public String toString()
-	{
-		return pluginFile.getName();
+	@Override
+	public String toString() {
+		return pluginHeader.getName();
 	}
 
 	/**
@@ -70,18 +63,13 @@ public class Plugin implements PluginInterface
 	 * @throws DataFormatException
 	 * @throws IOException
 	 */
-	public void load() throws PluginException, DataFormatException, IOException
-	{
-		load(true);
-	}
+	public abstract void load() throws PluginException, DataFormatException, IOException;
 
-	public void load(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException
-	{
-		if (!pluginFile.exists() || !pluginFile.isFile())
-			throw new IOException("Plugin file '" + pluginFile.getName() + "' does not exist");
+	public abstract void load(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException;
 
-		//in = new RandomAccessFile(pluginFile, "r");
-		in = new MappedByteBufferRAF(pluginFile, "r");
+	public void load(boolean indexCellsOnly, FileChannelRAF in)
+			throws PluginException, DataFormatException, IOException {
+		this.in = in;
 		pluginHeader.read(in);
 		int recordCount = pluginHeader.getRecordCount();
 		formList = new ArrayList<FormInfo>(recordCount);
@@ -89,16 +77,15 @@ public class Plugin implements PluginInterface
 		byte prefix[] = new byte[pluginHeader.getHeaderByteCount()];
 		int loadCount = 0;
 		int count = in.read(prefix);
-		while (count != -1)
-		{
+		while (count != -1) {
 			if (count != pluginHeader.getHeaderByteCount())
-				throw new PluginException(pluginFile.getName() + ": Group record prefix is too short");
+				throw new PluginException(pluginHeader.getName() + ": Group record prefix is too short");
 
 			String type = new String(prefix, 0, 4);
 			if (!type.equals("GRUP"))
-				throw new PluginException(pluginFile.getName() + ": Top-level record is not a group");
-			if (prefix[12] != 0)
-				throw new PluginException(pluginFile.getName() + ": Top-level group type is not 0");
+				throw new PluginException(pluginHeader.getName() + ": Top-level record is not a group");
+			if (prefix [12] != 0)
+				throw new PluginException(pluginHeader.getName() + ": Top-level group type is not 0");
 
 			int length = ESMByteConvert.extractInt(prefix, 4);
 			length -= pluginHeader.getHeaderByteCount();
@@ -108,12 +95,10 @@ public class Plugin implements PluginInterface
 			group.load("", in, length);
 
 			// if requested we only index the wrld and cell records, as that is 99% of the file size
-			if (indexCellsOnly && (group.getGroupRecordType().equals("WRLD") || group.getGroupRecordType().equals("CELL")))
-			{
+			if (indexCellsOnly
+				&& (group.getGroupRecordType().equals("WRLD") || group.getGroupRecordType().equals("CELL"))) {
 				updateFormListPointersOnly(group, formList);
-			}
-			else
-			{
+			} else {
 				updateFormList(group, formList);
 				groupList.add(group);
 				loadCount += group.getRecordCount() + 1;
@@ -123,10 +108,9 @@ public class Plugin implements PluginInterface
 			count = in.read(prefix);
 		}
 
-		if (loadCount != recordCount)
-		{
-			System.out.println(pluginFile.getName() + ": Load count " + loadCount + " does not match header count " + recordCount
-					+ ", presumably it is only indexed");
+		if (loadCount != recordCount) {
+			System.out.println(pluginHeader.getName()	+ ": Load count " + loadCount + " does not match header count "
+								+ recordCount + ", presumably it is only indexed");
 		}
 
 		//I think this is for empty esm files?
@@ -149,37 +133,30 @@ public class Plugin implements PluginInterface
 
 	}
 
-	public static void updateFormList(PluginGroup pg, List<FormInfo> formList)
-	{
-		for (Record r : pg.getRecordList())
-		{
-			PluginRecord record = (PluginRecord) r;
-			if (!record.isIgnored() || (record instanceof PluginGroup))
-			{
+	public static void updateFormList(PluginGroup pg, List<FormInfo> formList) {
+		for (Record r : pg.getRecordList()) {
+			PluginRecord record = (PluginRecord)r;
+			if (!record.isIgnored() || (record instanceof PluginGroup)) {
 				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record);
 				formList.add(formInfo);
 
-				if (record instanceof PluginGroup)
-				{
-					updateFormList((PluginGroup) record, formList);
+				if (record instanceof PluginGroup) {
+					updateFormList((PluginGroup)record, formList);
 				}
 			}
 		}
 	}
 
-	public static void updateFormListPointersOnly(PluginGroup pg, List<FormInfo> formList)
-	{
-		for (Record r : pg.getRecordList())
-		{
-			PluginRecord record = (PluginRecord) r;
-			if (!record.isIgnored() || (record instanceof PluginGroup))
-			{
+	public static void updateFormListPointersOnly(PluginGroup pg, List<FormInfo> formList) {
+		for (Record r : pg.getRecordList()) {
+			PluginRecord record = (PluginRecord)r;
+			if (!record.isIgnored() || (record instanceof PluginGroup)) {
 				//record.setParent(this);
-				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(), record.getFilePositionPointer());
+				FormInfo formInfo = new FormInfo(record.getRecordType(), record.getFormID(),
+						record.getFilePositionPointer());
 				formList.add(formInfo);
-				if (record instanceof PluginGroup)
-				{
-					updateFormListPointersOnly((PluginGroup) record, formList);
+				if (record instanceof PluginGroup) {
+					updateFormListPointersOnly((PluginGroup)record, formList);
 				}
 			}
 		}

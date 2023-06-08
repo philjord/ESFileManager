@@ -12,8 +12,7 @@ import esmio.loader.InteriorCELLTopGroup;
 import esmio.loader.WRLDChildren;
 import esmio.loader.WRLDTopGroup;
 
-public interface IMaster
-{
+public interface IMaster {
 	public WRLDTopGroup getWRLDTopGroup();
 
 	public InteriorCELLTopGroup getInteriorCELLTopGroup();
@@ -22,15 +21,18 @@ public interface IMaster
 
 	public WRLDChildren getWRLDChildren(int formID);
 
-	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException;
+	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y)
+			throws DataFormatException, IOException, PluginException;
 
-	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y) throws DataFormatException, IOException, PluginException;
+	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y)
+			throws DataFormatException, IOException, PluginException;
 
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException;
 
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException;
 
-	public PluginGroup getInteriorCELLPersistentChildren(int formID) throws DataFormatException, IOException, PluginException;
+	public PluginGroup getInteriorCELLPersistentChildren(int formID)
+			throws DataFormatException, IOException, PluginException;
 
 	public PluginRecord getPluginRecord(int formID) throws PluginException;
 

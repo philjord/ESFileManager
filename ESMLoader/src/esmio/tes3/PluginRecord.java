@@ -1,7 +1,6 @@
 package esmio.tes3;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -10,18 +9,17 @@ import esmio.common.PluginException;
 import esmio.common.data.plugin.PluginSubrecord;
 import esmio.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
+import tools.io.FileChannelRAF;
 
-public class PluginRecord extends esmio.common.data.plugin.PluginRecord
-{
-	protected String editorID = "";
-	protected int recordSize;
+public class PluginRecord extends esmio.common.data.plugin.PluginRecord {
+	protected String	editorID	= "";
+	protected int		recordSize;
 
 	/**
 	 * FormId is auto generated at load, to simulate form ids in the esm
 	 * @param formId
 	 */
-	public PluginRecord(int formId, byte[] prefix)
-	{
+	public PluginRecord(int formId, byte[] prefix) {
 		this.formID = formId;
 
 		recordType = new String(prefix, 0, 4);
@@ -31,11 +29,10 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 	}
 
 	/**
-	 * For making the fake wrld  and cell group records for morrowind
+	 * For making the fake wrld and cell group records for morrowind
 	 * @param formId
 	 */
-	public PluginRecord(int formId, String recordType, String name)
-	{
+	public PluginRecord(int formId, String recordType, String name) {
 		this.formID = formId;
 		this.recordType = recordType;
 		this.editorID = name;
@@ -43,28 +40,25 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 	}
 
 	@Override
-	public String getEditorID()
-	{
+	public String getEditorID() {
 		return editorID;
 	}
 
 	//Note recordLength is not used for tes3 (we have record size already in constructor
 	@Override
-	public void load(String fileName, RandomAccessFile in, int recordLength) throws PluginException, IOException
-	{
+	public void load(String fileName, FileChannelRAF in, int recordLength) throws PluginException, IOException {
 		filePositionPointer = in.getFilePointer();
 		recordData = new byte[recordSize];
 
 		int count = in.read(recordData);
 		if (count != recordSize)
-			throw new PluginException(fileName + ": " + recordType + " record bad length, asked for " + recordSize + " got " + count);
+			throw new PluginException(
+					fileName + ": " + recordType + " record bad length, asked for " + recordSize + " got " + count);
 
 		//attempt to find and set editor id
-		if (!nonEdidRecordSet.contains(recordType))
-		{
+		if (!nonEdidRecordSet.contains(recordType)) {
 			Subrecord s0 = getSubrecords().get(0);
-			if (s0.getSubrecordType().equals("NAME"))
-			{
+			if (s0.getSubrecordType().equals("NAME")) {
 				byte[] bs = s0.getSubrecordData();
 				int len = bs.length - 1;
 
@@ -73,27 +67,23 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 					len = bs.length;
 
 				editorID = new String(bs, 0, len);
-			}
-			else
-			{
-				new Throwable("sub record 0 is not NAME! " + recordType + " " + s0.getSubrecordType()).printStackTrace();
+			} else {
+				new Throwable("sub record 0 is not NAME! " + recordType + " " + s0.getSubrecordType())
+						.printStackTrace();
 			}
 		}
 
 		// exterior cells have the x and y as the name (some are blank some are region name)
-		if (recordType.equals("LTEX"))
-		{
+		if (recordType.equals("LTEX")) {
 			//LTEX must have edid swapped to unique key system
 			Subrecord s1 = getSubrecords().get(1);
-			if (s1.getSubrecordType().equals("INTV"))
-			{
+			if (s1.getSubrecordType().equals("INTV")) {
 				byte[] bs = s1.getSubrecordData();
 				editorID = "LTEX_" + ESMByteConvert.extractInt(bs, 0);
 
-			}
-			else
-			{
-				new Throwable("LTEX sub record 1 is not INTV! " + recordType + " " + s1.getSubrecordType()).printStackTrace();
+			} else {
+				new Throwable("LTEX sub record 1 is not INTV! " + recordType + " " + s1.getSubrecordType())
+						.printStackTrace();
 			}
 
 		}
@@ -107,52 +97,48 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 					System.out.println("CREA " +editorID);
 				}*/
 
-		
-	/*	if (recordType.equals("SCPT"))
-		{
-			FileWriter fw = new FileWriter("C:\\temp\\MorrowindScriptsCharGen.txt", true);
-			String nl =System.getProperty("line.separator");
-			//System.out.print("SCPT ");
-			boolean outScript = false;
-			for (Subrecord sr : getSubrecords())
+		/*	if (recordType.equals("SCPT"))
 			{
-				if (sr.getSubrecordType().equals("SCHD"))
+				FileWriter fw = new FileWriter("C:\\temp\\MorrowindScriptsCharGen.txt", true);
+				String nl =System.getProperty("line.separator");
+				//System.out.print("SCPT ");
+				boolean outScript = false;
+				for (Subrecord sr : getSubrecords())
 				{
-					//MoveAndTurn?
-					//Main
-					//Sound_Cave_Drip
-					//Startup
-					//CharGen*
-					String n = new String(sr.getSubrecordData(), 0, 32);
-					if (n.toLowerCase().contains("chargen"))
+					if (sr.getSubrecordType().equals("SCHD"))
 					{
-						outScript = true;
-						//System.out.println("Name = " + n);
-						fw.write("Script: " + n + nl);
+						//MoveAndTurn?
+						//Main
+						//Sound_Cave_Drip
+						//Startup
+						//CharGen*
+						String n = new String(sr.getSubrecordData(), 0, 32);
+						if (n.toLowerCase().contains("chargen"))
+						{
+							outScript = true;
+							//System.out.println("Name = " + n);
+							fw.write("Script: " + n + nl);
+						}
 					}
+					else if (sr.getSubrecordType().equals("SCTX") && outScript)
+					{
+						//System.out.println(" " + new String(sr.getSubrecordData()));
+						fw.write(new String(sr.getSubrecordData()) + nl);
+					}
+		
 				}
-				else if (sr.getSubrecordType().equals("SCTX") && outScript)
-				{
-					//System.out.println(" " + new String(sr.getSubrecordData()));
-					fw.write(new String(sr.getSubrecordData()) + nl);
-				}
-
+				fw.flush();
+				fw.close();
 			}
-			fw.flush();
-			fw.close();
-		}
-		*/
+			*/
 
 	}
 
 	@Override
-	public List<Subrecord> getSubrecords()
-	{
+	public List<Subrecord> getSubrecords() {
 		// must fill it up before anyone can get it asynch!
-		synchronized (this)
-		{
-			if (subrecordList == null)
-			{
+		synchronized (this) {
+			if (subrecordList == null) {
 				subrecordList = new ArrayList<Subrecord>();
 				getFillSubrecords(recordType, subrecordList, recordData);
 				recordData = null;
@@ -161,14 +147,11 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 		}
 	}
 
-	public static void getFillSubrecords(String recordType, List<Subrecord> subrecordList, byte[] recordData)
-	{
+	public static void getFillSubrecords(String recordType, List<Subrecord> subrecordList, byte[] recordData) {
 		int offset = 0;
 
-		if (recordData != null)
-		{
-			while (offset < recordData.length)
-			{
+		if (recordData != null) {
+			while (offset < recordData.length) {
 				String subrecordType = new String(recordData, offset + 0, 4);
 				int subrecordLength = ESMByteConvert.extractInt(recordData, offset + 4);
 				byte subrecordData[] = new byte[subrecordLength];
@@ -187,8 +170,7 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 	 * @see esmio.common.data.plugin.PluginRecord#isCompressed()
 	 */
 	@Override
-	public boolean isCompressed()
-	{
+	public boolean isCompressed() {
 		return false;
 	}
 
@@ -197,25 +179,23 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord
 	 * @see esmio.common.data.plugin.PluginRecord#getRecordFlags2()
 	 */
 	@Override
-	public int getRecordFlags2()
-	{
+	public int getRecordFlags2() {
 		return 0;
 	}
 
-	private static String[] edidRecords = new String[] { "GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN", //1-6
-			"REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY", //10-20
-			"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB", //21-30
-			"INGR", "BOOK", "ALCH", "LEVI", "LEVC", //
-			"SNDG", "DIAL" };
+	private static String[]			edidRecords			= new String[] {"GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN",			//1-6
+		"REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY",											//10-20
+		"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB",											//21-30
+		"INGR", "BOOK", "ALCH", "LEVI", "LEVC",																					//
+		"SNDG", "DIAL"};
 
-	private static String[] nonEdidRecords = new String[] { "TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND", //
-			"PGRD" };
+	private static String[]			nonEdidRecords		= new String[] {"TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND",			//
+		"PGRD"};
 
-	private static HashSet<String> edidRecordSet = new HashSet<String>();
-	private static HashSet<String> nonEdidRecordSet = new HashSet<String>();
+	private static HashSet<String>	edidRecordSet		= new HashSet<String>();
+	private static HashSet<String>	nonEdidRecordSet	= new HashSet<String>();
 
-	static
-	{
+	static {
 		for (String edidRecord : edidRecords)
 			edidRecordSet.add(edidRecord);
 

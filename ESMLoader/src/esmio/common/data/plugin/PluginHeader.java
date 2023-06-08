@@ -1,91 +1,77 @@
 package esmio.common.data.plugin;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
 
 import esmio.common.PluginException;
 import tools.io.ESMByteConvert;
+import tools.io.FileChannelRAF;
 
-public class PluginHeader
-{
+public class PluginHeader {
 
-	private String pluginFileName;
+	private String			pluginFileName;
 
-	private float pluginVersion = -1;
+	private float			pluginVersion	= -1;
 
-	private boolean master = false;
+	private boolean			master			= false;
 
-	private String creator = "";
+	private String			creator			= "";
 
-	private String summary = "";
+	private String			summary			= "";
 
-	private int recordCount = 0;
+	private int				recordCount		= 0;
 
-	private List<String> masterList = new ArrayList<String>();
+	private List<String>	masterList		= new ArrayList<String>();
 
-	private int headerByteCount = -1;
+	private int				headerByteCount	= -1;
 
-	public PluginHeader(String pluginFileName)
-	{
+	public PluginHeader(String pluginFileName) {
 		this.pluginFileName = pluginFileName;
 	}
 
-	public String getName()
-	{
+	public String getName() {
 		return pluginFileName;
 	}
 
-	public float getVersion()
-	{
+	public float getVersion() {
 		return pluginVersion;
 	}
 
-	public boolean isMaster()
-	{
+	public boolean isMaster() {
 		return master;
 	}
 
-	public String getCreator()
-	{
+	public String getCreator() {
 		return creator;
 	}
 
-	public String getSummary()
-	{
+	public String getSummary() {
 		return summary;
 	}
 
-	public int getRecordCount()
-	{
+	public int getRecordCount() {
 		return recordCount;
 	}
 
-	public List<String> getMasterList()
-	{
+	public List<String> getMasterList() {
 		return masterList;
 	}
 
-	public int getHeaderByteCount()
-	{
+	public int getHeaderByteCount() {
 		return headerByteCount;
 	}
 
-	public void read(RandomAccessFile in) throws PluginException, IOException
-	{
+	public void read(FileChannelRAF in) throws PluginException, IOException {
 		long fp = in.getFilePointer();
 		// check to see if a redundant 4 bytes is in the file or are we are teh HDR record now
 		byte[] tmp = new byte[4];
 		in.seek(fp + 20);
 		in.read(tmp);
-		if (new String(tmp).equals("HEDR"))
-		{
+		if (new String(tmp).equals("HEDR")) {
 			// it is indeed the HEDR record so we want a lenght of 20
 			headerByteCount = 20;
-		}
-		else
-		{
+		} else {
 			// we need to skip 24 bytes in the header
 			headerByteCount = 24;
 		}
@@ -101,21 +87,19 @@ public class PluginHeader
 		if (!type.equals("TES4") && !type.equals("TES3"))
 			throw new PluginException(pluginFileName + ": File is not a TES4 file (" + type + ")");
 
-		if ((prefix[8] & 1) != 0)
+		if ((prefix [8] & 1) != 0)
 			master = true;
 		else
 			master = false;
 		int headerLength = ESMByteConvert.extractInt(prefix, 4);
 
-		if (type.equals("TES3"))
-		{
+		if (type.equals("TES3")) {
 			readTes3(in, headerLength);
 			return;
 		}
 
 		byte buffer[] = new byte[1024];
-		do
-		{
+		do {
 			if (headerLength < 6)
 				break;
 
@@ -140,39 +124,27 @@ public class PluginHeader
 
 			type = new String(recordHeader, 0, 4);
 
-			if (type.equals("HEDR"))
-			{
+			if (type.equals("HEDR")) {
 				if (length < 8)
 					throw new PluginException(pluginFileName + ": HEDR subrecord is too small");
 
 				pluginVersion = Float.intBitsToFloat(ESMByteConvert.extractInt(buffer, 0));
 				recordCount = ESMByteConvert.extractInt(buffer, 4);
-			}
-			else if (type.equals("CNAM"))
-			{
+			} else if (type.equals("CNAM")) {
 				if (length > 1)
 					creator = new String(buffer, 0, length - 1);
-			}
-			else if (type.equals("SNAM"))
-			{
+			} else if (type.equals("SNAM")) {
 				if (length > 1)
 					summary = new String(buffer, 0, length - 1);
-			}
-			else if (type.equals("OFST"))
-			{
+			} else if (type.equals("OFST")) {
 				// what is this one?				 
-			}
-			else if (type.equals("DELE"))
-			{
+			} else if (type.equals("DELE")) {
 				// what is this one?
-			}
-			else if (type.equals("MAST") && length > 1)
-			{
+			} else if (type.equals("MAST") && length > 1) {
 				masterList.add(new String(buffer, 0, length - 1));
 				//System.out.println("MAST " + new String(buffer, 0, length - 1));
 			}
-		}
-		while (true);
+		} while (true);
 
 		if (headerLength != 0)
 			throw new PluginException(pluginFileName + ": Header is incomplete");
@@ -181,14 +153,17 @@ public class PluginHeader
 	}
 
 	// need a new format for records and sub records as the intro data is slightly different
-	
+
 	//http://www.uesp.net/morrow/tech/mw_esm.txt
 	//http://www.uesp.net/wiki/Tes4Mod:Mod_File_Format
-	private void readTes3(RandomAccessFile in, int headerLength) throws PluginException, IOException
-	{
+	
+	//TODO: these is a whole dedicated package for tes3, and this never seems to be called for Morrowind.esm, 
+	// perhaps delete it and the option to load it?
+	private void readTes3(FileChannelRAF in, int headerLength) throws PluginException, IOException {
+		throw new UnsupportedOperationException();
+		/*
 		byte buffer[] = new byte[1024];
-		do
-		{
+		do {
 			if (headerLength < 16)
 				break;
 
@@ -212,44 +187,32 @@ public class PluginHeader
 
 			String type = new String(recordHeader, 0, 4);
 
-			if (type.equals("HEDR"))
-			{
+			if (type.equals("HEDR")) {
 				if (length < 8)
 					throw new PluginException(pluginFileName + ": HEDR subrecord is too small");
 
 				pluginVersion = Float.intBitsToFloat(ESMByteConvert.extractInt(buffer, 0));
 				recordCount = ESMByteConvert.extractInt(buffer, 4);
-			}
-			else if (type.equals("CNAM"))
-			{
+			} else if (type.equals("CNAM")) {
 				if (length > 1)
 					creator = new String(buffer, 0, length - 1);
-			}
-			else if (type.equals("SNAM"))
-			{
+			} else if (type.equals("SNAM")) {
 				if (length > 1)
 					summary = new String(buffer, 0, length - 1);
-			}
-			else if (type.equals("OFST"))
-			{
+			} else if (type.equals("OFST")) {
 				// what is this one?				 
-			}
-			else if (type.equals("DELE"))
-			{
+			} else if (type.equals("DELE")) {
 				// what is this one?
-			}
-			else if (type.equals("MAST") && length > 1)
-			{
+			} else if (type.equals("MAST") && length > 1) {
 				masterList.add(new String(buffer, 0, length - 1));
 				//System.out.println("MAST " + new String(buffer, 0, length - 1));
 			}
-		}
-		while (true);
+		} while (true);
 
 		if (headerLength != 0)
 			throw new PluginException(pluginFileName + ": Header is incomplete");
 		else
 			return;
-
+*/
 	}
 }

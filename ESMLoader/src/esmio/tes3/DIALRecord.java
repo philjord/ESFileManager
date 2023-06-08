@@ -1,18 +1,17 @@
 package esmio.tes3;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.ArrayList;
 
 import esmio.common.PluginException;
+import tools.io.FileChannelRAF;
 
-public class DIALRecord extends PluginRecord
-{
-	private long INFOOffset = -1;
+public class DIALRecord extends PluginRecord {
+	private long					INFOOffset	= -1;
 
-	private boolean isLoaded = false;
+	private boolean					isLoaded	= false;
 
-	private ArrayList<PluginRecord> infos = new ArrayList<PluginRecord>();
+	private ArrayList<PluginRecord>	infos		= new ArrayList<PluginRecord>();
 
 	/*
 	  40: DIAL =   772 (    24,     33.54,     54)
@@ -32,31 +31,25 @@ public class DIALRecord extends PluginRecord
 
 	// later on a load call actually load up the INFO records
 
-	public DIALRecord(int formId, byte[] thisPrefix, RandomAccessFile in) throws PluginException, IOException
-	{
+	public DIALRecord(int formId, byte[] thisPrefix, FileChannelRAF in) throws PluginException, IOException {
 		super(formId, thisPrefix);
 		super.load("", in, -1);
 		INFOOffset = in.getFilePointer();
 	}
 
-	public boolean isLoaded()
-	{
+	public boolean isLoaded() {
 		return isLoaded;
 	}
 
-	public ArrayList<PluginRecord> getInfos()
-	{
+	public ArrayList<PluginRecord> getInfos() {
 		return infos;
 	}
 
-	public void load(RandomAccessFile in) throws PluginException, IOException
-	{
+	public void load(FileChannelRAF in) throws PluginException, IOException {
 		infos = new ArrayList<PluginRecord>();
-		synchronized (in)
-		{
+		synchronized (in) {
 			in.seek(INFOOffset);
-			while (in.getFilePointer() < in.length())
-			{
+			while (in.getFilePointer() < in.length()) {
 				// pull the prefix data so we know what sort of record we have
 				byte[] prefix = new byte[16];
 				int count = in.read(prefix);
@@ -64,14 +57,11 @@ public class DIALRecord extends PluginRecord
 					throw new PluginException(": record prefix is incomplete");
 
 				String recordType = new String(prefix, 0, 4);
-				if (recordType.equals("INFO"))
-				{
+				if (recordType.equals("INFO")) {
 					PluginRecord record = new PluginRecord(-1, prefix);
 					record.load("", in, -1);
 					infos.add(record);
-				}
-				else
-				{
+				} else {
 					// we are finished here
 					return;
 				}
