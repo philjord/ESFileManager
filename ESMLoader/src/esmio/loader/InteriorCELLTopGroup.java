@@ -27,12 +27,14 @@ public class InteriorCELLTopGroup extends PluginGroup {
 
 	}
 
-	public CELLDIALPointer getInteriorCELL(int cellId) {
+	public FormToFilePointer getInteriorCELL(int cellId) {
 		// notice Exception catching here
 		try {
 			int lastDigit = cellId % 10;
 			InteriorCELLBlock interiorCELLBlock = interiorCELLBlocks [lastDigit];
-			return interiorCELLBlock.getInteriorCELL(cellId, in);
+			//Note we can be asked for a cell that does not exist in this ESM/ESP file
+			if(interiorCELLBlock != null)
+				return interiorCELLBlock.getInteriorCELL(cellId, in);
 
 		} catch (PluginException e) {
 			e.printStackTrace();
@@ -43,11 +45,12 @@ public class InteriorCELLTopGroup extends PluginGroup {
 		return null;
 	}
 
-	public ArrayList<CELLDIALPointer> getAllInteriorCELLFormIds() {
+	public ArrayList<FormToFilePointer> getAllInteriorCELLFormIds() {
 		try {
-			ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
+			ArrayList<FormToFilePointer> ret = new ArrayList<FormToFilePointer>();
 			for (InteriorCELLBlock interiorCELLBlock : interiorCELLBlocks) {
-				interiorCELLBlock.getAllInteriorCELLFormIds(ret, in);
+				if(interiorCELLBlock != null)
+					interiorCELLBlock.getAllInteriorCELLFormIds(ret, in);
 			}
 
 			return ret;

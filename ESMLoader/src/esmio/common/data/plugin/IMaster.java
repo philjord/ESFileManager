@@ -7,7 +7,7 @@ import java.util.zip.DataFormatException;
 import com.frostwire.util.SparseArray;
 
 import esmio.common.PluginException;
-import esmio.loader.CELLDIALPointer;
+import esmio.loader.FormToFilePointer;
 import esmio.loader.InteriorCELLTopGroup;
 import esmio.loader.WRLDChildren;
 import esmio.loader.WRLDTopGroup;
@@ -40,7 +40,7 @@ public interface IMaster {
 
 	public int[] getAllFormIds();
 
-	public List<CELLDIALPointer> getAllInteriorCELLFormIds();
+	public List<FormToFilePointer> getAllInteriorCELLFormIds();
 
 	public int[] getAllWRLDTopGroupFormIds();
 

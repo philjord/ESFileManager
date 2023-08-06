@@ -32,7 +32,7 @@ public class WRLDExtBlock extends PluginGroup {
 			y |= 0xffff0000;
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, FileChannelRAF in)
+	public FormToFilePointer getWRLDExtBlockCELLByXY(Point point, FileChannelRAF in)
 			throws IOException, DataFormatException, PluginException {
 		// must hold everyone up so a single thread does the load if needed
 		synchronized (this) {

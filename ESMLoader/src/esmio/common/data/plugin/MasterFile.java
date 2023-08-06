@@ -22,7 +22,7 @@ public class MasterFile extends Master {
 	}
 
 	@Override
-	public void load() throws PluginException, DataFormatException, IOException {
+	public boolean load() throws PluginException, DataFormatException, IOException {
 
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
@@ -33,7 +33,7 @@ public class MasterFile extends Master {
 		else
 			in = new FileChannelRAF(masterFile, "r");
 
-		super.load(in);
+		return super.load(in);
 
 	}
 }

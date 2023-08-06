@@ -17,7 +17,7 @@ public class EsmSoundKeyToName implements SoundKeyToName
 		for (int formId : esmManager.getAllFormIds())
 		{
 			Record rec = esmManager.getRecord(formId);
-			if (rec.getRecordType().equals("SOUN"))
+			if (rec!=null && rec.getRecordType().equals("SOUN"))
 			{
 				String key = "";
 				String value = "";

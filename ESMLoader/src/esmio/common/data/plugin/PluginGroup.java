@@ -164,7 +164,7 @@ public class PluginGroup extends PluginRecord {
 
 	@Override
 	public String toString() {
-		int intValue = ESMByteConvert.extractInt(groupLabel, 0);
+		int intValue = ESMByteConvert.extractInt3(groupLabel, 0);
 		String text;
 
 		switch (groupType) {

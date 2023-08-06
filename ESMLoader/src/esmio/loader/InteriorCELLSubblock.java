@@ -16,7 +16,7 @@ public class InteriorCELLSubblock extends PluginGroup {
 	private int								length;
 	public int								secondLastDigit;
 
-	private SparseArray<CELLDIALPointer>	CELLByFormID	= null;
+	private SparseArray<FormToFilePointer>	CELLByFormID	= null;
 
 	public InteriorCELLSubblock(byte[] prefix, long fileOffset, int length) {
 		super(prefix);
@@ -26,14 +26,14 @@ public class InteriorCELLSubblock extends PluginGroup {
 		secondLastDigit = ESMByteConvert.extractInt(groupLabel, 0);
 	}
 
-	public CELLDIALPointer getInteriorCELL(int cellId, FileChannelRAF in) throws IOException, PluginException {
+	public FormToFilePointer getInteriorCELL(int cellId, FileChannelRAF in) throws IOException, PluginException {
 		if (CELLByFormID == null)
 			loadAndIndex(in);
 
 		return CELLByFormID.get(cellId);
 	}
 
-	public void getAllInteriorCELLFormIds(ArrayList<CELLDIALPointer> ret, FileChannelRAF in)
+	public void getAllInteriorCELLFormIds(ArrayList<FormToFilePointer> ret, FileChannelRAF in)
 			throws IOException, PluginException {
 		if (CELLByFormID == null)
 			loadAndIndex(in);
@@ -43,12 +43,12 @@ public class InteriorCELLSubblock extends PluginGroup {
 	}
 
 	public void loadAndIndex(FileChannelRAF in) throws IOException, PluginException {
-		CELLByFormID = new SparseArray<CELLDIALPointer>();
+		CELLByFormID = new SparseArray<FormToFilePointer>();
 		in.seek(fileOffset);
 		int dataLength = length;
 		byte prefix[] = new byte[headerByteCount];
 
-		CELLDIALPointer cellPointer = null;
+		FormToFilePointer formToFilePointer = null;
 
 		while (dataLength >= headerByteCount) {
 			long filePositionPointer = in.getFilePointer();
@@ -65,7 +65,7 @@ public class InteriorCELLSubblock extends PluginGroup {
 				int subGroupType = prefix [12] & 0xff;
 
 				if (subGroupType == PluginGroup.CELL) {
-					cellPointer.cellChildrenFilePointer = filePositionPointer;
+					formToFilePointer.cellChildrenFilePointer = filePositionPointer;
 
 					// now skip the group
 					in.skipBytes(length);
@@ -74,9 +74,9 @@ public class InteriorCELLSubblock extends PluginGroup {
 							"Group Type " + subGroupType + " not allowed as child of Int CELL sub block group");
 				}
 			} else if (type.equals("CELL")) {
-				int formID = ESMByteConvert.extractInt(prefix, 12);
-				cellPointer = new CELLDIALPointer(formID, filePositionPointer);
-				CELLByFormID.put(formID, cellPointer);
+				int formID = ESMByteConvert.extractInt3(prefix, 12);
+				formToFilePointer = new FormToFilePointer(formID, filePositionPointer);
+				CELLByFormID.put(formID, formToFilePointer);
 				in.skipBytes(length);
 			} else {
 				System.out.println("What the hell is a type " + type + " doing in the Int CELL sub block group?");

@@ -23,11 +23,12 @@ public class InteriorCELLBlock extends PluginGroup {
 		lastDigit = ESMByteConvert.extractInt(groupLabel, 0);
 	}
 
-	public CELLDIALPointer getInteriorCELL(int cellId, FileChannelRAF in) throws IOException, PluginException {
+	public FormToFilePointer getInteriorCELL(int cellId, FileChannelRAF in) throws IOException, PluginException {
 		if (interiorCELLSubblocks == null)
 			loadAndIndex(in);
 		int secondLastDigit = (cellId / 10) % 10;
 		InteriorCELLSubblock interiorCELLSubblock = interiorCELLSubblocks [secondLastDigit];
+		//Note we can be asked for a cell that does not exist in this ESM/ESP file
 		if (interiorCELLSubblock != null) {
 			return interiorCELLSubblock.getInteriorCELL(cellId, in);
 		}
@@ -35,11 +36,12 @@ public class InteriorCELLBlock extends PluginGroup {
 		return null;
 	}
 
-	public void getAllInteriorCELLFormIds(ArrayList<CELLDIALPointer> ret, FileChannelRAF in)
+	public void getAllInteriorCELLFormIds(ArrayList<FormToFilePointer> ret, FileChannelRAF in)
 			throws IOException, PluginException {
 		if (interiorCELLSubblocks == null)
 			loadAndIndex(in);
 		for (InteriorCELLSubblock interiorCELLSubblock : interiorCELLSubblocks) {
+			if(interiorCELLSubblock !=null)  
 			interiorCELLSubblock.getAllInteriorCELLFormIds(ret, in);
 		}
 	}

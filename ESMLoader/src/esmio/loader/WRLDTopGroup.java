@@ -22,7 +22,7 @@ public class WRLDTopGroup extends PluginGroup {
 		super(prefix);
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(int wrldFormId, Point point) {
+	public FormToFilePointer getWRLDExtBlockCELLByXY(int wrldFormId, Point point) {
 		WRLDChildren wrldChildren = WRLDChildrenByFormId.get(wrldFormId);
 		if (wrldChildren != null)
 			return wrldChildren.getWRLDExtBlockCELLByXY(point);
@@ -49,26 +49,32 @@ public class WRLDTopGroup extends PluginGroup {
 			WRLDByFormId.put(wrldRecord.getFormID(), wrldRecord);
 
 			dataLength -= length;
-
-			count = in.read(prefix);
-			if (count != headerByteCount)
-				throw new PluginException(fileName + ": Record prefix is incomplete");
-			dataLength -= headerByteCount;
-			//type = new String(prefix, 0, 4);
-			length = ESMByteConvert.extractInt(prefix, 4);
-
-			length -= headerByteCount;
-
-			int subGroupType = prefix [12] & 0xff;
-
-			if (subGroupType == PluginGroup.WORLDSPACE) {
-				WRLDChildren children = new WRLDChildren(prefix);
-				children.loadAndIndex(in, length);
-				WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);
-			} else {
-				System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD");
+			
+			//Anchorage WRLD 11657 has no children record, so check to see if we are finished here
+			if(dataLength >= headerByteCount) {
+	
+				count = in.read(prefix);
+				if (count != headerByteCount)
+					throw new PluginException(fileName + ": Record prefix is incomplete");
+				dataLength -= headerByteCount;
+				//type = new String(prefix, 0, 4);
+				length = ESMByteConvert.extractInt(prefix, 4);
+	
+				length -= headerByteCount;
+	
+				int subGroupType = prefix [12] & 0xff;
+	
+				if (subGroupType == PluginGroup.WORLDSPACE) {
+					WRLDChildren children = new WRLDChildren(prefix);
+					children.loadAndIndex(in, length);
+					WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);
+				} else {
+					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD id " + wrldRecord.getFormID());
+					//not fixable from here, stop trying to load					
+					return;
+				}
+				dataLength -= length;
 			}
-			dataLength -= length;
 
 		}
 

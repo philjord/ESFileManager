@@ -39,7 +39,7 @@ public class PluginRecord extends Record {
 		} else {
 			headerByteCount = prefix.length;
 			recordType = new String(prefix, 0, 4);
-			formID = ESMByteConvert.extractInt(prefix, 12);
+			formID = ESMByteConvert.extractInt3(prefix, 12);
 			recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
 			recordFlags2 = ESMByteConvert.extractInt(prefix, 16);
 			if (prefix.length == 24)

@@ -20,7 +20,7 @@ public class WRLDExtSubblock extends PluginGroup {
 	public int							x;
 	public int							y;
 
-	private Map<Point, CELLDIALPointer>	CELLByXY	= null;
+	private Map<Point, FormToFilePointer>	CELLByXY	= null;
 
 	public WRLDExtSubblock(byte[] prefix, long fileOffset, int length) {
 		super(prefix);
@@ -36,7 +36,7 @@ public class WRLDExtSubblock extends PluginGroup {
 			y |= 0xffff0000;
 	}
 
-	public CELLDIALPointer getWRLDExtBlockCELLByXY(Point point, FileChannelRAF in)
+	public FormToFilePointer getWRLDExtBlockCELLByXY(Point point, FileChannelRAF in)
 			throws IOException, DataFormatException, PluginException {
 		// must hold everyone up so a single thread does the load if needed
 		synchronized (this) {
@@ -48,13 +48,13 @@ public class WRLDExtSubblock extends PluginGroup {
 	}
 
 	private void loadAndIndex(FileChannelRAF in) throws IOException, DataFormatException, PluginException {
-		CELLByXY = new HashMap<Point, CELLDIALPointer>();
+		CELLByXY = new HashMap<Point, FormToFilePointer>();
 		synchronized (in) {
 			in.seek(fileOffset);
 			int dataLength = length;
 			byte prefix[] = new byte[headerByteCount];
 
-			CELLDIALPointer cellPointer = null;
+			FormToFilePointer formToFilePointer = null;
 
 			while (dataLength >= headerByteCount) {
 				long filePositionPointer = in.getFilePointer();
@@ -71,16 +71,16 @@ public class WRLDExtSubblock extends PluginGroup {
 					int gt = prefix [12] & 0xff;
 
 					if (gt == PluginGroup.CELL) {
-						cellPointer.cellChildrenFilePointer = filePositionPointer;
+						formToFilePointer.cellChildrenFilePointer = filePositionPointer;
 						// now skip the group
 						in.skipBytes(length);
 					} else {
 						System.out.println("Group Type " + gt + " not allowed as child of WRLD ext sub block group");
 					}
 				} else if (type.equals("CELL")) {
-					int formID = ESMByteConvert.extractInt(prefix, 12);
+					int formID = ESMByteConvert.extractInt3(prefix, 12);
 
-					cellPointer = new CELLDIALPointer(formID, filePositionPointer);
+					formToFilePointer = new FormToFilePointer(formID, filePositionPointer);
 
 					PluginRecord rec = new PluginRecord(prefix);
 					rec.load("", in, length);
@@ -99,7 +99,7 @@ public class WRLDExtSubblock extends PluginGroup {
 					}
 					//we do index now
 					Point p = new Point(x, y);
-					CELLByXY.put(p, cellPointer);
+					CELLByXY.put(p, formToFilePointer);
 				} else {
 					System.out.println("What the hell is a type " + type + " doing in the WRLD ext sub block group?");
 				}

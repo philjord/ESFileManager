@@ -11,7 +11,7 @@ import com.frostwire.util.SparseArray;
 import esmio.common.PluginException;
 import esmio.common.data.plugin.FormInfo;
 import esmio.common.data.plugin.PluginSubrecord;
-import esmio.loader.CELLDIALPointer;
+import esmio.loader.FormToFilePointer;
 import esmio.loader.InteriorCELLTopGroup;
 import esmio.loader.WRLDChildren;
 import esmio.loader.WRLDTopGroup;
@@ -297,10 +297,10 @@ public class Master implements IMasterTes3 {
 	}
 
 	@Override
-	public List<CELLDIALPointer> getAllInteriorCELLFormIds() {
-		ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
+	public List<FormToFilePointer> getAllInteriorCELLFormIds() {
+		ArrayList<FormToFilePointer> ret = new ArrayList<FormToFilePointer>();
 		for (int formId : interiorCellsByFormId.keySet()) {
-			ret.add(new CELLDIALPointer(formId, -1));
+			ret.add(new FormToFilePointer(formId, -1));
 		}
 
 		return ret;

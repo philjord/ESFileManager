@@ -10,7 +10,7 @@ import com.frostwire.util.SparseArray;
 import esmio.Point;
 import esmio.common.PluginException;
 import esmio.common.data.record.Record;
-import esmio.loader.CELLDIALPointer;
+import esmio.loader.FormToFilePointer;
 import esmio.loader.DIALTopGroup;
 import esmio.loader.InteriorCELLTopGroup;
 import esmio.loader.WRLDChildren;
@@ -174,7 +174,7 @@ public abstract class Master implements IMaster {
 			throws DataFormatException, IOException, PluginException {
 		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(wrldFormId);
 		if (children != null) {
-			CELLDIALPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
+			FormToFilePointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
 
 			if (cellPointer == null || cellPointer.cellFilePointer == -1) {
 				// normally this is fine just means we are off the edge of the map
@@ -202,7 +202,7 @@ public abstract class Master implements IMaster {
 			throws DataFormatException, IOException, PluginException {
 		WRLDChildren children = wRLDTopGroup.WRLDChildrenByFormId.get(wrldFormId);
 		if (children != null) {
-			CELLDIALPointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
+			FormToFilePointer cellPointer = children.getWRLDExtBlockCELLByXY(new Point(x, y));
 
 			if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1) {
 				return null;
@@ -220,17 +220,17 @@ public abstract class Master implements IMaster {
 	}
 
 	@Override
-	public List<CELLDIALPointer> getAllInteriorCELLFormIds() {
+	public List<FormToFilePointer> getAllInteriorCELLFormIds() {
 		//just for hunter sneaker cut down esm
 		if (interiorCELLTopGroup != null)
 			return interiorCELLTopGroup.getAllInteriorCELLFormIds();
 		else
-			return new ArrayList<CELLDIALPointer>();
+			return new ArrayList<FormToFilePointer>();
 	}
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException {
-		CELLDIALPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		FormToFilePointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellFilePointer == -1) {
 			return null;
 		}
@@ -247,7 +247,7 @@ public abstract class Master implements IMaster {
 
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException {
-		CELLDIALPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		FormToFilePointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1) {
 			return null;
 		}
@@ -265,7 +265,7 @@ public abstract class Master implements IMaster {
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID)
 			throws DataFormatException, IOException, PluginException {
-		CELLDIALPointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
+		FormToFilePointer cellPointer = interiorCELLTopGroup.getInteriorCELL(formID);
 		if (cellPointer == null || cellPointer.cellChildrenFilePointer == -1) {
 			return null;
 		}
@@ -286,9 +286,9 @@ public abstract class Master implements IMaster {
 		return null;
 	}
 
-	public abstract void load() throws PluginException, DataFormatException, IOException;
+	public abstract boolean load() throws PluginException, DataFormatException, IOException;
 
-	protected void load(FileChannelRAF in) throws PluginException, DataFormatException, IOException {
+	protected boolean load(FileChannelRAF in) throws PluginException, DataFormatException, IOException {
 		System.out.println("Loading ESM file " + masterHeader.getName());
 		long start = System.currentTimeMillis();
 
@@ -300,6 +300,12 @@ public abstract class Master implements IMaster {
 			in.seek(fp);
 
 			masterHeader.read(in);
+			
+			//bad header means bad file
+			if(masterHeader.getVersion() <= 0 || masterHeader.getRecordCount() == 0) {
+				System.out.println("Bad Header skip load for file " + masterHeader.getName());
+				return false;
+			}
 
 			headerByteCount = masterHeader.getHeaderByteCount();
 
@@ -385,12 +391,12 @@ public abstract class Master implements IMaster {
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
-			for (CELLDIALPointer cp : getAllInteriorCELLFormIds()) {
+			for (FormToFilePointer cp : getAllInteriorCELLFormIds()) {
 				int formId = cp.formId;
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
-
+			
 			for (int formId : getAllWRLDTopGroupFormIds()) {
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
@@ -399,12 +405,19 @@ public abstract class Master implements IMaster {
 
 		System.out.println(
 				"Finished loading ESM file " + masterHeader.getName() + " in " + (System.currentTimeMillis() - start));
-
+		return true;
 	}
 
 	@Override
 	public int[] getAllWRLDTopGroupFormIds() {
-		return wRLDTopGroup.WRLDByFormId.keySet();
+		if(wRLDTopGroup!=null) {			
+			return wRLDTopGroup.WRLDByFormId.keySet();
+		} else {
+			//happens if the esp file is bum
+			System.out.println(
+					"no wRLDTopGroup in  ESM file " + masterHeader.getName());
+			return new int[0];
+		}
 	}
 
 	/**

@@ -36,8 +36,8 @@ public class ESMManagerFile extends ESMManager {
 		try {
 			File m = new File(fileNameToAdd);
 			Master master = new MasterFile(m);
-			master.load();
-			addMaster(master);
+			if(master.load()) 
+				addMaster(master);
 		} catch (PluginException e1) {
 			e1.printStackTrace();
 		} catch (DataFormatException e1) {

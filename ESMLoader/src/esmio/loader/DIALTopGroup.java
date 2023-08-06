@@ -11,27 +11,27 @@ import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
 public class DIALTopGroup extends PluginGroup {
-	private SparseArray<CELLDIALPointer> DIALByFormID = null;
+	private SparseArray<FormToFilePointer> DIALByFormID = null;
 
 	public DIALTopGroup(byte[] prefix) {
 		super(prefix);
 	}
 
-	public CELLDIALPointer getDIAL(int dialId) throws IOException, PluginException {
+	public FormToFilePointer getDIAL(int dialId) throws IOException, PluginException {
 		return DIALByFormID.get(dialId);
 	}
 
-	public void getAllInteriorCELLFormIds(ArrayList<CELLDIALPointer> ret) throws IOException, PluginException {
+	public void getAllInteriorCELLFormIds(ArrayList<FormToFilePointer> ret) throws IOException, PluginException {
 		for (int i = 0; i < DIALByFormID.size(); i++)
 			ret.add(DIALByFormID.get(DIALByFormID.keyAt(i)));
 	}
 
 	public void loadAndIndex(FileChannelRAF in, int groupLength) throws IOException, PluginException {
-		DIALByFormID = new SparseArray<CELLDIALPointer>();
+		DIALByFormID = new SparseArray<FormToFilePointer>();
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
 
-		CELLDIALPointer cellPointer = null;
+		FormToFilePointer formToFilePointer = null;
 
 		while (dataLength >= headerByteCount) {
 			long filePositionPointer = in.getFilePointer();
@@ -48,16 +48,16 @@ public class DIALTopGroup extends PluginGroup {
 				int subGroupType = prefix [12] & 0xff;
 
 				if (subGroupType == PluginGroup.TOPIC) {
-					cellPointer.cellChildrenFilePointer = filePositionPointer;
+					formToFilePointer.cellChildrenFilePointer = filePositionPointer;
 					// now skip the group
 					in.skipBytes(length);
 				} else {
 					System.out.println("Group Type " + subGroupType + " not allowed as child of DIAL group");
 				}
 			} else if (type.equals("DIAL")) {
-				int formID = ESMByteConvert.extractInt(prefix, 12);
-				cellPointer = new CELLDIALPointer(formID, filePositionPointer);
-				DIALByFormID.put(formID, cellPointer);
+				int formID = ESMByteConvert.extractInt3(prefix, 12);
+				formToFilePointer = new FormToFilePointer(formID, filePositionPointer);
+				DIALByFormID.put(formID, formToFilePointer);
 				in.skipBytes(length);
 			} else {
 				System.out.println("What the hell is a type " + type + " doing in the Int CELL sub block group?");

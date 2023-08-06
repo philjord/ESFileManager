@@ -1,6 +1,11 @@
 package esmio.loader;
 
-public class CELLDIALPointer
+/**
+ * Pointer used by CELL and DIALS so a bit confusing
+ * @author pjnz
+ *
+ */
+public class FormToFilePointer
 {
 	public int formId = -1;
 
@@ -8,7 +13,7 @@ public class CELLDIALPointer
 
 	public long cellChildrenFilePointer = -1;
 
-	public CELLDIALPointer(int formId, long cellFilePointer)
+	public FormToFilePointer(int formId, long cellFilePointer)
 	{
 		this.formId = formId;
 		this.cellFilePointer = cellFilePointer;

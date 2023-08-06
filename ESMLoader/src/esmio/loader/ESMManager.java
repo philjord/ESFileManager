@@ -14,6 +14,7 @@ import esmio.common.data.plugin.PluginGroup;
 import esmio.common.data.plugin.PluginRecord;
 import esmio.common.data.record.Record;
 
+
 // TODO: this is really an ESMMaster manager (or master plus plugin? esp? for morrowind)
 
 // also the multi-master part ( and cacher) is really very separate from the ensuremaster
@@ -26,13 +27,13 @@ public abstract class ESMManager implements IESMManager {
 
 	private ArrayList<IMaster>	masters					= new ArrayList<IMaster>();
 
-	private float				pluginVersion			= -1;
+	private float				pluginVersion			= -999;
 
 	private String				pluginName				= "";
 
 	@Override
 	public void addMaster(IMaster master) {
-		if (pluginVersion == -1) {
+		if (pluginVersion == -999) {
 			pluginVersion = master.getVersion();
 			pluginName = master.getName();
 		} else {
@@ -42,7 +43,16 @@ public abstract class ESMManager implements IESMManager {
 			}
 		}
 
-		if (!masters.contains(master)) {
+		boolean hasMaster = masters.contains(master);
+		for(IMaster m : masters) { 
+			if(m.getName().equals(master.getName())) {				
+				hasMaster = true;
+				break;
+			}
+				
+		}
+			
+		if (!hasMaster) {		
 			masters.add(master);
 		} else {
 			System.out.println("why add same master twice? " + master);
@@ -131,57 +141,135 @@ public abstract class ESMManager implements IESMManager {
 	}
 
 	@Override
-	public List<CELLDIALPointer> getAllInteriorCELLFormIds() {
-		ArrayList<CELLDIALPointer> ret = new ArrayList<CELLDIALPointer>();
+	public List<FormToFilePointer> getAllInteriorCELLFormIds() {
+		ArrayList<FormToFilePointer> ret = new ArrayList<FormToFilePointer>();
 		for (IMaster m : masters) {
 			ret.addAll(m.getAllInteriorCELLFormIds());
 		}
 		return ret;
 	}
+	
+	
+	
+	
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException {
-		return getMasterForId(formID).getInteriorCELL(formID);
+		PluginRecord pr = null;
+		for (IMaster m : masters) {
+			PluginRecord pr2 = m.getInteriorCELL(formID);
+			if(pr2 != null) {
+				if(pr != null)
+					System.out.println("getInteriorCELL(int formID) found twice " + formID);				
+				pr = pr2;
+			}
+		}
+				
+		return pr;
 	}
 
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException {
-		return getMasterForId(formID).getInteriorCELLChildren(formID);
+		PluginGroup pg = null;
+		for (IMaster m : masters) {
+			PluginGroup pg2 = m.getInteriorCELLChildren(formID);
+			if(pg2 != null) {
+				if(pg != null)
+					System.out.println("getInteriorCELLChildren(int formID) found twice " + formID );				
+				pg = pg2;
+			}
+		}
+		return pg;	
 	}
 
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID)
 			throws DataFormatException, IOException, PluginException {
-		return getMasterForId(formID).getInteriorCELLPersistentChildren(formID);
+		PluginGroup pg = null;
+		for (IMaster m : masters) {
+			PluginGroup pg2 = m.getInteriorCELLPersistentChildren(formID);
+			if(pg2 != null) {
+				if(pg != null)
+					System.out.println("getInteriorCELLPersistentChildren(int formID) found twice " + formID );				
+				pg = pg2;
+			}
+		}
+		return pg;	
 	}
-
-	@Override
-	public PluginRecord getPluginRecord(int formID) throws PluginException {
-		return getMasterForId(formID).getPluginRecord(formID);
-	}
+	
+	
 
 	@Override
 	public PluginRecord getWRLD(int formID) throws DataFormatException, IOException, PluginException {
-		return getMasterForId(formID).getWRLD(formID);
+		PluginRecord pr = null;
+		for (IMaster m : masters) {
+			PluginRecord pr2 = m.getWRLD(formID);
+			if(pr2 != null) {
+				if(pr != null)
+					System.out.println("getWRLD(int formID) found twice " + formID);				
+				pr = pr2;
+			}
+		}
+		return pr;
 	}
 
 	@Override
 	public WRLDChildren getWRLDChildren(int formID) {
-		return getMasterForId(formID).getWRLDChildren(formID);
+		WRLDChildren pr = null;
+		for (IMaster m : masters) {
+			WRLDChildren pr2 = m.getWRLDChildren(formID);
+			if(pr2 != null) {
+				if(pr != null)
+					System.out.println("getWRLDChildren(int formID) found twice " + formID );				
+				pr = pr2;
+			}
+		}
+		return pr;
 	}
 
 	@Override
 	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y)
 			throws DataFormatException, IOException, PluginException {
-		return getMasterForId(wrldFormId).getWRLDExtBlockCELL(wrldFormId, x, y);
+		PluginRecord pr = null;
+		for (IMaster m : masters) {
+			PluginRecord pr2 = m.getWRLDExtBlockCELL(wrldFormId, x, y);
+			if(pr2 != null) {
+				if(pr != null)
+					System.out.println("getWRLDExtBlockCELL(int formID) found twice " + wrldFormId + " " + x + "x" + y);				
+				pr = pr2;
+			}
+		}
+		return pr;
 	}
 
 	@Override
 	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y)
 			throws DataFormatException, IOException, PluginException {
-		return getMasterForId(wrldFormId).getWRLDExtBlockCELLChildren(wrldFormId, x, y);
+		PluginGroup pg = null;
+		for (IMaster m : masters) {
+			PluginGroup pg2 = m.getWRLDExtBlockCELLChildren(wrldFormId, x, y);
+			if(pg2 != null) {
+				if(pg != null)
+					System.out.println("getWRLDExtBlockCELLChildren(int formID) found twice " + wrldFormId + " " + x + "x" + y);				
+				pg = pg2;
+			}
+		}
+		return pg;
 	}
+	
+	@Override
+	public PluginRecord getPluginRecord(int formID) throws PluginException {
+		for (IMaster m : masters) {
+			if (formID >= m.getMinFormId() && formID <= m.getMaxFormId()) {
+				return m.getPluginRecord(formID);
+			}
+		}
 
+		System.out.println("no master found for form id " + formID);
+		return null;
+
+	}
+	
 	@Override
 	public WRLDTopGroup getWRLDTopGroup() {
 		throw new UnsupportedOperationException("ESMManager does not have a single top group");
@@ -202,17 +290,13 @@ public abstract class ESMManager implements IESMManager {
 		throw new UnsupportedOperationException("ESMManager does not have a max form id");
 	}
 
-	private IMaster getMasterForId(int formID) {
-		for (IMaster m : masters) {
-			if (formID >= m.getMinFormId() && formID <= m.getMaxFormId()) {
-				return m;
-			}
-		}
+	
 
-		System.out.println("no master found for form id " + formID);
-		return null;
+	@Override
+	public ArrayList<IMaster> getMasters() {
+		return new ArrayList<IMaster>(masters);
 	}
-
+	
 	@Override
 	public void clearMasters() {
 		masters.clear();
