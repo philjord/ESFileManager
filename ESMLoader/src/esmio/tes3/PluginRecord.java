@@ -57,19 +57,17 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord {
 
 		//attempt to find and set editor id
 		if (!nonEdidRecordSet.contains(recordType)) {
-			Subrecord s0 = getSubrecords().get(0);
-			if (s0.getSubrecordType().equals("NAME")) {
-				byte[] bs = s0.getSubrecordData();
-				int len = bs.length - 1;
-
-				// GMST are not null terminated!!
-				if (recordType.equals("GMST"))
-					len = bs.length;
-
-				editorID = new String(bs, 0, len);
-			} else {
-				new Throwable("sub record 0 is not NAME! " + recordType + " " + s0.getSubrecordType())
-						.printStackTrace();
+			for(Subrecord s : getSubrecords()) {
+				if (s.getSubrecordType().equals("NAME")) {
+					byte[] bs = s.getSubrecordData();
+					int len = bs.length - 1;
+	
+					// GMST are not null terminated!!
+					if (recordType.equals("GMST"))
+						len = bs.length;
+	
+					editorID = new String(bs, 0, len);
+				} 
 			}
 		}
 
