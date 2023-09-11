@@ -2,6 +2,7 @@ package esmio.loader;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.zip.DataFormatException;
 
@@ -151,7 +152,7 @@ public abstract class ESMManager implements IESMManager {
 	
 	
 	
-	
+	private HashMap<Integer,Integer> doublesReported = new HashMap<Integer,Integer>();
 
 	@Override
 	public PluginRecord getInteriorCELL(int formID) throws DataFormatException, IOException, PluginException {
@@ -159,8 +160,10 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			PluginRecord pr2 = m.getInteriorCELL(formID);
 			if(pr2 != null) {
-				if(pr != null)
-					System.out.println("getInteriorCELL(int formID) found twice " + formID);				
+				if(pr != null && doublesReported.get(formID) == null) {
+					System.out.println("getInteriorCELL(int formID) found more than once " + formID);
+					doublesReported.put(formID,formID);
+				}
 				pr = pr2;
 			}
 		}
@@ -174,8 +177,10 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			PluginGroup pg2 = m.getInteriorCELLChildren(formID);
 			if(pg2 != null) {
-				if(pg != null)
-					System.out.println("getInteriorCELLChildren(int formID) found twice " + formID );				
+				if(pg != null && doublesReported.get(formID) == null) {
+					System.out.println("getInteriorCELLChildren(int formID) found more than once " + formID);
+					doublesReported.put(formID,formID);
+				}
 				pg = pg2;
 			}
 		}
@@ -189,8 +194,10 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			PluginGroup pg2 = m.getInteriorCELLPersistentChildren(formID);
 			if(pg2 != null) {
-				if(pg != null)
-					System.out.println("getInteriorCELLPersistentChildren(int formID) found twice " + formID );				
+				if(pg != null && doublesReported.get(formID) == null) {
+					System.out.println("getInteriorCELLPersistentChildren(int formID) found twice " + formID );	
+					doublesReported.put(formID,formID);
+				}
 				pg = pg2;
 			}
 		}
@@ -205,8 +212,10 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			PluginRecord pr2 = m.getWRLD(formID);
 			if(pr2 != null) {
-				if(pr != null)
-					System.out.println("getWRLD(int formID) found twice " + formID);				
+				if(pr != null && doublesReported.get(formID) == null) {
+					System.out.println("getWRLD(int formID) found twice " + formID);		
+					doublesReported.put(formID,formID);
+				}
 				pr = pr2;
 			}
 		}
@@ -219,8 +228,10 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			WRLDChildren pr2 = m.getWRLDChildren(formID);
 			if(pr2 != null) {
-				if(pr != null)
-					System.out.println("getWRLDChildren(int formID) found twice " + formID );				
+				if(pr != null && doublesReported.get(formID) == null) {
+					System.out.println("getWRLDChildren(int formID) found twice " + formID );	
+					doublesReported.put(formID,formID);
+				}
 				pr = pr2;
 			}
 		}
@@ -234,8 +245,9 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			PluginRecord pr2 = m.getWRLDExtBlockCELL(wrldFormId, x, y);
 			if(pr2 != null) {
-				if(pr != null)
-					System.out.println("getWRLDExtBlockCELL(int formID) found twice " + wrldFormId + " " + x + "x" + y);				
+				if(pr != null ) 
+					System.out.println("getWRLDExtBlockCELL(int formID) found twice " + wrldFormId + " " + x + "x" + y);	
+					 
 				pr = pr2;
 			}
 		}
@@ -249,8 +261,9 @@ public abstract class ESMManager implements IESMManager {
 		for (IMaster m : masters) {
 			PluginGroup pg2 = m.getWRLDExtBlockCELLChildren(wrldFormId, x, y);
 			if(pg2 != null) {
-				if(pg != null)
-					System.out.println("getWRLDExtBlockCELLChildren(int formID) found twice " + wrldFormId + " " + x + "x" + y);				
+				if(pg != null ) 
+					System.out.println("getWRLDExtBlockCELLChildren(int formID) found twice " + wrldFormId + " " + x + "x" + y);	
+				 
 				pg = pg2;
 			}
 		}
