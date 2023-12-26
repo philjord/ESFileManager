@@ -13,6 +13,7 @@ import esfilemanager.common.data.plugin.FormInfo;
 import esfilemanager.common.data.plugin.PluginGroup;
 import esfilemanager.common.data.plugin.PluginHeader;
 import esfilemanager.common.data.plugin.PluginRecord;
+import esfilemanager.common.data.plugin.PluginHeader.GAME;
 import esfilemanager.common.data.record.Record;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
@@ -72,11 +73,18 @@ public abstract class Plugin {
 		this.in = in;
 		pluginHeader.load(pluginHeader.getName(), in);
 		
-		if( pluginHeader.getPluginFileFormat().equals("TES3"))
+		if(pluginHeader.getGame() == GAME.TES3)
 		{
 			loadTES3(indexCellsOnly, in);
 			return;
 		}
+		
+		// fake top group for the header to live in
+		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
+		groupList.add(topPG);
+		topPG.getRecordList().add(pluginHeader);
+
+		
 		int recordCount = pluginHeader.getRecordCount();
 		formList = new ArrayList<FormInfo>(recordCount);
 		formMap = new HashMap<Integer, FormInfo>(recordCount);
@@ -141,26 +149,14 @@ public abstract class Plugin {
 
 	private void loadTES3(boolean indexCellsOnly, FileChannelRAF in) throws IOException, PluginException, DataFormatException {
 		
-		
 		// fake top groups for now, to butcher with later, cells and everything else
 		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
 		groupList.add(topPG);
+		topPG.getRecordList().add(pluginHeader);
 		PluginGroup cellPG = new esfilemanager.tes3.PluginGroup(PluginGroup.CELL);
 		topPG.getRecordList().add(cellPG);
 		
 		LinkedHashMap<String, PluginGroup> typeToGroup = new LinkedHashMap<String, PluginGroup>();
-		
-		for(String grup : esfilemanager.tes3.PluginRecord.edidRecords) {
-			PluginGroup pg = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, grup);
-			topPG.getRecordList().add(pg);
-			typeToGroup.put(grup, pg);
-		}
-		for(String grup : esfilemanager.tes3.PluginRecord.nonEdidRecords) {
-			PluginGroup pg = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, grup);
-			topPG.getRecordList().add(pg);
-			typeToGroup.put(grup, pg);
-		}
-			
 		
 		int recordCount = pluginHeader.getRecordCount();
 		formList = new ArrayList<FormInfo>(recordCount);
@@ -183,9 +179,18 @@ public abstract class Plugin {
 			if(type.equals("CELL")) {
 				cellPG.getRecordList().add(record);
 			} else {
-				if(typeToGroup.get(type) == null)
-					System.out.println("poo type " + type);
-				typeToGroup.get(type).getRecordList().add(record);
+				if(!esfilemanager.tes3.PluginRecord.edidRecordSet.contains(type) 
+						&& !esfilemanager.tes3.PluginRecord.nonEdidRecordSet.contains(type) )
+					System.out.println("unseen type " + type);
+				
+				PluginGroup pg = typeToGroup.get(type);
+				if(pg == null) {
+					pg = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, type);
+					topPG.getRecordList().add(pg);
+					typeToGroup.put(type, pg);
+				}
+				
+				pg.getRecordList().add(record);
 			}				
 
 			//prep for the next iter
@@ -195,70 +200,7 @@ public abstract class Plugin {
 		if (loadCount != recordCount) {
 			System.out.println(pluginHeader.getName()	+ ": Load count " + loadCount + " does not match header count "
 								+ recordCount + ", presumably it is only indexed");
-		}
-		
-		
-		
- /*
-
-		//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
-		PluginRecord wrldRecord = new PluginRecord(0, "WRLD", "MorrowindWorld");
-		idToFormMap.put(wrldRecord.getFormID(),
-				new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord));
-
-		while (in.getFilePointer() < in.length()) {
-			// pull the prefix data so we know what sort of record we need to load
-			byte[] prefix = new byte[16];
-			int count = in.read(prefix);
-			if (count != 16)
-				throw new PluginException(": record prefix is incomplete");
-
-			String recordType = new String(prefix, 0, 4);
-			//recordSize = ESMByteConvert.extractInt(prefix, 4);
-			//unknownInt = ESMByteConvert.extractInt(prefix, 8);
-			//recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
-
-			int formID = getNextFormId();
-
-			if (recordType.equals("CELL")) {
-				//	looks like x = 23 to -18 y is 27 to -17  so 50 wide with an x off of +25 and y of +20
-				CELLPluginGroup cellPluginGroup = new CELLPluginGroup(prefix, in);
-
-				if (cellPluginGroup.isExterior) {
-					int xIdx = cellPluginGroup.cellX + 50;
-					int yIdx = cellPluginGroup.cellY + 50;
-					exteriorCells [xIdx] [yIdx] = cellPluginGroup;
-				} else {
-					interiorCellsByEdid.put(cellPluginGroup.getEditorID(), cellPluginGroup);
-					interiorCellsByFormId.put(cellPluginGroup.getFormID(), cellPluginGroup);
-				}
-			} else if (recordType.equals("LAND")) {
-				//land are fully skipped as they get loaded with the owner cell at cell load time later
-				int recordSize = ESMByteConvert.extractInt(prefix, 4);
-				in.skipBytes(recordSize);
-			} else if (recordType.equals("DIAL")) {
-				DIALRecord dial = new DIALRecord(formID, prefix, in);
-				dials.put(dial.getEditorID(), dial);
-			} else {
-				PluginRecord record = new PluginRecord(formID, prefix);
-				record.load("", in, -1);
-
-				// 1 length are single 0's
-				if (record.getEditorID() != null && record.getEditorID().length() > 1) {
-					edidToFormIdMap.put(record.getEditorID(), new Integer(formID));
-				}
-
-				// every thing else gets stored as a record
-				FormInfo info = new FormInfo(record.getRecordType(), formID, record);
-				idToFormMap.put(formID, info);
-			}
-
-		}
-
-		// now establish min and max form id range
-		minFormId = 0;
-		maxFormId = currentFormId - 1;
-		*/
+		}		
 	}
 
 	public static void updateFormList(PluginGroup pg, List<FormInfo> formList) {

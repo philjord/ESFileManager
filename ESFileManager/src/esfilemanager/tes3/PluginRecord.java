@@ -185,13 +185,18 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 		"REGN", "BSGN", "LTEX", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY",											 
 		"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB",											 
 		"INGR", "BOOK", "ALCH", "LEVI", "LEVC",																					 
-		"SNDG", "DIAL"};
+		"SNDG", "DIAL"
+		// not in morrowind
+		,"SSCR"	
+		// change records from save files https://www.mwmythicmods.com/argent/tech/es_format.html
+		,"NPCC", "CREC", "CNTC", "REFR", "QUES", "JOUR", "FMAP", "PCDT", "GAME", "SPLM", "STLN"
+	};
 
 	public static String[]			nonEdidRecords		= new String[] {"TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND",			 
 		"PGRD"};
 
-	private static HashSet<String>	edidRecordSet		= new HashSet<String>();
-	private static HashSet<String>	nonEdidRecordSet	= new HashSet<String>();
+	public static HashSet<String>	edidRecordSet		= new HashSet<String>();
+	public static HashSet<String>	nonEdidRecordSet	= new HashSet<String>();
 
 	static {
 		for (String edidRecord : edidRecords)

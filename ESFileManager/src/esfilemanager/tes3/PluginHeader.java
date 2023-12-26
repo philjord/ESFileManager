@@ -22,7 +22,7 @@ public class PluginHeader extends PluginRecord {
 	private int		numRecords		= 0;
 
 	public PluginHeader() {
-		super(-1, "HEDR", "The header");
+		super(-1, "TES3", "The header");
 	}
 
 	public void load(String fileName, FileChannelRAF in) throws PluginException, IOException {
