@@ -181,13 +181,13 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord {
 		return 0;
 	}
 
-	private static String[]			edidRecords			= new String[] {"GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN",			//1-6
-		"REGN", "BSGN", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY",											//10-20
-		"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB",											//21-30
-		"INGR", "BOOK", "ALCH", "LEVI", "LEVC",																					//
+	public static String[]			edidRecords			= new String[] {"GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN",			 
+		"REGN", "BSGN", "LTEX", "STAT", "DOOR", "MISC", "WEAP", "CONT", "SPEL", "CREA", "BODY",											 
+		"LIGH", "ENCH", "NPC_", "ARMO", "CLOT", "REPA", "ACTI", "APPA", "LOCK", "PROB",											 
+		"INGR", "BOOK", "ALCH", "LEVI", "LEVC",																					 
 		"SNDG", "DIAL"};
 
-	private static String[]			nonEdidRecords		= new String[] {"TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND",			//
+	public static String[]			nonEdidRecords		= new String[] {"TES3", "SKIL", "MGEF", "SCPT", "INFO", "LAND",			 
 		"PGRD"};
 
 	private static HashSet<String>	edidRecordSet		= new HashSet<String>();

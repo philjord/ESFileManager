@@ -295,11 +295,7 @@ public abstract class Master implements IMaster {
 		this.in = in;
 
 		synchronized (in) {
-			long fp = in.getFilePointer();
-
-			in.seek(fp);
-
-			masterHeader.read(in);
+			masterHeader.load(masterHeader.getName(), in);
 			
 			//bad header means bad file
 			if(masterHeader.getVersion() <= 0 || masterHeader.getRecordCount() == 0) {

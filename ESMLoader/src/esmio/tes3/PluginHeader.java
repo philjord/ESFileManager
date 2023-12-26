@@ -70,11 +70,11 @@ public class PluginHeader extends PluginRecord {
 		}
 	}
 
-	public String getPluginFileName() {
+	public String getName() {
 		return pluginFileName;
 	}
 
-	public float getPluginVersion() {
+	public float getVersion() {
 		return pluginVersion;
 	}
 

@@ -8,13 +8,18 @@ import esmio.common.PluginException;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
-public class PluginHeader {
+public class PluginHeader  {
 
 	private String			pluginFileName;
+	
+	private String			pluginFileFormat; // ONLY TES3 and TES4 have ever been seen (and can be handled!)
+	//https://en.uesp.net/wiki/Oblivion_Mod:Mod_File_Format/Vs_Morrowind
+
 
 	private float			pluginVersion	= -1;
 
-	private boolean			master			= false;
+	public static enum FILE_TYPE{PLUGIN, MASTER, SAVE, UNKNOWN};//plugin == 0 master==1 save==32
+	private FILE_TYPE		master			= FILE_TYPE.UNKNOWN;
 
 	private String			creator			= "";
 
@@ -24,7 +29,7 @@ public class PluginHeader {
 
 	private List<String>	masterList		= new ArrayList<String>();
 
-	private int				headerByteCount	= -1;
+	private int				tesRecordLen	= -1;
 
 	public PluginHeader(String pluginFileName) {
 		this.pluginFileName = pluginFileName;
@@ -39,7 +44,7 @@ public class PluginHeader {
 	}
 
 	public boolean isMaster() {
-		return master;
+		return master == FILE_TYPE.MASTER;
 	}
 
 	public String getCreator() {
@@ -59,89 +64,107 @@ public class PluginHeader {
 	}
 
 	public int getHeaderByteCount() {
-		return headerByteCount;
+		return tesRecordLen;
 	}
+	
 
-	public void read(FileChannelRAF in) throws PluginException, IOException {
+	public String getPluginFileFormat() {
+		return pluginFileFormat;
+	}
+	
+	//https://en.uesp.net/wiki/Skyrim_Mod:Mod_File_Format/TES4
+	//http://www.uesp.net/wiki/Tes4Mod:Mod_File_Format
+	public void load(String fileName, FileChannelRAF in) throws PluginException, IOException  {
 		long fp = in.getFilePointer();
-		// check to see if a redundant 4 bytes is in the file or are we are teh HDR record now
-		byte[] tmp = new byte[4];
-		in.seek(fp + 20);
+		// check to how much data the TES? REcord have in it's header possibly 16, 20 or 24 , 
+		// nothing indicates this other than reading the file, this size is used by TES? and GRUP
+		byte[] tmp = new byte[12];
+		in.seek(fp + 16);
 		in.read(tmp);
-		if (new String(tmp).equals("HEDR")) {
-			// it is indeed the HEDR record so we want a lenght of 20
-			headerByteCount = 20;
+		
+		if (new String(tmp,0,4).equals("HEDR")) {
+			tesRecordLen = 16; //Morrowind
+		} else  if (new String(tmp,4,4).equals("HEDR")) {
+			tesRecordLen = 20; // oblivion
+		} else  if (new String(tmp,8,4).equals("HEDR")) {
+			tesRecordLen = 24; //fallout3, skyrim
 		} else {
-			// we need to skip 24 bytes in the header
-			headerByteCount = 24;
+			throw new PluginException(pluginFileName + ": HEDR not found");
 		}
 		in.seek(fp);
+		
 
-		byte prefix[] = new byte[headerByteCount];
-		int count = in.read(prefix, 0, headerByteCount);
+		byte tesRecordData[] = new byte[tesRecordLen];
+		int count = in.read(tesRecordData, 0, tesRecordLen);
+		
+		int headerLength = ESMByteConvert.extractInt(tesRecordData, 4);
+		
+		if (count != tesRecordLen)
+			throw new PluginException(pluginFileName + ": header read failed");
+		pluginFileFormat = new String(tesRecordData, 0, 4);	
 
-		if (count != headerByteCount)
-			throw new PluginException(pluginFileName + ": File is not a TES4 file");
-		String type = new String(prefix, 0, 4);
+		if (!pluginFileFormat.equals("TES4") && !pluginFileFormat.equals("TES3"))
+			throw new PluginException(pluginFileName + ": File is not a TES3/TES4 file (" + pluginFileFormat + ")");
 
-		if (!type.equals("TES4") && !type.equals("TES3"))
-			throw new PluginException(pluginFileName + ": File is not a TES4 file (" + type + ")");
-
-		if ((prefix [8] & 1) != 0)
-			master = true;
-		else
-			master = false;
-		int headerLength = ESMByteConvert.extractInt(prefix, 4);
-
-		if (type.equals("TES3")) {
+		if (pluginFileFormat.equals("TES3")) {
 			readTes3(in, headerLength);
 			return;
-		}
-
+		}	
+		
+		
+		//FIXME: is this accurate? it would seem no
+		int fileType = ESMByteConvert.extractInt(tesRecordData, 12);// (0=esp file; 1=esm file; 32=ess file)	
+		master = fileType == 0 ? FILE_TYPE.PLUGIN : fileType == 1 ? FILE_TYPE.MASTER : fileType == 32 ? FILE_TYPE.SAVE : FILE_TYPE.UNKNOWN;	
+		System.out.println("fileType " +fileType);
+		
+		
 		byte buffer[] = new byte[1024];
 		do {
 			if (headerLength < 6)
 				break;
 
-			byte[] recordHeader = new byte[6];
-			count = in.read(recordHeader);
+			// read a sub record as 4 char type and short data length(len not incl. 6 bytes)
+			byte[] subrecordHeader = new byte[6];
+			count = in.read(subrecordHeader);
 
 			if (count != 6)
 				throw new PluginException(pluginFileName + ": Header subrecord prefix truncated");
 			headerLength -= 6;
 
-			int length = ESMByteConvert.extractShort(recordHeader, 4);
+			int dataLen = ESMByteConvert.extractShort(subrecordHeader, 4);
 
-			if (length > headerLength)
+			if (dataLen > headerLength)
 				throw new PluginException(pluginFileName + ": Subrecord length exceeds header length");
-			if (length > buffer.length)
-				buffer = new byte[length];
+			if (dataLen > buffer.length)
+				buffer = new byte[dataLen];
 
-			count = in.read(buffer, 0, length);
-			if (count != length)
+			count = in.read(buffer, 0, dataLen);
+			if (count != dataLen)
 				throw new PluginException(pluginFileName + ": Header subrecord data truncated");
 			headerLength -= count;
 
-			type = new String(recordHeader, 0, 4);
+			String type = new String(subrecordHeader, 0, 4);
 
 			if (type.equals("HEDR")) {
-				if (length < 8)
+				if (dataLen < 8)
 					throw new PluginException(pluginFileName + ": HEDR subrecord is too small");
-
 				pluginVersion = Float.intBitsToFloat(ESMByteConvert.extractInt(buffer, 0));
 				recordCount = ESMByteConvert.extractInt(buffer, 4);
+				 
+				
+
 			} else if (type.equals("CNAM")) {
-				if (length > 1)
-					creator = new String(buffer, 0, length - 1);
+				if (dataLen > 1)
+					creator = new String(buffer, 0, dataLen - 1);
 			} else if (type.equals("SNAM")) {
-				if (length > 1)
-					summary = new String(buffer, 0, length - 1);
+				if (dataLen > 1)
+					summary = new String(buffer, 0, dataLen - 1);
 			} else if (type.equals("OFST")) {
 				// what is this one?				 
 			} else if (type.equals("DELE")) {
 				// what is this one?
-			} else if (type.equals("MAST") && length > 1) {
-				masterList.add(new String(buffer, 0, length - 1));
+			} else if (type.equals("MAST") && dataLen > 1) {
+				masterList.add(new String(buffer, 0, dataLen - 1));
 				//System.out.println("MAST " + new String(buffer, 0, length - 1));
 			}
 		} while (true);
@@ -155,24 +178,22 @@ public class PluginHeader {
 	// need a new format for records and sub records as the intro data is slightly different
 
 	//http://www.uesp.net/morrow/tech/mw_esm.txt
-	//http://www.uesp.net/wiki/Tes4Mod:Mod_File_Format
-	
-	//TODO: these is a whole dedicated package for tes3, and this never seems to be called for Morrowind.esm, 
-	// perhaps delete it and the option to load it?
+
+	//https://www.mwmythicmods.com/argent/tech/es_format.html	
 	private void readTes3(FileChannelRAF in, int headerLength) throws PluginException, IOException {
-		throw new UnsupportedOperationException();
-		/*
 		byte buffer[] = new byte[1024];
 		do {
-			if (headerLength < 16)
+			 if (headerLength < 6)
 				break;
-
-			byte[] recordHeader = new byte[16];
+			
+			byte[] recordHeader = new byte[8];
 			int count = in.read(recordHeader);
 
-			if (count != 16)
+			if (count != 8)
 				throw new PluginException(pluginFileName + ": Header subrecord prefix truncated");
-
+			headerLength -= count;
+			
+			String type = new String(recordHeader, 0, 4);
 			int length = ESMByteConvert.extractShort(recordHeader, 4);
 
 			if (length > headerLength)
@@ -185,27 +206,43 @@ public class PluginHeader {
 				throw new PluginException(pluginFileName + ": Header subrecord data truncated");
 			headerLength -= count;
 
-			String type = new String(recordHeader, 0, 4);
 
+
+			/*
+ 		HEDR (300 bytes)
+			4 bytes, float Version (1.2)
+			4 bytes, file type (0=esp file; 1=esm file; 32=ess file)
+			32 Bytes, Company Name string
+			256 Bytes, ESM file description?
+			4 bytes, long NumRecords (48227)
+	  	MAST = 	string, variable length
+	    		Only found in ESP plugins and specifies a master file that the
+			plugin requires. Can occur multiple times.  Usually found
+	    		just after the TES3 record.
+	  	DATA =  8 Bytes  long64 MasterSize
+	    		Size of the previous master file in bytes (used for version
+			tracking  of plugin).  The MAST and DATA records are always
+			found together, the DATA following the MAST record that
+			it refers to.
+
+			 */
 			if (type.equals("HEDR")) {
 				if (length < 8)
 					throw new PluginException(pluginFileName + ": HEDR subrecord is too small");
 
 				pluginVersion = Float.intBitsToFloat(ESMByteConvert.extractInt(buffer, 0));
-				recordCount = ESMByteConvert.extractInt(buffer, 4);
-			} else if (type.equals("CNAM")) {
-				if (length > 1)
-					creator = new String(buffer, 0, length - 1);
-			} else if (type.equals("SNAM")) {
-				if (length > 1)
-					summary = new String(buffer, 0, length - 1);
-			} else if (type.equals("OFST")) {
-				// what is this one?				 
-			} else if (type.equals("DELE")) {
-				// what is this one?
-			} else if (type.equals("MAST") && length > 1) {
+				int fileType = ESMByteConvert.extractInt(buffer, 4); // (0=esp file; 1=esm file; 32=ess file)		
+				master = fileType == 0 ? FILE_TYPE.PLUGIN : fileType == 1 ? FILE_TYPE.MASTER : fileType == 32 ? FILE_TYPE.SAVE : FILE_TYPE.UNKNOWN;
+				creator = new String(buffer, 8, 32);
+				summary = new String(buffer, 40, 256);				
+				
+				recordCount = ESMByteConvert.extractInt(buffer, 296);
+			}  else if (type.equals("MAST") && length > 1) {
 				masterList.add(new String(buffer, 0, length - 1));
 				//System.out.println("MAST " + new String(buffer, 0, length - 1));
+			} else if (type.equals("DATA")) {
+				// must follow MAST   
+				int masterLength = ESMByteConvert.extractInt64(buffer, 0);
 			}
 		} while (true);
 
@@ -213,6 +250,6 @@ public class PluginHeader {
 			throw new PluginException(pluginFileName + ": Header is incomplete");
 		else
 			return;
-*/
+
 	}
 }

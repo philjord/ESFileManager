@@ -16,7 +16,16 @@ public class PluginGroup extends esmio.common.data.plugin.PluginGroup
 		groupParentID = -1;
 		groupLabel = new byte[4];
 	}
+	
+	public PluginGroup(int groupType, String groupLabel)
+	{
+		this.recordType = "GRUP";
+		this.groupType = groupType;
+		groupParentID = -1;
+		this.groupLabel = groupLabel.getBytes();
+	}
 
+	@Override
 	public String getEditorID()
 	{
 		return editorID;

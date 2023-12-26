@@ -65,12 +65,12 @@ public class Master implements IMasterTes3 {
 
 	@Override
 	public String getName() {
-		return masterHeader.getPluginFileName();
+		return masterHeader.getName();
 	}
 
 	@Override
 	public float getVersion() {
-		return masterHeader.getPluginVersion();
+		return masterHeader.getVersion();
 	}
 
 	@Override

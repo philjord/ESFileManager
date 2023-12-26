@@ -1,4 +1,4 @@
-package esmio.common.data.plugin;
+package esmio.common.data.display;
 
 import java.io.File;
 import java.io.IOException;
