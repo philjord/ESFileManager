@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ESMManager</name>
+	<name>ESFileManager</name>
 	<comment></comment>
 	<projects>
 		<project>Tools</project>
