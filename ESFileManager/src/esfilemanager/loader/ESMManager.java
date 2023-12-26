@@ -1,4 +1,4 @@
-package esmio.loader;
+package esfilemanager.loader;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,12 +8,12 @@ import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.FormInfo;
-import esmio.common.data.plugin.IMaster;
-import esmio.common.data.plugin.PluginGroup;
-import esmio.common.data.plugin.PluginRecord;
-import esmio.common.data.record.Record;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.FormInfo;
+import esfilemanager.common.data.plugin.IMaster;
+import esfilemanager.common.data.plugin.PluginGroup;
+import esfilemanager.common.data.plugin.PluginRecord;
+import esfilemanager.common.data.record.Record;
 
 
 // TODO: this is really an ESMMaster manager (or master plus plugin? esp? for morrowind)

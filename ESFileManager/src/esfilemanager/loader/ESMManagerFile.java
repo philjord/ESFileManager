@@ -1,4 +1,4 @@
-package esmio.loader;
+package esfilemanager.loader;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,10 +6,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.zip.DataFormatException;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.Master;
-import esmio.common.data.plugin.MasterFile;
-import esmio.tes3.ESMManagerTes3File;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.Master;
+import esfilemanager.common.data.plugin.MasterFile;
+import esfilemanager.tes3.ESMManagerTes3File;
 
 /** For desktop to swap File path strings into ByteBuffer or randomaccessfile or io streams
  Android will have the same for SAF Uri starting points

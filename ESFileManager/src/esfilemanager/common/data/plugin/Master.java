@@ -1,4 +1,4 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,14 +7,14 @@ import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
 
-import esmio.Point;
-import esmio.common.PluginException;
-import esmio.common.data.record.Record;
-import esmio.loader.FormToFilePointer;
-import esmio.loader.DIALTopGroup;
-import esmio.loader.InteriorCELLTopGroup;
-import esmio.loader.WRLDChildren;
-import esmio.loader.WRLDTopGroup;
+import esfilemanager.Point;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.record.Record;
+import esfilemanager.loader.DIALTopGroup;
+import esfilemanager.loader.FormToFilePointer;
+import esfilemanager.loader.InteriorCELLTopGroup;
+import esfilemanager.loader.WRLDChildren;
+import esfilemanager.loader.WRLDTopGroup;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

@@ -1,4 +1,4 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,15 +7,15 @@ import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.FormInfo;
-import esmio.common.data.plugin.IMaster;
-import esmio.common.data.plugin.PluginGroup;
-import esmio.common.data.record.Record;
-import esmio.loader.FormToFilePointer;
-import esmio.loader.InteriorCELLTopGroup;
-import esmio.loader.WRLDChildren;
-import esmio.loader.WRLDTopGroup;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.FormInfo;
+import esfilemanager.common.data.plugin.IMaster;
+import esfilemanager.common.data.plugin.PluginGroup;
+import esfilemanager.common.data.record.Record;
+import esfilemanager.loader.FormToFilePointer;
+import esfilemanager.loader.InteriorCELLTopGroup;
+import esfilemanager.loader.WRLDChildren;
+import esfilemanager.loader.WRLDTopGroup;
 
 public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	private ArrayList<IMasterTes3>	masters			= new ArrayList<IMasterTes3>();
@@ -139,11 +139,11 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	
 	
 	@Override
-	public esmio.common.data.plugin.PluginRecord getInteriorCELL(int formID)
+	public esfilemanager.common.data.plugin.PluginRecord getInteriorCELL(int formID)
 			throws DataFormatException, IOException, PluginException {
-		esmio.common.data.plugin.PluginRecord pr = null;
+		esfilemanager.common.data.plugin.PluginRecord pr = null;
 		for (IMaster m : masters) {
-			esmio.common.data.plugin.PluginRecord pr2 = m.getInteriorCELL(formID);
+			esfilemanager.common.data.plugin.PluginRecord pr2 = m.getInteriorCELL(formID);
 			if(pr2 != null) {
 				if(pr != null)
 					System.out.println("getInteriorCELL(int formID) found twice " + formID);				
@@ -156,9 +156,9 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 
 	@Override
 	public PluginGroup getInteriorCELLChildren(int formID) throws DataFormatException, IOException, PluginException {
-		esmio.common.data.plugin.PluginGroup pg = null;
+		esfilemanager.common.data.plugin.PluginGroup pg = null;
 		for (IMaster m : masters) {
-			esmio.common.data.plugin.PluginGroup pg2 = m.getInteriorCELLChildren(formID);
+			esfilemanager.common.data.plugin.PluginGroup pg2 = m.getInteriorCELLChildren(formID);
 			if(pg2 != null) {
 				if(pg != null)
 					System.out.println("getInteriorCELLChildren(int formID) found twice " + formID );				
@@ -171,9 +171,9 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	@Override
 	public PluginGroup getInteriorCELLPersistentChildren(int formID)
 			throws DataFormatException, IOException, PluginException {
-		esmio.common.data.plugin.PluginGroup pg = null;
+		esfilemanager.common.data.plugin.PluginGroup pg = null;
 		for (IMaster m : masters) {
-			esmio.common.data.plugin.PluginGroup pg2 = m.getInteriorCELLPersistentChildren(formID);
+			esfilemanager.common.data.plugin.PluginGroup pg2 = m.getInteriorCELLPersistentChildren(formID);
 			if(pg2 != null) {
 				if(pg != null)
 					System.out.println("getInteriorCELLPersistentChildren(int formID) found twice " + formID );				
@@ -186,11 +186,11 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	
 
 	@Override
-	public esmio.common.data.plugin.PluginRecord getWRLD(int formID)
+	public esfilemanager.common.data.plugin.PluginRecord getWRLD(int formID)
 			throws DataFormatException, IOException, PluginException {
-		esmio.common.data.plugin.PluginRecord pr = null;
+		esfilemanager.common.data.plugin.PluginRecord pr = null;
 		for (IMaster m : masters) {
-			esmio.common.data.plugin.PluginRecord pr2 = m.getWRLD(formID);
+			esfilemanager.common.data.plugin.PluginRecord pr2 = m.getWRLD(formID);
 			if(pr2 != null) {
 				if(pr != null)
 					System.out.println("getWRLD(int formID) found twice " + formID);				
@@ -215,11 +215,11 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	}
 
 	@Override
-	public esmio.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y)
+	public esfilemanager.common.data.plugin.PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y)
 			throws DataFormatException, IOException, PluginException {		
-		esmio.common.data.plugin.PluginRecord pr = null;
+		esfilemanager.common.data.plugin.PluginRecord pr = null;
 		for (IMaster m : masters) {
-			esmio.common.data.plugin.PluginRecord pr2 = m.getWRLDExtBlockCELL(wrldFormId, x, y);
+			esfilemanager.common.data.plugin.PluginRecord pr2 = m.getWRLDExtBlockCELL(wrldFormId, x, y);
 			if(pr2 != null) {
 				if(pr != null)
 					System.out.println("getWRLDExtBlockCELL(int formID) found twice " + wrldFormId + " " + x + "x" + y);				
@@ -230,11 +230,11 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	}
 
 	@Override
-	public esmio.common.data.plugin.PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y)
+	public esfilemanager.common.data.plugin.PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y)
 			throws DataFormatException, IOException, PluginException {
-		esmio.common.data.plugin.PluginGroup pg = null;
+		esfilemanager.common.data.plugin.PluginGroup pg = null;
 		for (IMaster m : masters) {
-			esmio.common.data.plugin.PluginGroup pg2 = m.getWRLDExtBlockCELLChildren(wrldFormId, x, y);
+			esfilemanager.common.data.plugin.PluginGroup pg2 = m.getWRLDExtBlockCELLChildren(wrldFormId, x, y);
 			if(pg2 != null) {
 				if(pg != null)
 					System.out.println("getWRLDExtBlockCELLChildren(int formID) found twice " + wrldFormId + " " + x + "x" + y);				
@@ -246,7 +246,7 @@ public abstract class ESMManagerTes3 implements IESMManagerTes3 {
 	
 	
 	@Override
-	public esmio.common.data.plugin.PluginRecord getPluginRecord(int formID) throws PluginException {
+	public esfilemanager.common.data.plugin.PluginRecord getPluginRecord(int formID) throws PluginException {
 		for (IMaster m : masters) {
 			if (formID >= m.getMinFormId() && formID <= m.getMaxFormId()) {
 				return m.getPluginRecord(formID);

@@ -1,4 +1,4 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import esmio.common.PluginException;
-import esmio.common.data.record.Record;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.record.Record;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

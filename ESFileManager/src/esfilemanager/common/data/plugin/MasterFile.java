@@ -1,11 +1,11 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.zip.DataFormatException;
 
-import esmio.common.PluginException;
-import esmio.loader.ESMManager;
+import esfilemanager.common.PluginException;
+import esfilemanager.loader.ESMManager;
 import tools.io.FileChannelRAF;
 
 /**

@@ -1,4 +1,4 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.File;
 import java.io.IOException;

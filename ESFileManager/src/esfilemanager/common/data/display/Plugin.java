@@ -1,4 +1,4 @@
-package esmio.common.data.display;
+package esfilemanager.common.data.display;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,12 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.DataFormatException;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.FormInfo;
-import esmio.common.data.plugin.PluginGroup;
-import esmio.common.data.plugin.PluginHeader;
-import esmio.common.data.plugin.PluginRecord;
-import esmio.common.data.record.Record;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.FormInfo;
+import esfilemanager.common.data.plugin.PluginGroup;
+import esfilemanager.common.data.plugin.PluginHeader;
+import esfilemanager.common.data.plugin.PluginRecord;
+import esfilemanager.common.data.record.Record;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
@@ -143,20 +143,20 @@ public abstract class Plugin {
 		
 		
 		// fake top groups for now, to butcher with later, cells and everything else
-		PluginGroup topPG = new esmio.tes3.PluginGroup(PluginGroup.TOP);
+		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
 		groupList.add(topPG);
-		PluginGroup cellPG = new esmio.tes3.PluginGroup(PluginGroup.CELL);
+		PluginGroup cellPG = new esfilemanager.tes3.PluginGroup(PluginGroup.CELL);
 		topPG.getRecordList().add(cellPG);
 		
 		LinkedHashMap<String, PluginGroup> typeToGroup = new LinkedHashMap<String, PluginGroup>();
 		
-		for(String grup : esmio.tes3.PluginRecord.edidRecords) {
-			PluginGroup pg = new esmio.tes3.PluginGroup(PluginGroup.TOP, grup);
+		for(String grup : esfilemanager.tes3.PluginRecord.edidRecords) {
+			PluginGroup pg = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, grup);
 			topPG.getRecordList().add(pg);
 			typeToGroup.put(grup, pg);
 		}
-		for(String grup : esmio.tes3.PluginRecord.nonEdidRecords) {
-			PluginGroup pg = new esmio.tes3.PluginGroup(PluginGroup.TOP, grup);
+		for(String grup : esfilemanager.tes3.PluginRecord.nonEdidRecords) {
+			PluginGroup pg = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, grup);
 			topPG.getRecordList().add(pg);
 			typeToGroup.put(grup, pg);
 		}
@@ -176,7 +176,7 @@ public abstract class Plugin {
 			int length = ESMByteConvert.extractInt(prefix, 4);
 			length -= pluginHeader.getHeaderByteCount();
 
-			PluginRecord record = new esmio.tes3.PluginRecord(-1, prefix);
+			PluginRecord record = new esfilemanager.tes3.PluginRecord(-1, prefix);
 			record.load("", in, -1);
 			loadCount++;
 

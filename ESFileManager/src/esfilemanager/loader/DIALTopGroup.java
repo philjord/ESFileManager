@@ -1,12 +1,12 @@
-package esmio.loader;
+package esfilemanager.loader;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
 import com.frostwire.util.SparseArray;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.PluginGroup;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.PluginGroup;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

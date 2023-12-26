@@ -1,7 +1,7 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
-import esmio.common.data.plugin.IMaster;
-import esmio.loader.IESMManager;
+import esfilemanager.common.data.plugin.IMaster;
+import esfilemanager.loader.IESMManager;
 
 public interface IESMManagerTes3 extends IESMManager, IMasterTes3, IRecordStoreTes3
 {

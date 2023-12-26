@@ -1,11 +1,11 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import esmio.common.PluginException;
-import esmio.common.data.record.Subrecord;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

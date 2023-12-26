@@ -1,17 +1,17 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.PluginSubrecord;
-import esmio.common.data.record.Subrecord;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.PluginSubrecord;
+import esfilemanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
-public class PluginRecord extends esmio.common.data.plugin.PluginRecord {
+public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord {
 	protected String	editorID	= "";
 	protected int		recordSize;
 
@@ -165,7 +165,7 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord {
 
 	/**
 	 * Can't be compressed ever
-	 * @see esmio.common.data.plugin.PluginRecord#isCompressed()
+	 * @see esfilemanager.common.data.plugin.PluginRecord#isCompressed()
 	 */
 	@Override
 	public boolean isCompressed() {
@@ -174,7 +174,7 @@ public class PluginRecord extends esmio.common.data.plugin.PluginRecord {
 
 	/**
 	 * just a dummy flags
-	 * @see esmio.common.data.plugin.PluginRecord#getRecordFlags2()
+	 * @see esfilemanager.common.data.plugin.PluginRecord#getRecordFlags2()
 	 */
 	@Override
 	public int getRecordFlags2() {

@@ -1,4 +1,4 @@
-package esmio.common;
+package esfilemanager.common;
 
 public class PluginException extends Exception
 {

@@ -1,13 +1,13 @@
-package esmio.loader;
+package esfilemanager.loader;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.zip.DataFormatException;
 
-import esmio.Point;
-import esmio.common.PluginException;
-import esmio.common.data.plugin.PluginGroup;
-import esmio.common.data.plugin.PluginRecord;
+import esfilemanager.Point;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.PluginGroup;
+import esfilemanager.common.data.plugin.PluginRecord;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

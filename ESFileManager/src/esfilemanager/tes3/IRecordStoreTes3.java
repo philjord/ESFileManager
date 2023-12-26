@@ -1,7 +1,7 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
-import esmio.common.data.record.IRecordStore;
-import esmio.common.data.record.Record;
+import esfilemanager.common.data.record.IRecordStore;
+import esfilemanager.common.data.record.Record;
 
 public interface IRecordStoreTes3 extends IRecordStore
 {

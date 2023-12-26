@@ -1,4 +1,4 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
-import esmio.common.PluginException;
-import esmio.common.data.record.Record;
-import esmio.common.data.record.Subrecord;
-import esmio.loader.ESMManager;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.record.Record;
+import esfilemanager.common.data.record.Subrecord;
+import esfilemanager.loader.ESMManager;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

@@ -1,9 +1,9 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-import esmio.common.PluginException;
+import esfilemanager.common.PluginException;
 import tools.io.FileChannelRAF;
 
 public class DIALRecord extends PluginRecord {

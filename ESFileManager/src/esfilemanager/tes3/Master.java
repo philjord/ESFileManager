@@ -1,4 +1,4 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,13 +8,13 @@ import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
 
-import esmio.common.PluginException;
-import esmio.common.data.plugin.FormInfo;
-import esmio.common.data.plugin.PluginSubrecord;
-import esmio.loader.FormToFilePointer;
-import esmio.loader.InteriorCELLTopGroup;
-import esmio.loader.WRLDChildren;
-import esmio.loader.WRLDTopGroup;
+import esfilemanager.common.PluginException;
+import esfilemanager.common.data.plugin.FormInfo;
+import esfilemanager.common.data.plugin.PluginSubrecord;
+import esfilemanager.loader.FormToFilePointer;
+import esfilemanager.loader.InteriorCELLTopGroup;
+import esfilemanager.loader.WRLDChildren;
+import esfilemanager.loader.WRLDTopGroup;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 

@@ -1,4 +1,4 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 public class FormInfo {
 	private String			recordType;

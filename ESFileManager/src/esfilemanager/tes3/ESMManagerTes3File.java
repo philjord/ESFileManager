@@ -1,9 +1,9 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 import java.io.File;
 import java.io.IOException;
 
-import esmio.common.PluginException;
+import esfilemanager.common.PluginException;
 
 public class ESMManagerTes3File extends ESMManagerTes3 {
 	public ESMManagerTes3File(String fileName) {

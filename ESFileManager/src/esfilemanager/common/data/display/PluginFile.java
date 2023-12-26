@@ -1,10 +1,10 @@
-package esmio.common.data.display;
+package esfilemanager.common.data.display;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.zip.DataFormatException;
 
-import esmio.common.PluginException;
+import esfilemanager.common.PluginException;
 import tools.io.FileChannelRAF;
 
 /**

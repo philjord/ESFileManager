@@ -1,4 +1,4 @@
-package esmio.common.data.record;
+package esfilemanager.common.data.record;
 
 public interface IRecordStore
 {

@@ -1,9 +1,9 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import esmio.common.data.record.Subrecord;
+import esfilemanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 
 public class PluginSubrecord extends Subrecord

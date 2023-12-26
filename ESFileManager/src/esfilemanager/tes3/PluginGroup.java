@@ -1,11 +1,11 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
 /**
  * For making up fake children groups for tes3
  * @author phil
  *
  */
-public class PluginGroup extends esmio.common.data.plugin.PluginGroup
+public class PluginGroup extends esfilemanager.common.data.plugin.PluginGroup
 {
 	protected String editorID = "";
 

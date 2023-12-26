@@ -1,10 +1,10 @@
-package esmio.utils;
+package esfilemanager.utils;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import esmio.common.data.plugin.PluginGroup;
-import esmio.common.data.record.Record;
+import esfilemanager.common.data.plugin.PluginGroup;
+import esfilemanager.common.data.record.Record;
 
 public class ESMUtils
 {

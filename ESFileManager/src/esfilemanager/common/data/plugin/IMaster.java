@@ -1,4 +1,4 @@
-package esmio.common.data.plugin;
+package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
 import java.util.List;
@@ -6,11 +6,11 @@ import java.util.zip.DataFormatException;
 
 import com.frostwire.util.SparseArray;
 
-import esmio.common.PluginException;
-import esmio.loader.FormToFilePointer;
-import esmio.loader.InteriorCELLTopGroup;
-import esmio.loader.WRLDChildren;
-import esmio.loader.WRLDTopGroup;
+import esfilemanager.common.PluginException;
+import esfilemanager.loader.FormToFilePointer;
+import esfilemanager.loader.InteriorCELLTopGroup;
+import esfilemanager.loader.WRLDChildren;
+import esfilemanager.loader.WRLDTopGroup;
 
 public interface IMaster {
 	public WRLDTopGroup getWRLDTopGroup();

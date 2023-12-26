@@ -1,10 +1,10 @@
-package esmio.utils.source;
+package esfilemanager.utils.source;
 
 import java.util.HashMap;
 
-import esmio.common.data.record.Record;
-import esmio.common.data.record.Subrecord;
-import esmio.loader.IESMManager;
+import esfilemanager.common.data.record.Record;
+import esfilemanager.common.data.record.Subrecord;
+import esfilemanager.loader.IESMManager;
 import tools.SoundKeyToName;
 
 public class EsmSoundKeyToName implements SoundKeyToName

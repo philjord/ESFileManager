@@ -1,6 +1,6 @@
-package esmio.tes3;
+package esfilemanager.tes3;
 
-import esmio.common.data.plugin.IMaster;
+import esfilemanager.common.data.plugin.IMaster;
 
 public interface IMasterTes3 extends IMaster
 {
