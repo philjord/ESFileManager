@@ -23,6 +23,7 @@ public class PluginHeader extends PluginRecord {
 
 	public PluginHeader() {
 		super(-1, "TES3", "The header");
+		subrecordList = null;// force load below
 	}
 
 	public void load(String fileName, FileChannelRAF in) throws PluginException, IOException {
@@ -38,6 +39,7 @@ public class PluginHeader extends PluginRecord {
 		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
 
 		super.load(fileName, in, -1);
+		getSubrecords();// force load of subs
 		pluginFileName = fileName;
 		for (Subrecord sub : getSubrecords()) {
 			if (sub.getSubrecordType().equals("HEDR")) {
@@ -64,8 +66,7 @@ public class PluginHeader extends PluginRecord {
 				 * following the MAST record that it refers to.
 				 */
 			} else {
-				throw new PluginException(
-						"Unknown subrecord in TES3 Record " + recordType + " " + sub.getSubrecordType());
+				System.out.println("Unknown subrecord in TES3 Record " + recordType + " " + sub.getSubrecordType());
 			}
 		}
 	}
