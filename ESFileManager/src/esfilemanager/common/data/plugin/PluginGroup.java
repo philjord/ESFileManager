@@ -93,6 +93,19 @@ public class PluginGroup extends PluginRecord {
 
 		return recordCount;
 	}
+	
+	public int getRecordDeepDataSize() {
+		int dataSize = 0;
+
+		for (Record record : recordList) {
+			if (record instanceof PluginRecord)
+			dataSize += ((PluginRecord)record).getRecordDataLen();
+			if (record instanceof PluginGroup)
+				dataSize += ((PluginGroup)record).getRecordDeepDataSize();
+		}
+
+		return dataSize;
+	}
 
 	//Dear god this String fileName appears to do something magical without it failures!	
 	@Override

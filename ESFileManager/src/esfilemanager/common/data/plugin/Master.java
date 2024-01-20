@@ -1,6 +1,9 @@
 package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.DataFormatException;
@@ -11,6 +14,7 @@ import esfilemanager.Point;
 import esfilemanager.common.PluginException;
 import esfilemanager.common.data.record.Record;
 import esfilemanager.loader.DIALTopGroup;
+import esfilemanager.loader.ESMManager;
 import esfilemanager.loader.FormToFilePointer;
 import esfilemanager.loader.InteriorCELLTopGroup;
 import esfilemanager.loader.WRLDChildren;
@@ -275,15 +279,40 @@ public abstract class Master implements IMaster {
 
 	@Override
 	public PluginRecord getPluginRecord(int formID) {
+		 
 		//TODO: sort out the multiple esm file form id pointers properly, recall it is parent pointers only, no cross references
 		int masterFormID = formID & 0xffffff | masterID << 24;
 		FormInfo formInfo = idToFormMap.get(masterFormID);
-
-		if (formInfo != null)
-			return formInfo.getPluginRecord();
+		try {
+			if (formInfo != null) {
+				if (formInfo.isPointerOnly()) {
+					if (formInfo.getPluginRecordWR() != null) {
+						return formInfo.getPluginRecordWR();
+					}
+					long filePositionPointer = formInfo.getPointer();					
+					PluginRecord record = new PluginRecord(in, filePositionPointer, headerByteCount);
+					if (record.isDeleted() || record.isIgnored() || formID == 0 || formID >>> 24 < masterID) {
+						return null;
+					} else {
+						record.load(in, filePositionPointer + headerByteCount);
+						formInfo.setPluginRecordWR(record);
+						return record;
+					}
+				} else {
+					return formInfo.getPluginRecord();
+				}
+			}
+		} catch (PluginException e) {
+			e.printStackTrace();
+		} catch (DataFormatException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
 		//possibly from an unloaded cell etc.
 		return null;
+
 	}
 
 	public abstract boolean load() throws PluginException, DataFormatException, IOException;
@@ -296,9 +325,9 @@ public abstract class Master implements IMaster {
 
 		synchronized (in) {
 			masterHeader.load(masterHeader.getName(), in);
-			
+
 			//bad header means bad file
-			if(masterHeader.getVersion() <= 0 || masterHeader.getRecordCount() == 0) {
+			if (masterHeader.getVersion() <= 0 || masterHeader.getRecordCount() == 0) {
 				System.out.println("Bad Header skip load for file " + masterHeader.getName());
 				return false;
 			}
@@ -309,7 +338,7 @@ public abstract class Master implements IMaster {
 			byte prefix[] = new byte[headerByteCount];
 			masterID = masterHeader.getMasterList().size();
 			int recordCount = masterHeader.getRecordCount();
-			idToFormMap = new SparseArray<FormInfo>(recordCount);
+			idToFormMap = new SparseArray<FormInfo>(recordCount / 10);// enough to kick off with, but we aren't loading all of it
 
 			int count = in.read(prefix);
 			while (count != -1) {
@@ -324,7 +353,7 @@ public abstract class Master implements IMaster {
 				} else {
 					if (!recordType.equals("GRUP"))
 						throw new PluginException(masterHeader.getName() + ": Top-level record is not a group");
-					if (prefix [12] != 0)
+					if (prefix[12] != 0)
 						throw new PluginException(masterHeader.getName() + ": Top-level group type is not 0");
 
 					String groupRecordType = new String(prefix, 8, 4);
@@ -353,16 +382,33 @@ public abstract class Master implements IMaster {
 								groupLength -= recordLength;
 								in.skipBytes(recordLength - headerByteCount);
 							} else {
-								PluginRecord record = new PluginRecord(prefix);
-								int formID = record.getFormID();
+								// some should only be indexed rather than loaded now
+								boolean indexedOnly = false;
+								indexedOnly = (recordType.equals("QUST")	|| recordType.equals("PACK")
+												|| recordType.equals("SCEN") || recordType.equals("NPC_")
+												|| recordType.equals("RACE") || recordType.equals("STAT")
+												|| recordType.equals("WEAP") || recordType.equals("NAVI")
+												|| recordType.equals("SCOL") || recordType.equals("SNDR"));
 
-								if (record.isDeleted()	|| record.isIgnored() || formID == 0
-									|| formID >>> 24 < masterID) {
-									in.skipBytes(recordLength);
-								} else {
-									record.load("", in, recordLength);
+								if (indexedOnly) {
+									int formID = ESMByteConvert.extractInt3(prefix, 12);
 									formID = formID & 0xffffff | masterID << 24;
-									idToFormMap.put(formID, new FormInfo(recordType, formID, record));
+									long filePositionPointer = in.getFilePointer() - headerByteCount;// go back to the start of the header
+									idToFormMap.put(formID, new FormInfo(recordType, formID, filePositionPointer));
+									int length = ESMByteConvert.extractInt(prefix, 4);
+									in.skipBytes(length);
+								} else {
+									PluginRecord record = new PluginRecord(prefix);
+									int formID = record.getFormID();
+
+									if (record.isDeleted()	|| record.isIgnored() || formID == 0
+										|| formID >>> 24 < masterID) {
+										in.skipBytes(recordLength);
+									} else {
+										record.load("", in, recordLength);
+										formID = formID & 0xffffff | masterID << 24;
+										idToFormMap.put(formID, new FormInfo(recordType, formID, record));
+									}
 
 								}
 								groupLength -= recordLength + headerByteCount;
@@ -392,7 +438,7 @@ public abstract class Master implements IMaster {
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
-			
+
 			for (int formId : getAllWRLDTopGroupFormIds()) {
 				minFormId = formId < minFormId ? formId : minFormId;
 				maxFormId = formId > maxFormId ? formId : maxFormId;
@@ -406,12 +452,11 @@ public abstract class Master implements IMaster {
 
 	@Override
 	public int[] getAllWRLDTopGroupFormIds() {
-		if(wRLDTopGroup!=null) {			
+		if (wRLDTopGroup != null) {
 			return wRLDTopGroup.WRLDByFormId.keySet();
 		} else {
 			//happens if the esp file is bum
-			System.out.println(
-					"no wRLDTopGroup in  ESM file " + masterHeader.getName());
+			System.out.println("no wRLDTopGroup in  ESM file " + masterHeader.getName());
 			return new int[0];
 		}
 	}

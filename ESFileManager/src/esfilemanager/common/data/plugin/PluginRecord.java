@@ -1,6 +1,7 @@
 package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
@@ -16,11 +17,14 @@ import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
 public class PluginRecord extends Record {
+	
 	protected int		headerByteCount		= -1;
 
 	protected int		unknownInt;
 
 	protected byte[]	recordData;
+	
+	protected int		recordLength;
 
 	protected long		filePositionPointer	= -1;
 
@@ -39,11 +43,55 @@ public class PluginRecord extends Record {
 		} else {
 			headerByteCount = prefix.length;
 			recordType = new String(prefix, 0, 4);
+			recordLength = ESMByteConvert.extractInt(prefix, 4);
 			formID = ESMByteConvert.extractInt3(prefix, 12);
 			recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
 			recordFlags2 = ESMByteConvert.extractInt(prefix, 16);
 			if (prefix.length == 24)
 				unknownInt = ESMByteConvert.extractInt(prefix, 20);
+		}
+	}
+	
+	/**
+	 * non sync required load from filechannel
+	 * @param in
+	 * @param pointer
+	 * @param headerByteCount
+	 * @throws PluginException
+	 */
+	public PluginRecord(FileChannelRAF in, long pointer, int headerByteCount) throws PluginException {
+		try {
+			// read header off
+			byte prefix[] = new byte[headerByteCount];
+			FileChannel ch = in.getChannel();
+			if (ESMManager.USE_MINI_CHANNEL_MAPS) {
+				FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;
+				MappedByteBuffer mappedByteBuffer = ch.map(mm, pointer, headerByteCount);
+				mappedByteBuffer.get(prefix);
+			} else {
+				// use this non sync call for speed
+				ByteBuffer bb = ByteBuffer.wrap(prefix);
+				int count = ch.read(bb, pointer);
+
+				if (count != headerByteCount) {
+					throw new PluginException(": PluginRecord prefix is incomplete " + formID);
+				}
+			}
+
+			if (prefix.length != 20 && prefix.length != 24) {
+				throw new IllegalArgumentException("The record prefix is not 20 or 24 bytes as required");
+			} else {
+				headerByteCount = prefix.length;
+				recordType = new String(prefix, 0, 4);
+				recordLength = ESMByteConvert.extractInt(prefix, 4);
+				formID = ESMByteConvert.extractInt3(prefix, 12);
+				recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
+				recordFlags2 = ESMByteConvert.extractInt(prefix, 16);
+				if (prefix.length == 24)
+					unknownInt = ESMByteConvert.extractInt(prefix, 20);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -82,23 +130,54 @@ public class PluginRecord extends Record {
 		filePositionPointer = in.getFilePointer();
 
 		recordData = new byte[recordLength];
-
+		
 		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE) {
 			//Oddly this is hugely slow
-			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;
+			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;			
 			FileChannel ch = in.getChannel();
 			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
-			mappedByteBuffer.get(recordData, 0, recordLength);
+			mappedByteBuffer.get(recordData, 0, recordLength);			
 
 			//manually move the pointer forward (someone else is readin from this file)
 			in.seek(filePositionPointer + recordLength);
 		} else {
 			synchronized (in) {
 				int count = in.read(recordData);
-				if (count != recordLength)
-					throw new PluginException(fileName + ": " + recordType + " record is incomplete");
-			}
+			if (count != recordLength)
+				throw new PluginException(fileName + ": " + recordType + " record is incomplete");
 		}
+		}
+	}
+	
+	/**
+	 * Does not touch file pointer at all, no sync on in required
+	 * @param in
+	 * @param position
+	 * @param recordLength
+	 * @throws PluginException
+	 * @throws IOException
+	 * @throws DataFormatException
+	 */
+	public void load(FileChannelRAF in, long position)
+			throws PluginException, IOException, DataFormatException {
+		filePositionPointer = position;
+
+		recordData = new byte[recordLength];
+		FileChannel ch = in.getChannel();
+		
+		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE) {
+			//Oddly this is hugely slow
+			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;			
+			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
+			mappedByteBuffer.get(recordData);			
+		} else {
+			// use this non sync call for speed
+			ByteBuffer bb = ByteBuffer.wrap(recordData);
+			int count = ch.read(bb, filePositionPointer);
+			if (count != recordLength)
+				throw new PluginException(" : " + recordType + " record is incomplete");
+		}
+		 
 	}
 
 	private boolean uncompressRecordData() throws DataFormatException, PluginException {
@@ -211,6 +290,10 @@ public class PluginRecord extends Record {
 
 	public int getUnknownInt() {
 		return unknownInt;
+	}
+	
+	public int getRecordDataLen() {
+		return recordLength;
 	}
 
 }

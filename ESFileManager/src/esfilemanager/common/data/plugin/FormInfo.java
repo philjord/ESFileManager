@@ -1,5 +1,7 @@
 package esfilemanager.common.data.plugin;
 
+import java.lang.ref.WeakReference;
+
 public class FormInfo {
 	private String			recordType;
 
@@ -10,6 +12,10 @@ public class FormInfo {
 	private boolean			pointerOnly	= false;
 
 	private long			pointer;
+	
+	private WeakReference<PluginRecord>	pluginRecordWR;// for use on pointer only
+
+	
 
 	public FormInfo(String recordType, int formID, PluginRecord pluginRecord) {
 		this.recordType = recordType;
@@ -47,6 +53,14 @@ public class FormInfo {
 	@Override
 	public String toString() {
 		return "recordType:" + recordType + " formID:" + formID + " pointer:" + pointer + " pointerOnly:" + pointerOnly;
+	}
+	
+	public PluginRecord getPluginRecordWR() {
+		return pluginRecordWR != null ? pluginRecordWR.get() : null;
+	}
+
+	public void setPluginRecordWR(PluginRecord pluginRecordWR) {
+		this.pluginRecordWR = new WeakReference<PluginRecord>(pluginRecordWR);
 	}
 
 }
