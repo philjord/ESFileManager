@@ -1,6 +1,8 @@
 package esfilemanager.loader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.zip.DataFormatException;
 
@@ -52,47 +54,50 @@ public class WRLDExtBlock extends PluginGroup {
 
 	private void loadAndIndex(FileChannelRAF in) throws IOException, DataFormatException, PluginException {
 		WRLDExtSubblockChildren = new HashMap<Point, WRLDExtSubblock>();
-		synchronized (in) {
-			in.seek(fileOffset);
-			int dataLength = length;
-			byte prefix[] = new byte[headerByteCount];
+			
+		filePositionPointer = fileOffset;
+		long pos = filePositionPointer;
+		FileChannel ch = in.getChannel();
+		int dataLength = length;
+		byte[] prefix = new byte[headerByteCount];
 
-			while (dataLength >= headerByteCount) {
-				int count = in.read(prefix);
-				if (count != headerByteCount)
-					throw new PluginException("Record prefix is incomplete");
-				dataLength -= headerByteCount;
-				String type = new String(prefix, 0, 4);
-				int length = ESMByteConvert.extractInt(prefix, 4);
 
-				if (type.equals("GRUP")) {
-					length -= headerByteCount;
-					int subGroupType = prefix [12] & 0xff;
+		while (dataLength >= headerByteCount) {
+			int count = ch.read(ByteBuffer.wrap(prefix), pos);			
+			if (count != headerByteCount)
+				throw new PluginException("Record prefix is incomplete");
+			
+			pos += headerByteCount;
+			dataLength -= headerByteCount;
+			String type = new String(prefix, 0, 4);
+			int length = ESMByteConvert.extractInt(prefix, 4);
 
-					if (subGroupType == PluginGroup.EXTERIOR_SUBBLOCK) {
-						WRLDExtSubblock wrldExtSubblock = new WRLDExtSubblock(prefix, in.getFilePointer(), length);
-						WRLDExtSubblockChildren.put(new Point(wrldExtSubblock.x, wrldExtSubblock.y), wrldExtSubblock);
-						//we DO NOT index now, later
-						in.skipBytes(length);
-					} else {
-						System.out.println(
-								"Group Type " + subGroupType + " not allowed as child of WRLD ext block group");
-					}
+			if (type.equals("GRUP")) {
+				length -= headerByteCount;
+				int subGroupType = prefix [12] & 0xff;
+
+				if (subGroupType == PluginGroup.EXTERIOR_SUBBLOCK) {
+					WRLDExtSubblock wrldExtSubblock = new WRLDExtSubblock(prefix, pos, length);
+					WRLDExtSubblockChildren.put(new Point(wrldExtSubblock.x, wrldExtSubblock.y), wrldExtSubblock);
+					// don't load, pos moved forward below
 				} else {
-					System.out.println("What the hell is a type " + type + " doing in the WRLD ext block group?");
+					System.out.println(
+							"Group Type " + subGroupType + " not allowed as child of WRLD ext block group");
 				}
-
-				//prep for next iter
-				dataLength -= length;
+			} else {
+				System.out.println("What the hell is a type " + type + " doing in the WRLD ext block group?");
 			}
-
-			if (dataLength != 0) {
-				if (getGroupType() == 0)
-					throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
-				else
-					throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
-			}
+			
+			pos += length;
+			//prep for next iter
+			dataLength -= length;
 		}
 
+		if (dataLength != 0) {
+			if (getGroupType() == 0)
+				throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
+			else
+				throw new PluginException("Subgroup type " + getGroupType() + " is incomplete");
+		}		
 	}
 }

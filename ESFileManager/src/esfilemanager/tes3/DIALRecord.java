@@ -1,6 +1,8 @@
 package esfilemanager.tes3;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import esfilemanager.common.PluginException;
@@ -36,6 +38,12 @@ public class DIALRecord extends PluginRecord {
 		super.load("", in, -1);
 		INFOOffset = in.getFilePointer();
 	}
+	
+	public DIALRecord(int formId, byte[] thisPrefix, FileChannelRAF in, long pos) throws PluginException, IOException {
+		super(formId, thisPrefix);
+		super.load(in, pos);
+		INFOOffset = pos;
+	}
 
 	public boolean isLoaded() {
 		return isLoaded;
@@ -67,6 +75,35 @@ public class DIALRecord extends PluginRecord {
 				}
 			}
 		}
+		isLoaded = true;
+	}
+	
+	public void loadch(FileChannelRAF in) throws PluginException, IOException {
+		
+		FileChannel ch = in.getChannel();
+		infos = new ArrayList<PluginRecord>();
+
+		long pos = INFOOffset;
+		while (pos < ch.size()) {
+			// pull the prefix data so we know what sort of record we have
+			byte[] prefix = new byte[16];
+			int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			pos += prefix.length;
+			if (count != 16)
+				throw new PluginException(": record prefix is incomplete");
+
+			String recordType = new String(prefix, 0, 4);
+			if (recordType.equals("INFO")) {
+				PluginRecord record = new PluginRecord(-1, prefix);
+				record.load(in, pos);
+				pos += record.recordSize;
+				infos.add(record);
+			} else {
+				// we are finished here
+				return;
+			}
+		}
+		
 		isLoaded = true;
 	}
 }

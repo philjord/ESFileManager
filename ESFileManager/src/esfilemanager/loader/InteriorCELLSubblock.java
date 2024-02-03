@@ -1,6 +1,8 @@
 package esfilemanager.loader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import com.frostwire.util.SparseArray;
@@ -27,16 +29,20 @@ public class InteriorCELLSubblock extends PluginGroup {
 	}
 
 	public FormToFilePointer getInteriorCELL(int cellId, FileChannelRAF in) throws IOException, PluginException {
-		if (CELLByFormID == null)
-			loadAndIndex(in);
+		synchronized(this ) {
+			if (CELLByFormID == null)
+				loadAndIndex(in);
+		}
 
 		return CELLByFormID.get(cellId);
 	}
 
 	public void getAllInteriorCELLFormIds(ArrayList<FormToFilePointer> ret, FileChannelRAF in)
 			throws IOException, PluginException {
-		if (CELLByFormID == null)
-			loadAndIndex(in);
+		synchronized(this ) {
+			if (CELLByFormID == null)
+				loadAndIndex(in);
+		}
 
 		for (int i = 0; i < CELLByFormID.size(); i++)
 			ret.add(CELLByFormID.get(CELLByFormID.keyAt(i)));
@@ -44,44 +50,47 @@ public class InteriorCELLSubblock extends PluginGroup {
 
 	public void loadAndIndex(FileChannelRAF in) throws IOException, PluginException {
 		CELLByFormID = new SparseArray<FormToFilePointer>();
-		in.seek(fileOffset);
+		
+		filePositionPointer = fileOffset;
+		long pos = filePositionPointer;
+		FileChannel ch = in.getChannel();
 		int dataLength = length;
-		byte prefix[] = new byte[headerByteCount];
+		byte[] prefix = new byte[headerByteCount];
 
 		FormToFilePointer formToFilePointer = null;
 
 		while (dataLength >= headerByteCount) {
-			long filePositionPointer = in.getFilePointer();
+			long filePositionPointer = pos;// record start before header read so we can record a simple index
 
-			int count = in.read(prefix);
+			int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			pos += headerByteCount;
 			if (count != headerByteCount)
-				throw new PluginException(": Record prefix is incomplete");
+				throw new PluginException("Record prefix is incomplete");
+			
 			dataLength -= headerByteCount;
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
 			if (type.equals("GRUP")) {
 				length -= headerByteCount;
+
 				int subGroupType = prefix [12] & 0xff;
 
 				if (subGroupType == PluginGroup.CELL) {
-					formToFilePointer.cellChildrenFilePointer = filePositionPointer;
-
-					// now skip the group
-					in.skipBytes(length);
+					formToFilePointer.cellChildrenFilePointer = filePositionPointer;// note not current pos but pos with header
+					// don't load, pos moved forward below
 				} else {
-					System.out.println(
-							"Group Type " + subGroupType + " not allowed as child of Int CELL sub block group");
+					System.out.println("Group Type " + subGroupType + " not allowed as child of Int CELL sub block group");
 				}
 			} else if (type.equals("CELL")) {
 				int formID = ESMByteConvert.extractInt3(prefix, 12);
 				formToFilePointer = new FormToFilePointer(formID, filePositionPointer);
 				CELLByFormID.put(formID, formToFilePointer);
-				in.skipBytes(length);
 			} else {
 				System.out.println("What the hell is a type " + type + " doing in the Int CELL sub block group?");
 			}
-
+			
+			pos += length;
 			//prep for next iter
 			dataLength -= length;
 		}

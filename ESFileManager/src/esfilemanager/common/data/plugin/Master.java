@@ -2,7 +2,6 @@ package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,6 @@ import esfilemanager.Point;
 import esfilemanager.common.PluginException;
 import esfilemanager.common.data.record.Record;
 import esfilemanager.loader.DIALTopGroup;
-import esfilemanager.loader.ESMManager;
 import esfilemanager.loader.FormToFilePointer;
 import esfilemanager.loader.InteriorCELLTopGroup;
 import esfilemanager.loader.WRLDChildren;
@@ -81,38 +79,38 @@ public abstract class Master implements IMaster {
 	}
 
 	private PluginRecord getRecordFromFile(long pointer) throws PluginException, IOException, DataFormatException {
-		synchronized (in) {
-			in.seek(pointer);
+		FileChannel ch = in.getChannel();
+		// use this non sync call for speed
+		byte[] prefix = new byte[headerByteCount];
+		ByteBuffer bb = ByteBuffer.wrap(prefix);
+		int count = ch.read(bb, pointer);
+		if (count != headerByteCount)
+			throw new PluginException(" : " + this + " record header is incomplete");
+		
+		int length = ESMByteConvert.extractInt(prefix, 4);
 
-			byte prefix[] = new byte[headerByteCount];
-			in.read(prefix);
+		PluginRecord cellRecord = new PluginRecord(prefix);
 
-			int length = ESMByteConvert.extractInt(prefix, 4);
+		cellRecord.load(in, pointer + headerByteCount, length);
 
-			PluginRecord cellRecord = new PluginRecord(prefix);
-
-			//cellRecord.load(masterFile.getName(), in, length);
-			cellRecord.load("", in, length);
-
-			return cellRecord;
-		}
+		return cellRecord;				
 	}
 
 	private PluginGroup getChildrenFromFile(long pointer) throws PluginException, IOException, DataFormatException {
-		synchronized (in) {
-			in.seek(pointer);
+		FileChannel ch = in.getChannel();
+		// use this non sync call for speed
+		byte[] prefix = new byte[headerByteCount];
+		int count = ch.read(ByteBuffer.wrap(prefix), pointer);	
+		if (count != headerByteCount)
+			throw new PluginException(" : " + this + " record header is incomplete");
+		
+		int length = ESMByteConvert.extractInt(prefix, 4);
+		length -= headerByteCount;
+		PluginGroup childrenGroup = new PluginGroup(prefix);
 
-			byte prefix[] = new byte[headerByteCount];
-			in.read(prefix);
+		childrenGroup.load(in, pointer + headerByteCount, length, -1);
 
-			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= headerByteCount;
-			PluginGroup childrenGroup = new PluginGroup(prefix);
-			//Dear god this String fileName appears to do something magical without it failures!
-			childrenGroup.load("", in, length);
-
-			return childrenGroup;
-		}
+		return childrenGroup;
 	}
 
 	/**
@@ -124,30 +122,30 @@ public abstract class Master implements IMaster {
 	 * @throws DataFormatException
 	 */
 
-	private PluginGroup getChildrenFromFile(long pointer, int childGroupType)
+	private PluginGroup getChildrenFromFile(long pos, int childGroupType)
 			throws PluginException, IOException, DataFormatException {
-		synchronized (in) {
-			in.seek(pointer);
+		FileChannel ch = in.getChannel();
+		// use this non sync call for speed
+		byte[] prefix = new byte[headerByteCount];
+		int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+		pos += headerByteCount;
+		if (count != headerByteCount)
+			throw new PluginException(" : " + this + " record header is incomplete");
+		
+		int length = ESMByteConvert.extractInt(prefix, 4);
+		length -= headerByteCount;
+		PluginGroup childrenGroup = new PluginGroup(prefix);
 
-			byte prefix[] = new byte[headerByteCount];
-			in.read(prefix);
-
-			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= headerByteCount;
-			PluginGroup childrenGroup = new PluginGroup(prefix);
-			//Dear god this String fileName appears to do something magical without it failures!
-			childrenGroup.load("", in, length, childGroupType);
-
-			// Now pull out the right type like the persister guy and return it
-			if (childrenGroup.getRecordList() != null) {
-				for (Record pgr : childrenGroup.getRecordList()) {
-					PluginGroup pg = (PluginGroup)pgr;
-					if (pg.getGroupType() == childGroupType) {
-						return pg;
-					}
+		childrenGroup.load(in, pos, length, childGroupType);
+			 
+		// Now pull out the right type like the persister guy and return it
+		if (childrenGroup.getRecordList() != null) {
+			for (Record pgr : childrenGroup.getRecordList()) {
+				PluginGroup pg = (PluginGroup)pgr;
+				if (pg.getGroupType() == childGroupType) {
+					return pg;
 				}
 			}
-
 		}
 
 		return null;
@@ -304,8 +302,6 @@ public abstract class Master implements IMaster {
 			}
 		} catch (PluginException e) {
 			e.printStackTrace();
-		} catch (DataFormatException e) {
-			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -444,6 +440,151 @@ public abstract class Master implements IMaster {
 				maxFormId = formId > maxFormId ? formId : maxFormId;
 			}
 		}
+
+		System.out.println(
+				"Finished loading ESM file " + masterHeader.getName() + " in " + (System.currentTimeMillis() - start));
+		return true;
+	}
+	
+	protected boolean loadch(FileChannelRAF in) throws PluginException, DataFormatException, IOException {
+		System.out.println("Loading ESM file " + masterHeader.getName());
+		long start = System.currentTimeMillis();
+
+		this.in = in;
+		FileChannel ch = in.getChannel();
+		long pos = 0;// keep track of the pos in the file, so we don't use any file pointers
+
+		int count = masterHeader.loadch(masterHeader.getName(), ch, pos);
+		pos += count;
+
+		//bad header means bad file
+		if (masterHeader.getVersion() <= 0 || masterHeader.getRecordCount() == 0) {
+			System.out.println("Bad Header skip load for file " + masterHeader.getName());
+			return false;
+		}
+
+		headerByteCount = masterHeader.getHeaderByteCount();
+
+		// now load an index into memory
+		byte prefix[] = new byte[headerByteCount];
+		masterID = masterHeader.getMasterList().size();
+		int recordCount = masterHeader.getRecordCount();
+		idToFormMap = new SparseArray<FormInfo>(recordCount / 10);// enough to kick off with, but we aren't loading all of it
+		 
+		count = ch.read(ByteBuffer.wrap(prefix), pos);	
+		pos += prefix.length;
+		if (count != headerByteCount)
+			throw new PluginException("Record prefix is incomplete");
+ 
+		while (count != -1) {
+			if (count != headerByteCount)
+				throw new PluginException(masterHeader.getName() + ": Group record prefix is too short");
+
+			String recordType = new String(prefix, 0, 4);
+			int groupLength = ESMByteConvert.extractInt(prefix, 4);
+
+			if (recordType.equals("TES4")) {
+				System.out.println("WHAT THE HELL TES4 record seen but I've loaded header already");
+				pos += groupLength;
+			} else {
+				if (!recordType.equals("GRUP"))
+					throw new PluginException(masterHeader.getName() + ": Top-level record is not a group");
+
+				String groupRecordType = new String(prefix, 8, 4);
+				if (prefix[12] != 0)
+					throw new PluginException(masterHeader.getName() + ": Top-level group type " + groupRecordType + " is not 0");
+				
+				groupLength -= headerByteCount;
+
+				if (groupRecordType.equals("WRLD")) {
+					wRLDTopGroup = new WRLDTopGroup(prefix);
+					wRLDTopGroup.loadAndIndexch(masterHeader.getName(), in, pos, groupLength);
+					pos += groupLength;
+				} else if (groupRecordType.equals("CELL")) {
+					interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
+					interiorCELLTopGroup.loadAndIndexch(masterHeader.getName(), in, pos, groupLength);
+					pos += groupLength;
+				} else if (groupRecordType.equals("DIAL")) {
+					dIALTopGroup = new DIALTopGroup(prefix);
+					dIALTopGroup.loadAndIndexch(masterHeader.getName(), in, pos, groupLength);
+					pos += groupLength;
+				} else {
+					while (groupLength >= headerByteCount) {
+						count = ch.read(ByteBuffer.wrap(prefix), pos);	
+						pos += prefix.length;
+						if (count != headerByteCount) 
+							throw new PluginException(masterHeader.getName() + ": Group " + groupRecordType + " is incomplete");
+						 
+						recordType = new String(prefix, 0, 4);
+						int recordLength = ESMByteConvert.extractInt(prefix, 4);
+						if (recordType.equals("GRUP")) {
+							groupLength -= recordLength;
+							pos += (recordLength - headerByteCount);//skip it
+						} else {
+							// some should only be indexed rather than loaded now
+							boolean indexedOnly = false;
+							indexedOnly = (recordType.equals("QUST")	|| recordType.equals("PACK")
+											|| recordType.equals("SCEN") || recordType.equals("NPC_")
+											|| recordType.equals("RACE") || recordType.equals("STAT")
+											|| recordType.equals("WEAP") || recordType.equals("NAVI")
+											|| recordType.equals("SCOL") || recordType.equals("SNDR"));
+
+							if (indexedOnly) {
+								int formID = ESMByteConvert.extractInt3(prefix, 12);
+								formID = formID & 0xffffff | masterID << 24;
+								long filePositionPointer = pos - headerByteCount;// go back to the start of the header
+								idToFormMap.put(formID, new FormInfo(recordType, formID, filePositionPointer));
+								int length = ESMByteConvert.extractInt(prefix, 4);
+								pos += length;
+							} else {
+								PluginRecord record = new PluginRecord(prefix);
+								int formID = record.getFormID();
+
+								if (record.isDeleted()	|| record.isIgnored() || formID == 0
+									|| formID >>> 24 < masterID) {
+									pos += recordLength;
+								} else {
+									record.load(in, pos, recordLength);
+									pos += recordLength;
+									formID = formID & 0xffffff | masterID << 24;
+									idToFormMap.put(formID, new FormInfo(recordType, formID, record));
+								}
+
+							}
+							groupLength -= recordLength + headerByteCount;
+						}
+					}
+
+					if (groupLength != 0) {
+						throw new PluginException(
+								masterHeader.getName() + ": Group " + groupRecordType + " is incomplete");
+					}
+				}
+			}
+
+			// prep for the next loop
+			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			pos += prefix.length;
+		}
+
+		addGeckDefaultObjects();
+
+		// now establish min and max form id range
+		for (int formId : idToFormMap.keySet()) {
+			minFormId = formId < minFormId ? formId : minFormId;
+			maxFormId = formId > maxFormId ? formId : maxFormId;
+		}
+		for (FormToFilePointer cp : getAllInteriorCELLFormIds()) {
+			int formId = cp.formId;
+			minFormId = formId < minFormId ? formId : minFormId;
+			maxFormId = formId > maxFormId ? formId : maxFormId;
+		}
+
+		for (int formId : getAllWRLDTopGroupFormIds()) {
+			minFormId = formId < minFormId ? formId : minFormId;
+			maxFormId = formId > maxFormId ? formId : maxFormId;
+		}
+	
 
 		System.out.println(
 				"Finished loading ESM file " + masterHeader.getName() + " in " + (System.currentTimeMillis() - start));

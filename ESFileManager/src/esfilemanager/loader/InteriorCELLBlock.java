@@ -1,6 +1,8 @@
 package esfilemanager.loader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import esfilemanager.common.PluginException;
@@ -24,8 +26,10 @@ public class InteriorCELLBlock extends PluginGroup {
 	}
 
 	public FormToFilePointer getInteriorCELL(int cellId, FileChannelRAF in) throws IOException, PluginException {
-		if (interiorCELLSubblocks == null)
-			loadAndIndex(in);
+		synchronized(this) {
+			if (interiorCELLSubblocks == null)
+				loadAndIndex(in);
+		}
 		int secondLastDigit = (cellId / 10) % 10;
 		InteriorCELLSubblock interiorCELLSubblock = interiorCELLSubblocks [secondLastDigit];
 		//Note we can be asked for a cell that does not exist in this ESM/ESP file
@@ -38,24 +42,32 @@ public class InteriorCELLBlock extends PluginGroup {
 
 	public void getAllInteriorCELLFormIds(ArrayList<FormToFilePointer> ret, FileChannelRAF in)
 			throws IOException, PluginException {
-		if (interiorCELLSubblocks == null)
-			loadAndIndex(in);
+		synchronized(this) {
+			if (interiorCELLSubblocks == null)
+				loadAndIndex(in);
+		}
 		for (InteriorCELLSubblock interiorCELLSubblock : interiorCELLSubblocks) {
-			if(interiorCELLSubblock !=null)  
-			interiorCELLSubblock.getAllInteriorCELLFormIds(ret, in);
+			if(interiorCELLSubblock != null)  
+				interiorCELLSubblock.getAllInteriorCELLFormIds(ret, in);
 		}
 	}
 
 	public void loadAndIndex(FileChannelRAF in) throws IOException, PluginException {
 		interiorCELLSubblocks = new InteriorCELLSubblock[10];
-		in.seek(fileOffset);
+		
+		
+		filePositionPointer = fileOffset;
+		long pos = filePositionPointer;
+		FileChannel ch = in.getChannel();
 		int dataLength = length;
-		byte prefix[] = new byte[headerByteCount];
-
+		byte[] prefix = new byte[headerByteCount];
+		
 		while (dataLength >= headerByteCount) {
-			int count = in.read(prefix);
+			int count = ch.read(ByteBuffer.wrap(prefix), pos);			
 			if (count != headerByteCount)
-				throw new PluginException(": Record prefix is incomplete");
+				throw new PluginException("Record prefix is incomplete");
+			
+			pos += headerByteCount;
 			dataLength -= headerByteCount;
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
@@ -65,11 +77,11 @@ public class InteriorCELLBlock extends PluginGroup {
 				int subGroupType = prefix [12] & 0xff;
 
 				if (subGroupType == PluginGroup.INTERIOR_SUBBLOCK) {
-					InteriorCELLSubblock subblock = new InteriorCELLSubblock(prefix, in.getFilePointer(), length);
+					InteriorCELLSubblock subblock = new InteriorCELLSubblock(prefix, pos, length);
 					interiorCELLSubblocks [subblock.secondLastDigit] = subblock;
 
 					//children.loadAndIndex(fileName, in, length, interiorCELLByFormId);
-					in.skipBytes(length);
+					pos += length;
 				} else {
 					System.out.println("Group Type " + subGroupType + " not allowed as child of Int CELL block group");
 				}

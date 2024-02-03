@@ -14,6 +14,7 @@ import tools.io.FileChannelRAF;
  */
 public class MasterFile extends Master {
 
+	private static final boolean CH = true;
 	private File masterFile;
 
 	public MasterFile(File masterFile) {
@@ -33,7 +34,10 @@ public class MasterFile extends Master {
 		else
 			in = new FileChannelRAF(masterFile, "r");
 
-		return super.load(in);
+		if(CH)
+			return super.loadch(in);
+		else
+			return super.load(in);
 
 	}
 }

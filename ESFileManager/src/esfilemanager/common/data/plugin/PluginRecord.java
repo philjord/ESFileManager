@@ -123,6 +123,17 @@ public class PluginRecord extends Record {
 		}
 		return "";
 	}
+	
+	
+	//Search for
+	// synchronized (in)
+	// synchronized (this)
+	// Dear god
+	// use of the filechannelRAF file pointer methods
+	//DUMP USE_MINI_CHANNEL_MAPS
+	// ch = in.getChannel(); need to hand channel around not fileChannelRAF
+	// methods called *ch(
+	//getFilePointer() or .seek(
 
 	//Dear god this String fileName appears to do something magical without it failures!	
 	public void load(String fileName, FileChannelRAF in, int recordLength)
@@ -138,14 +149,45 @@ public class PluginRecord extends Record {
 			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
 			mappedByteBuffer.get(recordData, 0, recordLength);			
 
-			//manually move the pointer forward (someone else is readin from this file)
+			//manually move the pointer forward (someone else is reading from this file)
 			in.seek(filePositionPointer + recordLength);
 		} else {
 			synchronized (in) {
 				int count = in.read(recordData);
-			if (count != recordLength)
-				throw new PluginException(fileName + ": " + recordType + " record is incomplete");
+				if (count != recordLength)
+					throw new PluginException(fileName + ": " + recordType + " record is incomplete");
+			}
 		}
+	}
+	
+	/**
+	 * Does not touch file pointer at all, no sync on in required
+	 * @param in
+	 * @param position
+	 * @param recordLength
+	 * @throws PluginException
+	 * @throws IOException
+	 * @throws DataFormatException
+	 */
+	public void load(FileChannelRAF in, long position, int recordLength)
+			throws PluginException, IOException, DataFormatException {
+		this.filePositionPointer = position;
+		this.recordLength = recordLength;
+		recordData = new byte[this.recordLength];
+				
+		FileChannel ch = in.getChannel();
+		
+		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE) {
+			//Oddly this is hugely slow
+			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;			
+			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
+			mappedByteBuffer.get(recordData);			
+		} else {
+			// use this non sync call for speed
+			ByteBuffer bb = ByteBuffer.wrap(recordData);
+			int count = ch.read(bb, filePositionPointer);
+			if (count != recordLength)
+				throw new PluginException(" : " + recordType + " record is incomplete");
 		}
 	}
 	
@@ -159,7 +201,7 @@ public class PluginRecord extends Record {
 	 * @throws DataFormatException
 	 */
 	public void load(FileChannelRAF in, long position)
-			throws PluginException, IOException, DataFormatException {
+			throws PluginException, IOException {
 		filePositionPointer = position;
 
 		recordData = new byte[recordLength];
@@ -223,53 +265,50 @@ public class PluginRecord extends Record {
 	}
 
 	/**
-	 * pulls the sub records from the raw byte array if required, and dumps the bytes
+	 * pulls the sub records from the raw byte array if required, and dumps the bytes, synch calls only one time deal!
 	 */
 	private void loadSubRecords() {
-		synchronized (this) {
-			if (subrecordList == null) {
-				subrecordList = new ArrayList<Subrecord>();
-				try {
-					uncompressRecordData();
+		subrecordList = new ArrayList<Subrecord>();
+		try {
+			uncompressRecordData();
 
-					int offset = 0;
-					int overrideLength = 0;
+			int offset = 0;
+			int overrideLength = 0;
 
-					if (recordData != null) {
-						while (offset < recordData.length) {
-							String subrecordType = new String(recordData, offset, 4);
-							int subrecordLength = recordData [offset + 4]	& 0xff
-													| (recordData [offset + 5] & 0xff) << 8;
-							if (subrecordType.equals("XXXX")) {
-								overrideLength = ESMByteConvert.extractInt(recordData, offset + 6);
-								offset += 6 + 4;
-								continue;
-							}
-							if (subrecordLength == 0) {
-								subrecordLength = overrideLength;
-								overrideLength = 0;
-							}
-							byte subrecordData[] = new byte[subrecordLength];
-
-							// bad decompress can happen (LAND record in falloutNV)
-							if (offset + 6 + subrecordLength <= recordData.length)
-								System.arraycopy(recordData, offset + 6, subrecordData, 0, subrecordLength);
-
-							subrecordList.add(new PluginSubrecord(subrecordType, subrecordData));
-
-							offset += 6 + subrecordLength;
-						}
+			if (recordData != null) {
+				while (offset < recordData.length) {
+					String subrecordType = new String(recordData, offset, 4);
+					int subrecordLength = recordData [offset + 4]	& 0xff
+											| (recordData [offset + 5] & 0xff) << 8;
+					if (subrecordType.equals("XXXX")) {
+						overrideLength = ESMByteConvert.extractInt(recordData, offset + 6);
+						offset += 6 + 4;
+						continue;
 					}
+					if (subrecordLength == 0) {
+						subrecordLength = overrideLength;
+						overrideLength = 0;
+					}
+					byte subrecordData[] = new byte[subrecordLength];
 
-					// discard the raw data as used now
-					recordData = null;
-				} catch (DataFormatException e) {
-					e.printStackTrace();
-				} catch (PluginException e) {
-					e.printStackTrace();
+					// bad decompress can happen (LAND record in falloutNV)
+					if (offset + 6 + subrecordLength <= recordData.length)
+						System.arraycopy(recordData, offset + 6, subrecordData, 0, subrecordLength);
+
+					subrecordList.add(new PluginSubrecord(subrecordType, subrecordData));
+
+					offset += 6 + subrecordLength;
 				}
 			}
+
+			// discard the raw data as used now
+			recordData = null;
+		} catch (DataFormatException e) {
+			e.printStackTrace();
+		} catch (PluginException e) {
+			e.printStackTrace();
 		}
+			
 
 	}
 

@@ -1,6 +1,8 @@
 package esfilemanager.loader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 
 import esfilemanager.common.PluginException;
@@ -96,7 +98,55 @@ public class InteriorCELLTopGroup extends PluginGroup {
 				System.out.println("what the hell is a type " + type + " doing in the Int CELL group?");
 			}
 
-			// now take teh length of the dataLength ready for the next iteration
+			// now take the length of the dataLength ready for the next iteration
+			dataLength -= length;
+		}
+
+		if (dataLength != 0) {
+			if (getGroupType() == 0)
+				throw new PluginException(fileName + ": Group " + getGroupRecordType() + " is incomplete");
+			else
+				throw new PluginException(fileName + ": Subgroup type " + getGroupType() + " is incomplete");
+		}
+	}
+	
+	
+	public void loadAndIndexch(String fileName, FileChannelRAF in, long pos, int groupLength) throws IOException, PluginException {
+
+		this.in = in;
+		FileChannel ch = in.getChannel();
+		
+		int dataLength = groupLength;
+		byte prefix[] = new byte[headerByteCount];
+
+		while (dataLength >= headerByteCount) {
+			int count = ch.read(ByteBuffer.wrap(prefix), pos);			
+			if (count != headerByteCount)
+				throw new PluginException("Record prefix is incomplete");
+			
+			pos += headerByteCount;			
+			dataLength -= headerByteCount;
+			String type = new String(prefix, 0, 4);
+			int length = ESMByteConvert.extractInt(prefix, 4);
+
+			if (type.equals("GRUP")) {
+				length -= headerByteCount;
+				int prefixGroupType = prefix [12] & 0xff;
+
+				if (prefixGroupType == PluginGroup.INTERIOR_BLOCK) {
+					InteriorCELLBlock cellBlock = new InteriorCELLBlock(prefix, pos, length);
+					interiorCELLBlocks [cellBlock.lastDigit] = cellBlock;
+
+					//children.loadAndIndex(fileName, in, length, interiorCELLByFormId);
+					pos += length;	
+				} else {
+					System.out.println("Group Type " + prefixGroupType + " not allowed as child of Int CELL");
+				}
+			} else {
+				System.out.println("what the hell is a type " + type + " doing in the Int CELL group?");
+			}
+
+			// now take the length of the dataLength ready for the next iteration
 			dataLength -= length;
 		}
 

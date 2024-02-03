@@ -1,6 +1,8 @@
 package esfilemanager.loader;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.zip.DataFormatException;
 
@@ -21,8 +23,7 @@ public class WRLDChildren extends PluginGroup {
 	// each cell is followed by it's group of temp children
 
 	//so incoming value of say 7,41 = extsub of x7/4*8 = 1 and y41/4*8 = 10 so sub of x1/8 = 0 and y10/8 = 2
-
-	private FileChannelRAF					in;
+	private FileChannelRAF in;
 
 	// should be a single road
 	private PluginRecord					road;
@@ -57,7 +58,7 @@ public class WRLDChildren extends PluginGroup {
 
 		return null;
 	}
-
+	
 	public void loadAndIndex(FileChannelRAF in, int groupLength)
 			throws IOException, DataFormatException, PluginException {
 		this.in = in;
@@ -95,6 +96,66 @@ public class WRLDChildren extends PluginGroup {
 			} else if (type.equals("CELL")) {
 				PluginRecord record = new PluginRecord(prefix);
 				record.load("", in, length);
+				wrldCell = record;
+			} else {
+				System.out.println("What the hell is a type " + type + " doing in the WRLD children group?");
+			}
+
+			//prep for next iter;
+			dataLength -= length;
+		}
+
+		if (dataLength != 0) {
+			if (getGroupType() == 0)
+				throw new PluginException("Group " + getGroupRecordType() + " is incomplete");
+			else
+				throw new PluginException(" Subgroup type " + getGroupType() + " is incomplete");
+		}
+
+	}
+
+	public void loadAndIndexch(FileChannelRAF in, long pos, int groupLength)
+			throws IOException, DataFormatException, PluginException {
+ 
+		this.in = in;
+		FileChannel ch  = in.getChannel();
+		int dataLength = groupLength;
+		byte[] prefix = new byte[headerByteCount];
+		while (dataLength >= headerByteCount) {
+			int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			pos += prefix.length;
+			if (count != headerByteCount)
+				throw new PluginException("Record prefix is incomplete");
+			dataLength -= headerByteCount;
+			String type = new String(prefix, 0, 4);
+			int length = ESMByteConvert.extractInt(prefix, 4);
+
+			if (type.equals("GRUP")) {
+				length -= headerByteCount;
+
+				int subGroupType = prefix [12] & 0xff;
+
+				if (subGroupType == PluginGroup.EXTERIOR_BLOCK) {
+					WRLDExtBlock wrldExtBlock = new WRLDExtBlock(prefix, pos, length);
+					WRLDExtBlockChildren.put(new Point(wrldExtBlock.x, wrldExtBlock.y), wrldExtBlock);
+					//we DO NOT index now, later
+					pos += length;
+				} else if (subGroupType == PluginGroup.CELL) {
+					wrldCellChildren = new PluginGroup(prefix);
+					wrldCellChildren.load(in, pos, length);
+					pos += length;
+				} else {
+					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD children group");
+				}
+			} else if (type.equals("ROAD")) {
+				PluginRecord record = new PluginRecord(prefix);
+				record.load(in, pos, length);
+				pos += length;
+				road = record;
+			} else if (type.equals("CELL")) {
+				PluginRecord record = new PluginRecord(prefix);
+				record.load(in, pos, length);
+				pos += length;
 				wrldCell = record;
 			} else {
 				System.out.println("What the hell is a type " + type + " doing in the WRLD children group?");
