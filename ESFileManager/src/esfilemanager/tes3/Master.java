@@ -103,83 +103,15 @@ public class Master implements IMasterTes3 {
 		return idToFormMap;
 	}
 
+
 	public void load() throws PluginException, IOException {
-		synchronized (in) {
-			masterHeader.load(fileName, in);
-
-			idToFormMap = new SparseArray<FormInfo>();
-			edidToFormIdMap = new LinkedHashMap<String, Integer>();
-			dials = new LinkedHashMap<String, DIALRecord>();
-
-			//add a single wrld indicator, to indicate the single morrowind world, id MUST be wrldFormId (0)!
-			PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
-			idToFormMap.put(wrldRecord.getFormID(),
-					new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord));
-
-			while (in.getFilePointer() < in.length()) {
-				// pull the prefix data so we know what sort of record we need to load
-				byte[] prefix = new byte[16];
-				int count = in.read(prefix);
-				if (count != 16)
-					throw new PluginException(": record prefix is incomplete");
-
-				String recordType = new String(prefix, 0, 4);
-				//recordSize = ESMByteConvert.extractInt(prefix, 4);
-				//unknownInt = ESMByteConvert.extractInt(prefix, 8);
-				//recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
-
-				int formID = getNextFormId();
-
-				if (recordType.equals("CELL")) {
-					//	looks like x = 23 to -18 y is 27 to -17  so 50 wide with an x off of +25 and y of +20
-					CELLPluginGroup cellPluginGroup = new CELLPluginGroup(prefix, in);
-
-					if (cellPluginGroup.isExterior) {
-						int xIdx = cellPluginGroup.cellX + 50;
-						int yIdx = cellPluginGroup.cellY + 50;
-						exteriorCells [xIdx] [yIdx] = cellPluginGroup;
-					} else {
-						interiorCellsByEdid.put(cellPluginGroup.getEditorID(), cellPluginGroup);
-						interiorCellsByFormId.put(cellPluginGroup.getFormID(), cellPluginGroup);
-					}
-				} else if (recordType.equals("LAND")) {
-					//land are fully skipped as they get loaded with the owner cell at cell load time later
-					int recordSize = ESMByteConvert.extractInt(prefix, 4);
-					in.skipBytes(recordSize);
-				} else if (recordType.equals("DIAL")) {
-					DIALRecord dial = new DIALRecord(formID, prefix, in);
-					dials.put(dial.getEditorID(), dial);
-				} else {
-					PluginRecord record = new PluginRecord(formID, prefix);
-					record.load("", in, -1);
-
-					// 1 length are single 0's
-					if (record.getEditorID() != null && record.getEditorID().length() > 1) {
-						edidToFormIdMap.put(record.getEditorID(), new Integer(formID));
-					}
-
-					// every thing else gets stored as a record
-					FormInfo info = new FormInfo(record.getRecordType(), formID, record);
-					idToFormMap.put(formID, info);
-				}
-
-			}
-
-			// now establish min and max form id range
-			minFormId = 0;
-			maxFormId = currentFormId - 1;
-		}
-	}
-	
-	
-	public void loadch() throws PluginException, IOException {
 		System.out.println("Loading ESM file " + fileName);
 		long start = System.currentTimeMillis();
 
 		FileChannel ch = in.getChannel();
 		long pos = 0;// keep track of the pos in the file, so we don't use any file pointers
 
-		int count = masterHeader.loadch(fileName, in, pos);
+		int count = masterHeader.load(fileName, in, pos);
 		pos += count;
 		
 		idToFormMap = new SparseArray<FormInfo>();
@@ -308,10 +240,7 @@ public class Master implements IMasterTes3 {
 				// make sure no one else asks for it while we check load state
 				synchronized (cellPluginGroup) {
 					if (!cellPluginGroup.isLoaded()) {
-						if(ESMManagerTes3File.CH)
-							cellPluginGroup.loadch(in);
-						else
-							cellPluginGroup.load(in);
+						cellPluginGroup.load(in);
 					}
 				}
 
@@ -335,10 +264,7 @@ public class Master implements IMasterTes3 {
 			// make sure no one else asks for it while we check load state
 			synchronized (cellPluginGroup) {
 				if (!cellPluginGroup.isLoaded()) {
-					if(ESMManagerTes3File.CH)
-						cellPluginGroup.loadch(in);
-					else
-						cellPluginGroup.load(in);
+					cellPluginGroup.load(in);
 				}
 			}
 
@@ -354,10 +280,7 @@ public class Master implements IMasterTes3 {
 			// make sure no one else asks for it while we check load state
 			synchronized (cellPluginGroup) {
 				if (!cellPluginGroup.isLoaded()) {
-					if(ESMManagerTes3File.CH)
-						cellPluginGroup.loadch(in);
-					else
-						cellPluginGroup.load(in);
+					cellPluginGroup.load(in);
 				}
 			}
 			return cellPluginGroup.createPluginRecord();
@@ -372,10 +295,7 @@ public class Master implements IMasterTes3 {
 			// make sure no one else asks for it while we check load state
 			synchronized (cellPluginGroup) {
 				if (!cellPluginGroup.isLoaded()) {
-					if(ESMManagerTes3File.CH)
-						cellPluginGroup.loadch(in);
-					else
-						cellPluginGroup.load(in);
+					cellPluginGroup.load(in);
 				}
 			}
 			return cellPluginGroup;

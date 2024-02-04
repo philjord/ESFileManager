@@ -65,53 +65,8 @@ public class InteriorCELLTopGroup extends PluginGroup {
 		return null;
 	}
 
-	public void loadAndIndex(String fileName, FileChannelRAF in, int groupLength) throws IOException, PluginException {
-
-		this.in = in;
-		int dataLength = groupLength;
-		byte prefix[] = new byte[headerByteCount];
-
-		while (dataLength >= headerByteCount) {
-			int count = in.read(prefix);
-			if (count != headerByteCount)
-				throw new PluginException(fileName + ": Record prefix is incomplete");
-
-			dataLength -= headerByteCount;
-			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
-
-			if (type.equals("GRUP")) {
-				length -= headerByteCount;
-				int prefixGroupType = prefix [12] & 0xff;
-
-				if (prefixGroupType == PluginGroup.INTERIOR_BLOCK) {
-					InteriorCELLBlock cellBlock = new InteriorCELLBlock(prefix, in.getFilePointer(), length);
-					interiorCELLBlocks [cellBlock.lastDigit] = cellBlock;
-
-					//children.loadAndIndex(fileName, in, length, interiorCELLByFormId);
-					in.skipBytes(length);
-
-				} else {
-					System.out.println("Group Type " + prefixGroupType + " not allowed as child of Int CELL");
-				}
-			} else {
-				System.out.println("what the hell is a type " + type + " doing in the Int CELL group?");
-			}
-
-			// now take the length of the dataLength ready for the next iteration
-			dataLength -= length;
-		}
-
-		if (dataLength != 0) {
-			if (getGroupType() == 0)
-				throw new PluginException(fileName + ": Group " + getGroupRecordType() + " is incomplete");
-			else
-				throw new PluginException(fileName + ": Subgroup type " + getGroupType() + " is incomplete");
-		}
-	}
-	
-	
-	public void loadAndIndexch(String fileName, FileChannelRAF in, long pos, int groupLength) throws IOException, PluginException {
+		
+	public void loadAndIndex(String fileName, FileChannelRAF in, long pos, int groupLength) throws IOException, PluginException {
 
 		this.in = in;
 		FileChannel ch = in.getChannel();

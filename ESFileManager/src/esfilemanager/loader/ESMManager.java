@@ -22,9 +22,6 @@ import esfilemanager.common.data.record.Record;
 // and get esm manager bit so perhaps time for 2?
 
 public abstract class ESMManager implements IESMManager {
-	public static boolean		USE_FILE_MAPS			= true;
-	public static boolean		USE_MINI_CHANNEL_MAPS	= false;
-	public static boolean		USE_NON_NATIVE_ZIP		= false;					// true=slower but no native calls
 
 	private ArrayList<IMaster>	masters					= new ArrayList<IMaster>();
 

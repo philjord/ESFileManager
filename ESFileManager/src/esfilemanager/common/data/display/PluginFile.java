@@ -31,6 +31,7 @@ public class PluginFile extends Plugin {
 		load(true);
 	}
 
+
 	@Override
 	public void load(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException {
 		if (!pluginFile.exists() || !pluginFile.isFile())
@@ -39,14 +40,5 @@ public class PluginFile extends Plugin {
 		//in = new RandomAccessFile(pluginFile, "r");
 		in = new FileChannelRAF(pluginFile, "r");
 		super.load(indexCellsOnly, in);
-	}
-	@Override
-	public void loadch(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException {
-		if (!pluginFile.exists() || !pluginFile.isFile())
-			throw new IOException("Plugin file '" + pluginFile.getName() + "' does not exist");
-
-		//in = new RandomAccessFile(pluginFile, "r");
-		in = new FileChannelRAF(pluginFile, "r");
-		super.loadch(indexCellsOnly, in);
 	}
 }

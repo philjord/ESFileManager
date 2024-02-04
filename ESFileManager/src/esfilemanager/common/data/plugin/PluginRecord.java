@@ -2,7 +2,6 @@ package esfilemanager.common.data.plugin;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.zip.Inflater;
 import esfilemanager.common.PluginException;
 import esfilemanager.common.data.record.Record;
 import esfilemanager.common.data.record.Subrecord;
-import esfilemanager.loader.ESMManager;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
@@ -64,19 +62,15 @@ public class PluginRecord extends Record {
 			// read header off
 			byte prefix[] = new byte[headerByteCount];
 			FileChannel ch = in.getChannel();
-			if (ESMManager.USE_MINI_CHANNEL_MAPS) {
-				FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;
-				MappedByteBuffer mappedByteBuffer = ch.map(mm, pointer, headerByteCount);
-				mappedByteBuffer.get(prefix);
-			} else {
-				// use this non sync call for speed
-				ByteBuffer bb = ByteBuffer.wrap(prefix);
-				int count = ch.read(bb, pointer);
 
-				if (count != headerByteCount) {
-					throw new PluginException(": PluginRecord prefix is incomplete " + formID);
-				}
+			// use this non sync call for speed
+			ByteBuffer bb = ByteBuffer.wrap(prefix);
+			int count = ch.read(bb, pointer);
+
+			if (count != headerByteCount) {
+				throw new PluginException(": PluginRecord prefix is incomplete " + formID);
 			}
+
 
 			if (prefix.length != 20 && prefix.length != 24) {
 				throw new IllegalArgumentException("The record prefix is not 20 or 24 bytes as required");
@@ -124,42 +118,7 @@ public class PluginRecord extends Record {
 		return "";
 	}
 	
-	
-	//Search for
-	// synchronized (in)
-	// Dear god
-	// old(
-	// use of the filechannelRAF file pointer methods
-	//DUMP USE_MINI_CHANNEL_MAPS
-	// ch = in.getChannel(); need to hand channel around not fileChannelRAF
-	// methods called *ch(
-	//getFilePointer() or .seek(
 
-	//Dear god this String fileName appears to do something magical without it failures!	
-	public void load(String fileName, FileChannelRAF in, int recordLength)
-			throws PluginException, IOException, DataFormatException {
-		filePositionPointer = in.getFilePointer();
-
-		recordData = new byte[recordLength];
-		
-		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE) {
-			//Oddly this is hugely slow
-			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;			
-			FileChannel ch = in.getChannel();
-			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
-			mappedByteBuffer.get(recordData, 0, recordLength);			
-
-			//manually move the pointer forward (someone else is reading from this file)
-			in.seek(filePositionPointer + recordLength);
-		} else {
-			synchronized (in) {
-				int count = in.read(recordData);
-				if (count != recordLength)
-					throw new PluginException(fileName + ": " + recordType + " record is incomplete");
-			}
-		}
-	}
-	
 	/**
 	 * Does not touch file pointer at all, no sync on in required
 	 * @param in
@@ -169,25 +128,20 @@ public class PluginRecord extends Record {
 	 * @throws IOException
 	 * @throws DataFormatException
 	 */
+	
+	//FIXME: why doesn't the method below make this redundant?
 	public void load(FileChannelRAF in, long position, int recordLength)
 			throws PluginException, IOException, DataFormatException {
+		FileChannel ch = in.getChannel();
 		this.filePositionPointer = position;
 		this.recordLength = recordLength;
 		recordData = new byte[this.recordLength];
-				
-		FileChannel ch = in.getChannel();
-		
-		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE) {
-			//Oddly this is hugely slow
-			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;			
-			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
-			mappedByteBuffer.get(recordData);			
-		} else {
-			// use this non sync call for speed
-			int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
-			if (count != recordLength)
-				throw new PluginException(" : " + recordType + " record is incomplete");
-		}
+						
+		// use this non sync call for speed
+		int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
+		if (count != recordLength)
+			throw new PluginException(" : " + recordType + " record is incomplete");
+	
 	}
 	
 	/**
@@ -201,23 +155,16 @@ public class PluginRecord extends Record {
 	 */
 	public void load(FileChannelRAF in, long position)
 			throws PluginException, IOException {
+		FileChannel ch = in.getChannel();
 		filePositionPointer = position;
 
 		recordData = new byte[recordLength];
-		FileChannel ch = in.getChannel();
-		
-		if (ESMManager.USE_MINI_CHANNEL_MAPS && filePositionPointer < Integer.MAX_VALUE) {
-			//Oddly this is hugely slow
-			FileChannel.MapMode mm = FileChannel.MapMode.READ_ONLY;			
-			MappedByteBuffer mappedByteBuffer = ch.map(mm, filePositionPointer, recordLength);
-			mappedByteBuffer.get(recordData);			
-		} else {
-			// use this non sync call for speed
-			int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
-			if (count != recordLength)
-				throw new PluginException(" : " + recordType + " record is incomplete");
-		}
-		 
+
+		// use this non sync call for speed
+		int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
+		if (count != recordLength)
+			throw new PluginException(" : " + recordType + " record is incomplete");
+
 	}
 
 	private boolean uncompressRecordData() throws DataFormatException, PluginException {
@@ -228,24 +175,14 @@ public class PluginRecord extends Record {
 		int length = ESMByteConvert.extractInt(recordData, 0);
 		byte buffer[] = new byte[length];
 
-		if (ESMManager.USE_NON_NATIVE_ZIP) {
-			//JCraft version slower - though I wonder about android? seems real slow too
-			com.jcraft.jzlib.Inflater inflater = new com.jcraft.jzlib.Inflater();
-			inflater.setInput(recordData, 4, recordData.length - 4, false);
-			inflater.setOutput(buffer);
-			inflater.inflate(4);//Z_FINISH
-			inflater.end();
-			recordData = buffer;
+		Inflater expand = new Inflater();
+		expand.setInput(recordData, 4, recordData.length - 4);
+		int count = expand.inflate(buffer);
+		if (count != length) {
+			throw new PluginException("Expanded data less than data length");
 		} else {
-			Inflater expand = new Inflater();
-			expand.setInput(recordData, 4, recordData.length - 4);
-			int count = expand.inflate(buffer);
-			if (count != length) {
-				throw new PluginException("Expanded data less than data length");
-			} else {
-				expand.end();
-				recordData = buffer;
-			}
+			expand.end();
+			recordData = buffer;
 		}
 
 		return true;

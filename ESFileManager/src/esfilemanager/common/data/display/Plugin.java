@@ -69,98 +69,19 @@ public abstract class Plugin {
 	public abstract void load() throws PluginException, DataFormatException, IOException;
 
 	public abstract void load(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException;
-	
+		
 	public void load(boolean indexCellsOnly, FileChannelRAF in)
-			throws PluginException, DataFormatException, IOException {
-		this.in = in;
-		pluginHeader.load(pluginHeader.getName(), in);
-		
-		if(pluginHeader.getGame() == GAME.TES3)
-		{
-			loadTES3(indexCellsOnly, in);
-			return;
-		}
-		
-		// fake top group for the header to live in
-		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
-		groupList.add(topPG);
-		topPG.getRecordList().add(pluginHeader);
-
-		
-		int recordCount = pluginHeader.getRecordCount();
-		formList = new ArrayList<FormInfo>(recordCount);
-		formMap = new HashMap<Integer, FormInfo>(recordCount);
-		byte prefix[] = new byte[pluginHeader.getHeaderByteCount()];
-		int loadCount = 0;
-		int count = in.read(prefix);
-		while (count != -1) {
-			if (count != pluginHeader.getHeaderByteCount())
-				throw new PluginException(pluginHeader.getName() + ": Group record prefix is too short");
-
-			String type = new String(prefix, 0, 4);
-			if (!type.equals("GRUP"))
-				throw new PluginException(pluginHeader.getName() + ": Top-level record is not a group");
-			if (prefix [12] != 0)
-				throw new PluginException(pluginHeader.getName() + ": Top-level group type is not 0");
-
-			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= pluginHeader.getHeaderByteCount();
-
-			PluginGroup group = new PluginGroup(prefix);
-			//Dear god this String fileName appears to do something magical without it failures!			
-			group.load("", in, length);
-
-			// if requested we only index the wrld and cell records, as that is 99% of the file size
-			if (indexCellsOnly
-				&& (group.getGroupRecordType().equals("WRLD") || group.getGroupRecordType().equals("CELL"))) {
-				updateFormListPointersOnly(group, formList);
-			} else {
-				updateFormList(group, formList);
-				groupList.add(group);
-				loadCount += group.getRecordCount() + 1;
-			}
-
-			//prep for the next iter
-			count = in.read(prefix);
-		}
-
-		if (loadCount != recordCount) {
-			System.out.println(pluginHeader.getName()	+ ": Load count " + loadCount + " does not match header count "
-								+ recordCount + ", presumably it is only indexed");
-		}
-
-		//I think this is for empty esm files?
-		/*	if (pluginHeader.getMasterList().size() == 0)
-		 {
-		 Integer refFormID = new Integer(20);
-		 if (formMap.get(refFormID) == null)
-		 {
-		 FormInfo playerInfo = (FormInfo) formMap.get(new Integer(7));
-		 if (playerInfo != null
-		 && playerInfo.getRecordType().equals("NPC_")
-		 && playerInfo.getEditorID().equals("Player"))
-		 {
-		 FormInfo playerRefInfo = new FormInfo(null, "REFR", 20, "PlayerREF");
-		 formList.add(playerRefInfo);
-		 formMap.put(refFormID, playerRefInfo);
-		 }
-		 }
-		 }*/
-
-	}
-	
-	public void loadch(boolean indexCellsOnly, FileChannelRAF in)
 			throws PluginException, DataFormatException, IOException {
 		this.in = in;
 		FileChannel ch = in.getChannel();
 		long pos = 0;// keep track of the pos in the file, so we don't use any file pointers
 		
-		int count = pluginHeader.loadch(pluginHeader.getName(), ch, pos);
+		int count = pluginHeader.load(pluginHeader.getName(), ch, pos);
 		pos += count;
 		
 		if(pluginHeader.getGame() == GAME.TES3)
 		{
-			loadTES3ch(indexCellsOnly, in, pos);
+			loadTES3(indexCellsOnly, in, pos);
 			return;
 		}
 		
@@ -235,8 +156,9 @@ public abstract class Plugin {
 
 	}
 	
-	private void loadTES3(boolean indexCellsOnly, FileChannelRAF in) throws IOException, PluginException, DataFormatException {
-		
+	
+	private void loadTES3(boolean indexCellsOnly, FileChannelRAF in, long pos) throws IOException, PluginException, DataFormatException {
+		FileChannel ch = in.getChannel();
 		// fake top groups for now, to butcher with later, cells and everything else
 		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
 		groupList.add(topPG);
@@ -251,7 +173,8 @@ public abstract class Plugin {
 		formMap = new HashMap<Integer, FormInfo>(recordCount);
 		byte prefix[] = new byte[pluginHeader.getHeaderByteCount()];
 		int loadCount = 0;
-		int count = in.read(prefix);
+		int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+		pos += prefix.length;
 		while (count != -1) {
 			if (count != pluginHeader.getHeaderByteCount())
 				throw new PluginException(pluginHeader.getName() + ": Group record prefix is too short");
@@ -261,7 +184,8 @@ public abstract class Plugin {
 			length -= pluginHeader.getHeaderByteCount();
 
 			PluginRecord record = new esfilemanager.tes3.PluginRecord(-1, prefix);
-			record.load("", in, -1);
+			record.load(in, pos);
+			pos += length;
 			loadCount++;
 
 			if(type.equals("CELL")) {
@@ -282,63 +206,8 @@ public abstract class Plugin {
 			}				
 
 			//prep for the next iter
-			count = in.read(prefix);
-		}
-
-		if (loadCount != recordCount) {
-			System.out.println(pluginHeader.getName()	+ ": Load count " + loadCount + " does not match header count "
-								+ recordCount + ", presumably it is only indexed");
-		}		
-	}
-
-	private void loadTES3ch(boolean indexCellsOnly, FileChannelRAF in, long pos) throws IOException, PluginException, DataFormatException {
-		
-		// fake top groups for now, to butcher with later, cells and everything else
-		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
-		groupList.add(topPG);
-		topPG.getRecordList().add(pluginHeader);
-		PluginGroup cellPG = new esfilemanager.tes3.PluginGroup(PluginGroup.CELL);
-		topPG.getRecordList().add(cellPG);
-		
-		LinkedHashMap<String, PluginGroup> typeToGroup = new LinkedHashMap<String, PluginGroup>();
-		
-		int recordCount = pluginHeader.getRecordCount();
-		formList = new ArrayList<FormInfo>(recordCount);
-		formMap = new HashMap<Integer, FormInfo>(recordCount);
-		byte prefix[] = new byte[pluginHeader.getHeaderByteCount()];
-		int loadCount = 0;
-		int count = in.read(prefix);
-		while (count != -1) {
-			if (count != pluginHeader.getHeaderByteCount())
-				throw new PluginException(pluginHeader.getName() + ": Group record prefix is too short");
-
-			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= pluginHeader.getHeaderByteCount();
-
-			PluginRecord record = new esfilemanager.tes3.PluginRecord(-1, prefix);
-			record.load("", in, -1);
-			loadCount++;
-
-			if(type.equals("CELL")) {
-				cellPG.getRecordList().add(record);
-			} else {
-				if(!esfilemanager.tes3.PluginRecord.edidRecordSet.contains(type) 
-						&& !esfilemanager.tes3.PluginRecord.nonEdidRecordSet.contains(type) )
-					System.out.println("unseen type " + type);
-				
-				PluginGroup pg = typeToGroup.get(type);
-				if(pg == null) {
-					pg = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, type);
-					topPG.getRecordList().add(pg);
-					typeToGroup.put(type, pg);
-				}
-				
-				pg.getRecordList().add(record);
-			}				
-
-			//prep for the next iter
-			count = in.read(prefix);
+			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			pos += prefix.length;
 		}
 
 		if (loadCount != recordCount) {
@@ -374,10 +243,5 @@ public abstract class Plugin {
 				}
 			}
 		}
-	}
-
-	public void loadch(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException {
-		// TODO Auto-generated method stub
-		
 	}
 }

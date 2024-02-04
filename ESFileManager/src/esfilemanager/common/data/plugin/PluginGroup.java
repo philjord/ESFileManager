@@ -109,59 +109,6 @@ public class PluginGroup extends PluginRecord {
 		return dataSize;
 	}
 
-	//Dear god this String fileName appears to do something magical without it failures!	
-	@Override
-	public void load(String fileName, FileChannelRAF in, int groupLength)
-			throws IOException, DataFormatException, PluginException {
-		//-1 means load all children groups that exist (only relevant to the "children" of CELLS groups
-		load(fileName, in, groupLength, -1);
-	}
-
-	//Dear god this String fileName appears to do something magical without it failures!	
-	public void load(String fileName, FileChannelRAF in, int groupLength, int childGroupType)
-			throws IOException, DataFormatException, PluginException {
-		int dataLength = groupLength;
-		byte prefix[] = new byte[headerByteCount];
-
-		while (dataLength >= headerByteCount) {
-			int count = in.read(prefix);
-			if (count != headerByteCount)
-				throw new PluginException(fileName + ": Record prefix is incomplete");
-			dataLength -= headerByteCount;
-			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
-
-			if (type.equals("GRUP")) {
-				length -= headerByteCount;
-				PluginGroup pg = new PluginGroup(prefix);
-				if (childGroupType == -1 || pg.getGroupType() == childGroupType) {
-					pg.load("", in, length);
-					recordList.add(pg);
-				} else {
-					// not loading this group now
-					in.skipBytes(length);
-				}
-			} else {
-				PluginRecord record = new PluginRecord(prefix);
-				record.load("", in, length);
-				recordList.add(record);
-			}
-
-			// remove this iteration from the total
-			dataLength -= length;
-		}
-
-		if (dataLength != 0) {
-			if (groupType == 0)
-				throw new PluginException(fileName + ": Group " + groupRecordType + " is incomplete");
-			else
-				throw new PluginException(fileName + ": Subgroup type " + groupType + " is incomplete");
-		}
-
-		return;
-	}
-	
-
 	@Override
 	public void load(FileChannelRAF in, long pointer, int groupLength)
 			throws IOException, DataFormatException, PluginException {

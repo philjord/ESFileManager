@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.zip.DataFormatException;
 
 import esfilemanager.common.PluginException;
-import esfilemanager.loader.ESMManager;
 import tools.io.FileChannelRAF;
 
 /**
@@ -14,7 +13,6 @@ import tools.io.FileChannelRAF;
  */
 public class MasterFile extends Master {
 
-	private static final boolean CH = true;
 	private File masterFile;
 
 	public MasterFile(File masterFile) {
@@ -28,16 +26,8 @@ public class MasterFile extends Master {
 		if (!masterFile.exists() || !masterFile.isFile())
 			throw new IOException("Master file '" + masterFile.getAbsolutePath() + "' does not exist");
 
-		FileChannelRAF in;
-		if (masterFile.length() > Integer.MAX_VALUE || !ESMManager.USE_FILE_MAPS)
-			in = new FileChannelRAF(masterFile, "r");
-		else
-			in = new FileChannelRAF(masterFile, "r");
+		FileChannelRAF in = new FileChannelRAF(masterFile, "r");
 
-		if(CH)
-			return super.loadch(in);
-		else
-			return super.load(in);
-
+		return super.load(in);
 	}
 }

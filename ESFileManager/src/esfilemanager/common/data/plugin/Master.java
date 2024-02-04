@@ -312,141 +312,8 @@ public abstract class Master implements IMaster {
 	}
 
 	public abstract boolean load() throws PluginException, DataFormatException, IOException;
-
-	protected boolean load(FileChannelRAF in) throws PluginException, DataFormatException, IOException {
-		System.out.println("Loading ESM file " + masterHeader.getName());
-		long start = System.currentTimeMillis();
-
-		this.in = in;
-
-		synchronized (in) {
-			masterHeader.load(masterHeader.getName(), in);
-
-			//bad header means bad file
-			if (masterHeader.getVersion() <= 0 || masterHeader.getRecordCount() == 0) {
-				System.out.println("Bad Header skip load for file " + masterHeader.getName());
-				return false;
-			}
-
-			headerByteCount = masterHeader.getHeaderByteCount();
-
-			// now load an index into memory
-			byte prefix[] = new byte[headerByteCount];
-			masterID = masterHeader.getMasterList().size();
-			int recordCount = masterHeader.getRecordCount();
-			idToFormMap = new SparseArray<FormInfo>(recordCount / 10);// enough to kick off with, but we aren't loading all of it
-
-			int count = in.read(prefix);
-			while (count != -1) {
-				if (count != headerByteCount)
-					throw new PluginException(masterHeader.getName() + ": Group record prefix is too short");
-
-				String recordType = new String(prefix, 0, 4);
-				int groupLength = ESMByteConvert.extractInt(prefix, 4);
-
-				if (recordType.equals("TES4")) {
-					in.skipBytes(groupLength);
-				} else {
-					if (!recordType.equals("GRUP"))
-						throw new PluginException(masterHeader.getName() + ": Top-level record is not a group");
-					if (prefix[12] != 0)
-						throw new PluginException(masterHeader.getName() + ": Top-level group type is not 0");
-
-					String groupRecordType = new String(prefix, 8, 4);
-					groupLength -= headerByteCount;
-
-					if (groupRecordType.equals("WRLD")) {
-						wRLDTopGroup = new WRLDTopGroup(prefix);
-						wRLDTopGroup.loadAndIndex(masterHeader.getName(), in, groupLength);
-					} else if (groupRecordType.equals("CELL")) {
-						interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
-						interiorCELLTopGroup.loadAndIndex(masterHeader.getName(), in, groupLength);
-					} else if (groupRecordType.equals("DIAL")) {
-						dIALTopGroup = new DIALTopGroup(prefix);
-						dIALTopGroup.loadAndIndex(in, groupLength);
-					} else {
-						while (groupLength >= headerByteCount) {
-							count = in.read(prefix);
-							if (count != headerByteCount) {
-								throw new PluginException(
-										masterHeader.getName() + ": Group " + groupRecordType + " is incomplete");
-							}
-
-							recordType = new String(prefix, 0, 4);
-							int recordLength = ESMByteConvert.extractInt(prefix, 4);
-							if (recordType.equals("GRUP")) {
-								groupLength -= recordLength;
-								in.skipBytes(recordLength - headerByteCount);
-							} else {
-								// some should only be indexed rather than loaded now
-								boolean indexedOnly = false;
-								indexedOnly = (recordType.equals("QUST")	|| recordType.equals("PACK")
-												|| recordType.equals("SCEN") || recordType.equals("NPC_")
-												|| recordType.equals("RACE") || recordType.equals("STAT")
-												|| recordType.equals("WEAP") || recordType.equals("NAVI")
-												|| recordType.equals("SCOL") || recordType.equals("SNDR"));
-
-								if (indexedOnly) {
-									int formID = ESMByteConvert.extractInt3(prefix, 12);
-									formID = formID & 0xffffff | masterID << 24;
-									long filePositionPointer = in.getFilePointer() - headerByteCount;// go back to the start of the header
-									idToFormMap.put(formID, new FormInfo(recordType, formID, filePositionPointer));
-									int length = ESMByteConvert.extractInt(prefix, 4);
-									in.skipBytes(length);
-								} else {
-									PluginRecord record = new PluginRecord(prefix);
-									int formID = record.getFormID();
-
-									if (record.isDeleted()	|| record.isIgnored() || formID == 0
-										|| formID >>> 24 < masterID) {
-										in.skipBytes(recordLength);
-									} else {
-										record.load("", in, recordLength);
-										formID = formID & 0xffffff | masterID << 24;
-										idToFormMap.put(formID, new FormInfo(recordType, formID, record));
-									}
-
-								}
-								groupLength -= recordLength + headerByteCount;
-							}
-						}
-
-						if (groupLength != 0) {
-							throw new PluginException(
-									masterHeader.getName() + ": Group " + groupRecordType + " is incomplete");
-						}
-					}
-				}
-
-				// prep for the next loop
-				count = in.read(prefix);
-			}
-
-			addGeckDefaultObjects();
-
-			// now establish min and max form id range
-			for (int formId : idToFormMap.keySet()) {
-				minFormId = formId < minFormId ? formId : minFormId;
-				maxFormId = formId > maxFormId ? formId : maxFormId;
-			}
-			for (FormToFilePointer cp : getAllInteriorCELLFormIds()) {
-				int formId = cp.formId;
-				minFormId = formId < minFormId ? formId : minFormId;
-				maxFormId = formId > maxFormId ? formId : maxFormId;
-			}
-
-			for (int formId : getAllWRLDTopGroupFormIds()) {
-				minFormId = formId < minFormId ? formId : minFormId;
-				maxFormId = formId > maxFormId ? formId : maxFormId;
-			}
-		}
-
-		System.out.println(
-				"Finished loading ESM file " + masterHeader.getName() + " in " + (System.currentTimeMillis() - start));
-		return true;
-	}
 	
-	protected boolean loadch(FileChannelRAF in) throws PluginException, DataFormatException, IOException {
+	protected boolean load(FileChannelRAF in) throws PluginException, DataFormatException, IOException {
 		System.out.println("Loading ESM file " + masterHeader.getName());
 		long start = System.currentTimeMillis();
 
@@ -454,7 +321,7 @@ public abstract class Master implements IMaster {
 		FileChannel ch = in.getChannel();
 		long pos = 0;// keep track of the pos in the file, so we don't use any file pointers
 
-		int count = masterHeader.loadch(masterHeader.getName(), ch, pos);
+		int count = masterHeader.load(masterHeader.getName(), ch, pos);
 		pos += count;
 
 		//bad header means bad file
@@ -498,15 +365,15 @@ public abstract class Master implements IMaster {
 
 				if (groupRecordType.equals("WRLD")) {
 					wRLDTopGroup = new WRLDTopGroup(prefix);
-					wRLDTopGroup.loadAndIndexch(masterHeader.getName(), in, pos, groupLength);
+					wRLDTopGroup.loadAndIndex(masterHeader.getName(), in, pos, groupLength);
 					pos += groupLength;
 				} else if (groupRecordType.equals("CELL")) {
 					interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
-					interiorCELLTopGroup.loadAndIndexch(masterHeader.getName(), in, pos, groupLength);
+					interiorCELLTopGroup.loadAndIndex(masterHeader.getName(), in, pos, groupLength);
 					pos += groupLength;
 				} else if (groupRecordType.equals("DIAL")) {
 					dIALTopGroup = new DIALTopGroup(prefix);
-					dIALTopGroup.loadAndIndexch(masterHeader.getName(), in, pos, groupLength);
+					dIALTopGroup.loadAndIndex(masterHeader.getName(), in, pos, groupLength);
 					pos += groupLength;
 				} else {
 					while (groupLength >= headerByteCount) {
