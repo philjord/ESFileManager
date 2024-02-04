@@ -127,8 +127,8 @@ public class PluginRecord extends Record {
 	
 	//Search for
 	// synchronized (in)
-	// synchronized (this)
 	// Dear god
+	// old(
 	// use of the filechannelRAF file pointer methods
 	//DUMP USE_MINI_CHANNEL_MAPS
 	// ch = in.getChannel(); need to hand channel around not fileChannelRAF
@@ -184,8 +184,7 @@ public class PluginRecord extends Record {
 			mappedByteBuffer.get(recordData);			
 		} else {
 			// use this non sync call for speed
-			ByteBuffer bb = ByteBuffer.wrap(recordData);
-			int count = ch.read(bb, filePositionPointer);
+			int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
 			if (count != recordLength)
 				throw new PluginException(" : " + recordType + " record is incomplete");
 		}
@@ -214,8 +213,7 @@ public class PluginRecord extends Record {
 			mappedByteBuffer.get(recordData);			
 		} else {
 			// use this non sync call for speed
-			ByteBuffer bb = ByteBuffer.wrap(recordData);
-			int count = ch.read(bb, filePositionPointer);
+			int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
 			if (count != recordLength)
 				throw new PluginException(" : " + recordType + " record is incomplete");
 		}

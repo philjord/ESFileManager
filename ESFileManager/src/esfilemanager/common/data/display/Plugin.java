@@ -375,4 +375,9 @@ public abstract class Plugin {
 			}
 		}
 	}
+
+	public void loadch(boolean indexCellsOnly) throws PluginException, DataFormatException, IOException {
+		// TODO Auto-generated method stub
+		
+	}
 }
