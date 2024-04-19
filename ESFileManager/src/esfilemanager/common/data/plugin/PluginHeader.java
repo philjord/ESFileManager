@@ -248,7 +248,12 @@ public class PluginHeader extends PluginRecord {
 				int masterLength = ESMByteConvert.extractInt64(buffer, 0);
 			} else if (type.equals("ONAM")) {
 				 
-			} else {
+			} 
+			//Fallout4.esm
+			else if (type.equals("TNAM")) {
+			}else if (type.equals("INTV")) {
+			}else if (type.equals("INCC")) {			
+			}else {
 				System.out.println(pluginFileName + ": " + type + " : unregistered subrecord in header");
 			}
 		} while (true);
