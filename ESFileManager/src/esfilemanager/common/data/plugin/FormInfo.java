@@ -18,13 +18,13 @@ public class FormInfo {
 	
 
 	public FormInfo(String recordType, int formID, PluginRecord pluginRecord) {
-		this.recordType = recordType;
+		this.recordType = recordType.intern();
 		this.formID = formID;
 		this.pluginRecord = pluginRecord;
 	}
 
 	public FormInfo(String recordType, int formID, long pointer) {
-		this.recordType = recordType;
+		this.recordType = recordType.intern();
 		this.formID = formID;
 		this.pointer = pointer;
 		this.pointerOnly = true;

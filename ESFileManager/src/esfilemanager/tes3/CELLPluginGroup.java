@@ -48,8 +48,8 @@ public class CELLPluginGroup extends PluginGroup {
 
 		getRecordList().add(temps);
 		getRecordList().add(dists);
-
-		recordType = new String(prefix, 0, 4);
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		recordType = new String(prefix, 0, 4).intern();
 		recordSize = ESMByteConvert.extractInt(prefix, 4);
 		unknownInt = ESMByteConvert.extractInt(prefix, 8);
 		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);

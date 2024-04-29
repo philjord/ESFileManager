@@ -13,7 +13,8 @@ public class Subrecord
 	
 	public Subrecord(String subrecordType, byte subrecordData[])
 	{
-		this.subrecordType = subrecordType;
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		this.subrecordType = subrecordType.intern();
 		this.subrecordData = subrecordData;
 	}
 

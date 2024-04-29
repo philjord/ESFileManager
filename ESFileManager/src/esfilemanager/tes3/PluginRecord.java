@@ -23,8 +23,8 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 	 */
 	public PluginRecord(int formId, byte[] prefix) {
 		this.formID = formId;
-
-		recordType = new String(prefix, 0, 4);
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		recordType = new String(prefix, 0, 4).intern();
 		recordSize = ESMByteConvert.extractInt(prefix, 4);
 		unknownInt = ESMByteConvert.extractInt(prefix, 8);
 		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
@@ -36,7 +36,10 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 	 */
 	public PluginRecord(int formId, String recordType, String name) {
 		this.formID = formId;
-		this.recordType = recordType;
+		if(recordType.length() != 4)
+			System.out.println("PluginRecord recordType not 4 long " + recordType);
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		this.recordType = recordType.intern();
 		this.editorID = name;
 		subrecordList = new ArrayList<Subrecord>();
 	}

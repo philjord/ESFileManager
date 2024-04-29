@@ -40,7 +40,8 @@ public class PluginHeader extends PluginRecord {
 		if (count != 16)
 			throw new PluginException(": record prefix is incomplete");
 
-		recordType = new String(prefix, 0, 4);
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		recordType = new String(prefix, 0, 4).intern();
 		recordSize = ESMByteConvert.extractInt(prefix, 4);
 		unknownInt = ESMByteConvert.extractInt(prefix, 8);
 		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);

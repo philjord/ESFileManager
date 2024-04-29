@@ -40,7 +40,8 @@ public class PluginRecord extends Record {
 			throw new IllegalArgumentException("The record prefix is not 20 or 24 bytes as required");
 		} else {
 			headerByteCount = prefix.length;
-			recordType = new String(prefix, 0, 4);
+			// memory saving mechanism  https://www.baeldung.com/java-string-pool
+			recordType = new String(prefix, 0, 4).intern();
 			recordLength = ESMByteConvert.extractInt(prefix, 4);
 			formID = ESMByteConvert.extractInt3(prefix, 12);
 			recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
@@ -76,7 +77,8 @@ public class PluginRecord extends Record {
 				throw new IllegalArgumentException("The record prefix is not 20 or 24 bytes as required");
 			} else {
 				headerByteCount = prefix.length;
-				recordType = new String(prefix, 0, 4);
+				// memory saving mechanism  https://www.baeldung.com/java-string-pool
+				recordType = new String(prefix, 0, 4).intern();
 				recordLength = ESMByteConvert.extractInt(prefix, 4);
 				formID = ESMByteConvert.extractInt3(prefix, 12);
 				recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
@@ -94,7 +96,8 @@ public class PluginRecord extends Record {
 	 */
 	public PluginRecord(int headerByteCount, String recordType, int formID) {
 		this.headerByteCount = headerByteCount;
-		this.recordType = recordType;
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		this.recordType = recordType.intern();
 		this.formID = formID;
 		this.recordFlags1 = 0;
 		this.recordFlags2 = 0;

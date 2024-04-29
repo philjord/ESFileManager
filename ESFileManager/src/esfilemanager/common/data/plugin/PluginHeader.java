@@ -152,7 +152,8 @@ public class PluginHeader extends PluginRecord {
 			byte[] tesRecordData = new byte[tesRecordLen];
 			count = ch.read(ByteBuffer.wrap(tesRecordData), pos);	
 			pos += tesRecordLen;
-			recordType = new String(tesRecordData, 0, 4);
+			// memory saving mechanism  https://www.baeldung.com/java-string-pool
+			recordType = new String(tesRecordData, 0, 4).intern();
 			int headerLength = ESMByteConvert.extractInt(tesRecordData, 4);
 			if(tesRecordLen == 20) {
 				recordFlags1 = ESMByteConvert.extractInt(tesRecordData, 8);

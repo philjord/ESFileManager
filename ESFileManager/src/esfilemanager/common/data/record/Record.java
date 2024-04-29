@@ -22,7 +22,8 @@ public class Record
 
 	public Record(String recordType, int formID, int cellFormID, int recordFlags1, int recordFlags2)
 	{
-		this.recordType = recordType;
+		// memory saving mechanism  https://www.baeldung.com/java-string-pool
+		this.recordType = recordType.intern();
 		this.formID = formID;
 		this.cellFormID = cellFormID;
 		this.recordFlags1 = recordFlags1;
@@ -60,6 +61,7 @@ public class Record
 		return formID;
 	}
 
+	@Override
 	public String toString()
 	{
 		return recordType + " record: " + formID + " " + (isIgnored() ? "(Ignore) " : "") + (isDeleted() ? "(Deleted) " : "");
