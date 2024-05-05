@@ -40,7 +40,7 @@ public class PluginGroup extends PluginRecord {
 
 	protected byte						groupLabel[];
 
-	protected String					groupRecordType;
+	protected String					groupRecordType 	= "UNKW";
 
 	protected int						groupParentID;
 
