@@ -351,7 +351,7 @@ public class PluginGroup extends PluginRecord {
 		{"SNCT", "Sound Category"},// Not in SF
 		{"SNDR", "Sound Reference"}, // Not in SF
 		{"SOPM", "Sound Output Marker"}, // Not in SF
-		{"SPGD", "Shader Particle Geometry"}, {"WOOP", "Word Of Power"},// Not in FO4// Not in SF
+		{"SPGD", "Shader Particle Geometry"}, {"WOOP", "Word Of Power"},// Not in FO4// Not in FO76// Not in SF
 				
 		//Added from Fallout 4			
 		{"AECH", "Audio Effect Chain"}, // Not in SF
