@@ -278,56 +278,138 @@ public class PluginGroup extends PluginRecord {
 		return text;
 	}
 
-	private static String groupDescriptions[][] = {{"GRUP", "Form Group"}, //
-		{"REFR", "Object Reference"}, {"ACHR", "Actor Reference"}, {"ACTI", "Activators"}, {"ALCH", "Potions"},
-		{"AMMO", "Ammunition"}, {"ANIO", "Animated Object"}, {"APPA", "Apparatus"}, //Not in FO3 
-		{"ARMO", "Armor"}, {"BOOK", "Books"}, {"BSGN", "Birthsigns"}, //Not in FO3 , Not in Skyrim
-		{"CELL", "Cells"}, {"CLAS", "Classes"}, {"CLOT", "Clothing"}, //Not in FO3 , Not in Skyrim
-		{"CLMT", "Climate"}, {"CONT", "Containers"}, {"CREA", "Creatures"}, //Not in Skyrim 
-		{"CSTY", "Combat Styles"}, {"DIAL", "Dialog"}, {"DOOR", "Doors"}, {"EFSH", "Effect Shaders"},
-		{"ENCH", "Enchantments"}, {"EYES", "Eyes"}, {"FACT", "Factions"}, {"FLOR", "Flora"}, //Not in FO3 
+	private static String groupDescriptions[][] = {
+		{"GRUP", "Form Group"}, {"REFR", "Object Reference"}, 
+		//Oblivion
+		{"ACHR", "Actor Reference"}, // Not in FO4// Not in FO76// Not in SF
+		{"ACTI", "Activators"},	{"ALCH", "Potions"}, {"AMMO", "Ammunition"}, {"ANIO", "Animated Object"},
+		{"APPA", "Apparatus"}, //Not in FO3// Not in FO4// Not in FO76// Not in SF
+		{"ARMO", "Armor"}, {"BOOK", "Books"}, {"BSGN", "Birthsigns"}, //Not in FO3 , Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"CELL", "Cells"}, {"CLAS", "Classes"}, {"CLOT", "Clothing"}, //Not in FO3 , Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"CLMT", "Climate"}, {"CONT", "Containers"}, {"CREA", "Creatures"}, //Not in Skyrim // Not in FO4// Not in FO76// Not in SF
+		{"CSTY", "Combat Styles"}, {"DIAL", "Dialog"},// Not in FO4// Not in FO76 // no entries SF
+		{"DOOR", "Doors"}, {"EFSH", "Effect Shaders"}, {"ENCH", "Enchantments"}, {"EYES", "Eyes"}, // Not in FO4// Not in FO76// Not in SF
+		{"FACT", "Factions"}, {"FLOR", "Flora"}, //Not in FO3  
 		{"FURN", "Furniture"}, {"GLOB", "Global Variables"}, {"GMST", "Game Settings"}, {"GRAS", "Grass"},
-		{"HAIR", "Hair"}, // Not in Skyrim
-		{"IDLE", "Idle Animations"}, {"INGR", "Ingredients"}, {"KEYM", "Keys"}, {"LIGH", "Lights"},
-		{"LSCR", "Load Screens"}, {"LTEX", "Land Textures"}, {"LVLC", "Leveled Creatures"}, // Not in Skyrim
-		{"LVLI", "Leveled Items"}, {"LVSP", "Leveled Spells"}, //Not in FO3 
+		{"HAIR", "Hair"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"IDLE", "Idle Animations"}, {"INGR", "Ingredients"},// Not in SF
+		{"KEYM", "Keys"}, {"LIGH", "Lights"}, {"LSCR", "Load Screens"}, {"LTEX", "Land Textures"}, 
+		{"LVLC", "Leveled Creatures"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"LVLI", "Leveled Items"}, {"LVSP", "Leveled Spells"}, //Not in FO3 // Not in FO4// Not in FO76// Not in SF
 		{"MGEF", "Magic Effects"}, {"MISC", "Miscellaneous Items"}, {"NPC_", "NPCs"}, {"PACK", "Packages"},
-		{"QUST", "Quests"}, {"RACE", "Races"}, {"REGN", "Regions"}, {"SBSP", "Subspaces"}, //Not in FO3, Not in Skyrim
-		{"SCPT", "Scripts"}, // Not in Skyrim
-		{"SGST", "Sigil Stones"}, //Not in FO3, Not in SKyrim 
-		{"SKIL", "Skills"}, //Not in FO3, Not in SKyrim   
-		{"SLGM", "Soul Gems"}, //Not in FO3 
-		{"SOUN", "Sounds"}, {"SPEL", "Spells"}, {"STAT", "Statics"}, {"TREE", "Trees"}, {"WATR", "Water"},
-		{"WEAP", "Weapons"}, {"WTHR", "Weather"}, {"WRLD", "World Spaces"},
+		{"QUST", "Quests"}, {"RACE", "Races"}, {"REGN", "Regions"}, 
+		{"SBSP", "Subspaces"}, //Not in FO3, Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"SCPT", "Scripts"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"SGST", "Sigil Stones"}, //Not in FO3, Not in Skyrim // Not in FO4// Not in FO76// Not in SF
+		{"SKIL", "Skills"}, //Not in FO3, Not in Skyrim  // Not in FO4// Not in FO76 // Not in SF
+		{"SLGM", "Soul Gems"}, //Not in FO3 // Not in FO4// Not in FO76// Not in SF
+		{"SOUN", "Sounds"}, {"SPEL", "Spells"}, {"STAT", "Statics"}, {"TREE", "Trees"}, // no entries FO76// Not in SF
+		{"WATR", "Water"}, {"WEAP", "Weapons"}, {"WRLD", "World Spaces"}, {"WTHR", "Weather"},
 
 		//new in FO3 
 		{"ADDN", "Addon Node"}, {"ARMA", "Armor Addon"}, {"ASPC", "Acoustic Space"},
-		{"AVIF", "Actor Values/Perk Tree Graphics"}, {"BPTD", "Body Part Data"}, {"CAMS", "Cameras"},
+		{"AVIF", "Actor Values (Perk Tree Graphics)"}, {"BPTD", "Body Part Data"}, {"CAMS", "Cameras"},
 		{"COBJ", "Constructible Object (recipes)"}, {"CPTH", "Camera Path"}, {"DEBR", "Debris"},
-		{"DOBJ", "Default Object Manager"}, {"ECZN", "Encounter Zone"}, {"EXPL", "Explosion"},
-		{"FLST", "Form List (non-leveled list)"}, {"HDPT", "Head Part"}, {"IDLM", "Idle Marker"},
+		{"DOBJ", "Default Object Manager"}, {"ECZN", "Encounter Zone"},// Not in FO76 // Not in SF
+		{"EXPL", "Explosion"}, {"FLST", "Form List (non-leveled list)"}, {"HDPT", "Head Part"}, {"IDLM", "Idle Marker"},
 		{"IMAD", "Image Space Modifier"}, {"IMGS", "Image Space"}, {"IPCT", "Impact"}, {"IPDS", "Impact Data Set"},
-		{"LVLN", "LeveledCharacter"}, {"LGTM", "Lighting Template"}, {"MESG", "Message"}, {"MICN", "Menu Icon"}, // Not in Skyrim
-		{"MSTT", "Movable Static"}, {"MUSC", "Music"}, {"NAVI", "Navigation"}, {"NOTE", "Notes"}, // Not in Skyrim
-		{"PERK", "Perk"}, {"PROJ", "Projectile"}, {"PWAT", "Placeable Water"}, // Not in Skyrim
-		{"RADS", "Unknown RADS ?"}, // Not in Skyrim
-		{"RGDL", "Ragdoll"}, // Not in Skyrim
+		{"LGTM", "Lighting Template"}, {"LVLN", "Leveled Character"}, {"MESG", "Message"}, 
+		{"MICN", "Menu Icon"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
+		{"MSTT", "Movable Static"}, {"MUSC", "Music"}, {"NAVI", "Navigation"}, {"NOTE", "Notes"}, // Not in Skyrim// Not in SF
+		{"PERK", "Perk"}, {"PROJ", "Projectile"}, {"PWAT", "Placeable Water"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
+		{"RADS", "RADS ?"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
+		{"RGDL", "Ragdoll"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
 		{"SCOL", "Static Collection"}, // Not in Skyrim
-		{"TACT", "Talking Activator"}, {"TERM", "Terminal"}, // Not in Skyrim
+		{"TACT", "Talking Activator"}, // Not in SF
+		{"TERM", "Terminal"}, // Not in Skyrim
 		{"TXST", "Texture Set"}, {"VTYP", "Voice Type"},
 
+		// Added in Fallout3 NV. Note NONE of these are in Skyrim,FO4 only 1 is in FO76,SF
+		{"ALOC", "Location musCtrl (music?)"},{"AMEF", "Ammo Effect"}, {"CCRD", "Caravan Card"}, {"CDCK", "Caravan Deck"},
+		{"CHAL", "Challenge"}, // IS IN FO76 // IS IN SF
+		{"CHIP", "Poker Chip"}, {"CMNY", "Casino Money"}, {"CSNO", "Casino"}, {"DEHY", "Drinking Effects"},
+		{"HUNG", "Eating Effects"}, {"IMOD", "Gun Mods"}, {"LSCT", "Loading Tip"}, {"MSET", "Music Set?"}, {"RCCT", "Recipe (Menus?)"}, 
+		{"RCPE", "Recipes"}, {"REPU", "Reputation"}, {"SLPD", "Sleeping Effects"}, 
+		
 		// new in Skyrim
-		{"AACT", "Action"}, {"ARTO", "Art Object"}, {"ASTP", "Association Type"}, {"COLL", "Collision Layer"},
-		{"CLFM", "Color"}, {"DLVW", "Dialog View"}, {"DLBR", "Dialog Branch"}, {"DUAL", "Dual Cast Data"}, // (possibly unused)
+		{"AACT", "Action"},	{"ARTO", "Art Object"},	{"ASTP", "Association Type"}, // Not in SF
+		{"CLFM", "Color"}, {"COLL", "Collision Layer"},
+		{"DLVW", "Dialog View"}, // no entries FO76 // Not in SF
+		{"DLBR", "Dialog Branch"}, // Not in FO4// Not in FO76 // no entries SF
+		{"DUAL", "Dual Cast Data"}, // (possibly unused)// Not in FO4// Not in FO76// Not in SF
 		{"EQUP", "Equip Slot"}, // (flag-type values)
 		{"FSTP", "Footstep"}, {"FSTS", "Footstep Set"}, {"HAZD", "Hazard"}, {"KYWD", "Keyword"},
-		{"LCRT", "Location Reference Type"}, {"LCTN", "Location"}, {"MATT", "Material Type"}, {"MUST", "Music Track"},
-		{"MATO", "Material Object"}, {"MOVT", "Movement Type"}, {"OTFT", "Outfit"}, {"RELA", "Relationship"},
-		{"RFCT", "Visual Effect"}, {"REVB", "Reverb Parameters"}, {"SPGD", "Shader Particle Geometry"},
-		{"SCRL", "Scroll"}, {"SMBN", "Story Manager Branch Node"}, {"SMQN", "Story Manager Quest Node"},
-		{"SMEN", "Story Manager Event Node"}, {"SHOU", "Shout"}, {"SCEN", "Scene"}, {"SNCT", "Sound Category"},
-		{"SOPM", "Sound Output Marker"}, {"SNDR", "Sound Reference"}, {"WOOP", "Word Of Power"},
-
+		{"LCRT", "Location Reference Type"}, {"LCTN", "Location"},
+		{"MATO", "Material Object"},// Not in SF
+		{"MATT", "Material Type"}, {"MUST", "Music Track"},	{"MOVT", "Movement Type"}, {"OTFT", "Outfit"}, 
+		{"RELA", "Relationship"},// Not in SF
+		{"REVB", "Reverb Parameters"}, {"RFCT", "Visual Effect"},// Not in SF
+		{"SCEN", "Scene"}, // Not in FO4// Not in FO76// no entries SF
+		{"SCRL", "Scroll"}, // Not in FO4// Not in FO76// Not in SF
+		{"SHOU", "Shout"}, // Not in FO4// Not in FO76// Not in SF
+		{"SMBN", "Story Manager Branch Node"}, {"SMEN", "Story Manager Event Node"}, {"SMQN", "Story Manager Quest Node"},
+		{"SNCT", "Sound Category"},// Not in SF
+		{"SNDR", "Sound Reference"}, // Not in SF
+		{"SOPM", "Sound Output Marker"}, // Not in SF
+		{"SPGD", "Shader Particle Geometry"}, {"WOOP", "Word Of Power"},// Not in FO4// Not in SF
+				
+		//Added from Fallout 4			
+		{"AECH", "Audio Effect Chain"}, // Not in SF
+		{"AMDL", "Weapon (AM?)"}, {"AORU", "Rules?"}, {"BNDS", "Cable Spline"}, {"CMPO", "Components (of Recipes)"},// Not in SF
+		{"DFOB", "Interface somethings?"}, {"DMGT", "Damage Type"}, {"GDRY", "Sun Rays"}, // no entries FO76// Not in SF
+		{"INNR", "Equipping?"}, {"KSSM", "Weapon something?"}, 
+		{"LAYR", "Location something?"}, {"LENS", "Lens Flare"}, {"MSWP", "Material Swaps"},// Not in SF
+		{"NOCM", "NOCM?"}, {"OMOD", "Model something?"}, 
+		{"OVIS", "OVIS?"}, {"PKIN", "PackIn?"}, {"RFGP", "RFGP?"}, {"SCCO", "Views?"},// Not in SF
+		{"SCSN", "SCSN?"}, // Not in SF
+		{"STAG", "Character ATS?"},	{"TRNS", "Related to models?"}, {"ZOOM", "Weapon Zooms"},
+			
+		//Added from Fallout 76
+		{"AAMD", "Gun Type Templates"}, {"AAPD", "A Creature (replaces ACHR?) body parts"}, {"ASTM", "deprecated"},// Not in SF
+		{"ATXO", "Entitlements and keywords?"}, // Not in SF
+		{"AUVF", "AUVF?"},// Not in SF
+		{"AVTR", "PlayerIcons"},// Not in SF
+		{"CNCY", "Currency"},// Not in SF
+		{"CNDF", "Conditions (for effects/events)"}, {"COEN", "Texture Data (related to icons)"},// Not in SF
+		{"CPRD", "Rewards"}, // Not in SF
+		{"CSEN", "CSEN?"}, // Not in SF
+		{"CURV", "Links to json files?"}, {"DCGF", "DCGF?"},// Not in SF
+		{"DIST", "Districts"},// Not in SF
+		{"ECAT", "Emote Category"},// Not in SF
+		{"EMOT", "Player Emotes"}, // Not in SF
+		{"ENTM", "Texture Data?"}, // Not in SF
+		{"GCVR", "Ground Cover?"}, {"GMRW", "Challenge Data?"},// Not in SF
+		{"LGDI", "Legendary Items"},
+		{"LOUT", "Load out"}, // Not in SF
+		{"LVLP", "Leveled Projectile?"}, {"LVPC", "Leveled Cards?"},// Not in SF
+		{"MDSP", "Animation data?"},// Not in SF
+		{"PACH", "Power Armour data?"},// Not in SF
+		{"PCRD", "Perk Card"}, // Not in SF
+		{"PEPF", "Playlist"}, // Not in SF
+		{"PMFT", "Photo Mode Frame"},
+		{"PPAK", "Perk Card Pack"}, // Not in SF
+		{"QMDL", "Quest Module"},// Not in SF
+		{"RESO", "Resource"},// Not in SF
+		{"SECH", "Markers?"}, {"STHD", "Hunger/Thirst Threshold"},// Not in SF
+		{"STMP", "STMP? model data?"}, {"STND", "Node data?"},// Not in SF
+		{"UTIL", "Atomic Exchange data?"},// Not in SF
+		{"VOLI", "Weather data?"}, {"WAVE", "Wave data (as in wave of enemies?)"}, // Not in SF
+		{"WSPR", "Permissions?"},  // Not in SF
+		
+		
+		//Added from Starfield
+		{"AFFE", "Action Choice"}, {"AMBS", "Ambience Set"}, {"AOPF", "Audio Occlusion Primative"}, {"AOPS", "Laser Sight?"}, 
+		{"ATMO", "Atmosphere"}, {"AVMD", "Locamotion Data?"}, {"BIOM", "Biome"}, {"BMMO", "Biome Marker"}, {"BMOD", "Animation Data?"}, 
+		{"CLDF", "Clouds"}, {"CUR3", "Water Transparency"}, {"EFSQ", "Effects data?"}, {"FFKW", "Model Data?"}, {"FOGV", "Fog Data"}, 
+		{"FORC", "Wind Force"}, {"GBFM", "Ship Templates?"},  {"GBFT", "GBFT?"}, {"INFO", "INFO?"},//FO76 no records of type   
+		{"IRES", "IRES?"}, {"LMSW", "Swaps?"}, {"LVLB", "Leveled Ship?"}, {"LVSC", "LVSC?"}, {"MAAM", "Melee Data?"},
+		{"MRPH", "Morphables Data"}, {"MTPT", "Material Data?"}, {"NAVM", "NAVM?"},//FO76 no records of type
+		{"OSWP", "Swap Data?"},  {"PCBN", "PCBN?"}, {"PCCN", "PackIn Data?"}, {"PCMT", "PCMT?"}, {"PDCL", "PDCL?"},   
+		{"PNDT", "Planet Data"}, {"PSDC", "PSDC?"},  {"PTST", "Pattern Style"}, {"RSGD", "RSGD?"},  {"RSPJ", "Research"},
+		{"SDLT", "SDLT?"}, {"SFBK", "Surface Terrain Data?"}, {"SFPC", "Surface Pattern Config"}, {"SFPT", "Surface Pattern Data?"},
+		{"SFTR", "Surface Tree"}, {"SPCH", "Speech Challenge"}, {"STBH", "STBH?"},   
+		{"STDT", "Star Data"}, {"SUNP", "Sun Data"},  {"TMLM", "Terminal Menu"}, {"TODD", "More Start Data?"},  
+		{"TRAV", "Traversal (of animaion)"}, {"WBAR", "Gun Data?"}, {"WKMF", "WKMF?"}, {"WTHS", "Weather"},  {"WWED", "Sound Data?"}, 
 	};
 
 	static {
