@@ -87,11 +87,8 @@ public abstract class Master implements IMaster {
 		if (count != headerByteCount)
 			throw new PluginException(" : " + this + " record header is incomplete");
 		
-		int length = ESMByteConvert.extractInt(prefix, 4);
-
 		PluginRecord cellRecord = new PluginRecord(prefix);
-
-		cellRecord.load(in, pointer + headerByteCount, length);
+		cellRecord.load(in, pointer + headerByteCount);
 
 		return cellRecord;				
 	}
@@ -411,7 +408,7 @@ public abstract class Master implements IMaster {
 									|| formID >>> 24 < masterID) {
 									pos += recordLength;
 								} else {
-									record.load(in, pos, recordLength);
+									record.load(in, pos);
 									pos += recordLength;
 									formID = formID & 0xffffff | masterID << 24;
 									idToFormMap.put(formID, new FormInfo(recordType, formID, record));

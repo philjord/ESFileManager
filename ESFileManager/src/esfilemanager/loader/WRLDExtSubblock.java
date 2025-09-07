@@ -89,7 +89,7 @@ public class WRLDExtSubblock extends PluginGroup {
 				formToFilePointer = new FormToFilePointer(formID, filePositionPointer);// note not current pos but pos with header
 
 				PluginRecord rec = new PluginRecord(prefix);
-				rec.load(in, pos, length);
+				rec.load(in, pos);
 				// find the x and y
 				List<Subrecord> subrecords = rec.getSubrecords();
 				int x = 0;

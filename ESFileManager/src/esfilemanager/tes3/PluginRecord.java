@@ -49,12 +49,8 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 		return editorID;
 	}
 
-	//Note recordLength is not used for tes3 (we have record size already in constructor
-	/**REcord length ignored, but overridy stuff affects this here now
-	 * 
-	 */
 	@Override
-	public void load(FileChannelRAF in, long pos, int recordLength) throws PluginException, IOException {
+	public void load(FileChannelRAF in, long pos) throws PluginException, IOException {
 		FileChannel ch = in.getChannel();
 		
 		filePositionPointer = pos;
@@ -141,7 +137,7 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 			*/
 
 	}
-
+	
 	@Override
 	public List<Subrecord> getSubrecords() {
 		// must fill it up before anyone can get it asynch!

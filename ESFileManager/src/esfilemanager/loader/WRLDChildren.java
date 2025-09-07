@@ -87,19 +87,19 @@ public class WRLDChildren extends PluginGroup {
 					pos += length;
 				} else if (subGroupType == PluginGroup.CELL) {
 					wrldCellChildren = new PluginGroup(prefix);
-					wrldCellChildren.load(in, pos, length);
+					wrldCellChildren.load(in, pos);
 					pos += length;
 				} else {
 					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD children group");
 				}
 			} else if (type.equals("ROAD")) {
 				PluginRecord record = new PluginRecord(prefix);
-				record.load(in, pos, length);
+				record.load(in, pos);
 				pos += length;
 				road = record;
 			} else if (type.equals("CELL")) {
 				PluginRecord record = new PluginRecord(prefix);
-				record.load(in, pos, length);
+				record.load(in, pos);
 				pos += length;
 				wrldCell = record;
 			} else {

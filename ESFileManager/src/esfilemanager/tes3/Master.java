@@ -54,7 +54,7 @@ public class Master implements IMasterTes3 {
 	private int										maxFormId				= Integer.MIN_VALUE;
 
 	// used to indicate the single morrowind world, added first
-	public static int								wrldFormId				= 0;
+	private static int								singleWrldFormId				= 0;
 
 	public Master(FileChannelRAF in, String fileName) {
 		this.in = in;
@@ -63,16 +63,6 @@ public class Master implements IMasterTes3 {
 		// in case we've loaded a master already and this is a new load, in that case start again
 		// so the form id's correctly start from 0 again
 		resetFormId();
-	}
-
-	@Override
-	public String getName() {
-		return masterHeader.getName();
-	}
-
-	@Override
-	public float getVersion() {
-		return masterHeader.getVersion();
 	}
 
 	@Override
@@ -85,14 +75,6 @@ public class Master implements IMasterTes3 {
 		return maxFormId;
 	}
 
-	public static void resetFormId() {
-		currentFormId = 0;
-	}
-
-	public static int getNextFormId() {
-		return currentFormId++;
-	}
-
 	@Override
 	public int[] getAllFormIds() {
 		return idToFormMap.keySet();
@@ -102,7 +84,141 @@ public class Master implements IMasterTes3 {
 	public SparseArray<FormInfo> getFormMap() {
 		return idToFormMap;
 	}
+	
+	@Override
+	public WRLDTopGroup getWRLDTopGroup() {
+		throw new UnsupportedOperationException();
+	}
 
+	@Override
+	public InteriorCELLTopGroup getInteriorCELLTopGroup() {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public PluginRecord getWRLD(int formID) throws  IOException, PluginException {
+		if (formID == singleWrldFormId) {
+			PluginRecord wrld = getPluginRecord(formID);
+			// loaded as a cell so we'll fake it up
+			wrld.getSubrecords().add(new PluginSubrecord("NAME", "Morrowind".getBytes()));
+			wrld.getSubrecords().add(new PluginSubrecord("DATA", new byte[12]));
+			return wrld;
+		}
+		// no message as null indicates a non world formid
+		return null;
+	}
+	
+	@Override
+	public WRLDChildren getWRLDChildren(int formID) {
+		return null;
+	}
+
+	@Override
+	public PluginRecord getWRLDExtBlockCELL(int wrldFormId, int x, int y)
+			throws  IOException, PluginException {
+		if (wrldFormId != singleWrldFormId) {
+			new Throwable("bad morrowind world id! " + wrldFormId).printStackTrace();
+		}
+		int xIdx = x + 50;
+		int yIdx = y + 50;
+		if (xIdx > 0 && yIdx > 0 && xIdx < 100 && yIdx < 100) {
+			CELLPluginGroup cellPluginGroup = exteriorCells [xIdx] [yIdx];
+			if (cellPluginGroup != null) {
+				// make sure no one else asks for it while we check load state
+				synchronized (cellPluginGroup) {
+					if (!cellPluginGroup.isLoaded()) {
+						cellPluginGroup.load(in);
+					}
+				}
+
+				return cellPluginGroup.createPluginRecord();
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId, int x, int y)
+			throws  IOException, PluginException {
+		if (wrldFormId != singleWrldFormId) {
+			new Throwable("bad morrowind world id! " + wrldFormId).printStackTrace();
+		}
+		int xIdx = x + 50;
+		int yIdx = y + 50;
+		CELLPluginGroup cellPluginGroup = exteriorCells [xIdx] [yIdx];
+		if (cellPluginGroup != null) {
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup) {
+				if (!cellPluginGroup.isLoaded()) {
+					cellPluginGroup.load(in);
+				}
+			}
+
+			return cellPluginGroup;
+		}
+		return null;
+	}
+	
+	@Override
+	public List<FormToFilePointer> getAllInteriorCELLFormIds() {
+		ArrayList<FormToFilePointer> ret = new ArrayList<FormToFilePointer>();
+		for (int formId : interiorCellsByFormId.keySet()) {
+			ret.add(new FormToFilePointer(formId, -1));
+		}
+
+		return ret;
+	}
+	
+	@Override
+	public PluginRecord getInteriorCELL(int formID) throws IOException, PluginException {
+		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
+		if (cellPluginGroup != null) {
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup) {
+				if (!cellPluginGroup.isLoaded()) {
+					cellPluginGroup.load(in);
+				}
+			}
+			return cellPluginGroup.createPluginRecord();
+		}
+		return null;	}
+
+	@Override
+	public PluginGroup getInteriorCELLChildren(int formID) throws IOException, PluginException {
+		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
+		if (cellPluginGroup != null) {
+			// make sure no one else asks for it while we check load state
+			synchronized (cellPluginGroup) {
+				if (!cellPluginGroup.isLoaded()) {
+					cellPluginGroup.load(in);
+				}
+			}
+			return cellPluginGroup;
+		}
+		return null;
+	}
+
+	@Override
+	public PluginGroup getInteriorCELLPersistentChildren(int formID)
+			throws IOException, PluginException {
+		//To my knowledge these don't exist in any real manner
+		throw new UnsupportedOperationException();
+	}
+	
+	/**
+	 * Not for CELLs
+	 */
+	@Override
+	public PluginRecord getPluginRecord(int formID) throws PluginException {
+		FormInfo formInfo = idToFormMap.get(formID);
+
+		if (formInfo == null) {
+			throw new PluginException(
+					"" + fileName + ": Record " + formID + " not found, it may be a CELL or WRLD record");
+		}
+		return (PluginRecord)formInfo.getPluginRecord();
+	}
+	
 
 	public void load() throws PluginException, IOException {
 		System.out.println("Loading ESM file " + fileName);
@@ -122,10 +238,11 @@ public class Master implements IMasterTes3 {
 		PluginRecord wrldRecord = new PluginRecord(currentFormId++, "WRLD", "MorrowindWorld");
 		idToFormMap.put(wrldRecord.getFormID(),
 				new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord));
-
+		byte[] prefix = new byte[16];
+		
 		while (pos < ch.size()) {
 			// pull the prefix data so we know what sort of record we need to load
-			byte[] prefix = new byte[16];
+
 			count = ch.read(ByteBuffer.wrap(prefix), pos);	
 			pos += prefix.length;
 			if (count != 16)
@@ -139,7 +256,7 @@ public class Master implements IMasterTes3 {
 			int formID = getNextFormId();
 
 			if (recordType.equals("CELL")) {
-				//	looks like x = 23 to -18 y is 27 to -17  so 50 wide with an x off of +25 and y of +20
+				//	looks like x = 23 to -18 y is 27 to -17  so 100 wide with an x off of +50 and y of +50
 				CELLPluginGroup cellPluginGroup = new CELLPluginGroup(prefix, in, pos);
 				pos += cellPluginGroup.getRecordSize();
 
@@ -161,7 +278,7 @@ public class Master implements IMasterTes3 {
 				dials.put(dial.getEditorID(), dial);
 			} else {
 				PluginRecord record = new PluginRecord(formID, prefix);
-				record.load(in, pos, record.recordSize);
+				record.load(in, pos);
 				pos += record.recordSize;
 
 				// 1 length are single 0's
@@ -183,147 +300,11 @@ public class Master implements IMasterTes3 {
 		System.out.println(
 				"Finished loading ESM file " + masterHeader.getName() + " in " + (System.currentTimeMillis() - start));
 	}
-
-	/**
-	 * Not for CELLs
-	 */
-	@Override
-	public PluginRecord getPluginRecord(int formID) throws PluginException {
-		FormInfo formInfo = idToFormMap.get(formID);
-
-		if (formInfo == null) {
-			throw new PluginException(
-					"" + fileName + ": Record " + formID + " not found, it may be a CELL or WRLD record");
-		}
-		return (PluginRecord)formInfo.getPluginRecord();
-	}
-
-	@Override
-	public WRLDTopGroup getWRLDTopGroup() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public InteriorCELLTopGroup getInteriorCELLTopGroup() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public PluginRecord getWRLD(int formID) throws  IOException, PluginException {
-		if (formID == wrldFormId) {
-			PluginRecord wrld = getPluginRecord(formID);
-			// loaded as a cell so we'll fake it up
-			wrld.getSubrecords().add(new PluginSubrecord("NAME", "Morrowind".getBytes()));
-			wrld.getSubrecords().add(new PluginSubrecord("DATA", new byte[12]));
-			return wrld;
-		}
-		// no message as null indicates a non world formid
-		return null;
-	}
-
-	@Override
-	public WRLDChildren getWRLDChildren(int formID) {
-		return null;
-	}
-
-	@Override
-	public PluginRecord getWRLDExtBlockCELL(int wrldFormId2, int x, int y)
-			throws  IOException, PluginException {
-		if (wrldFormId2 != wrldFormId) {
-			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
-		}
-		int xIdx = x + 50;
-		int yIdx = y + 50;
-		if (xIdx > 0 && yIdx > 0 && xIdx < 100 && yIdx < 100) {
-			CELLPluginGroup cellPluginGroup = exteriorCells [xIdx] [yIdx];
-			if (cellPluginGroup != null) {
-				// make sure no one else asks for it while we check load state
-				synchronized (cellPluginGroup) {
-					if (!cellPluginGroup.isLoaded()) {
-						cellPluginGroup.load(in);
-					}
-				}
-
-				return cellPluginGroup.createPluginRecord();
-			}
-		}
-		return null;
-
-	}
-
-	@Override
-	public PluginGroup getWRLDExtBlockCELLChildren(int wrldFormId2, int x, int y)
-			throws  IOException, PluginException {
-		if (wrldFormId2 != wrldFormId) {
-			new Throwable("bad morrowind world id! " + wrldFormId2).printStackTrace();
-		}
-		int xIdx = x + 50;
-		int yIdx = y + 50;
-		CELLPluginGroup cellPluginGroup = exteriorCells [xIdx] [yIdx];
-		if (cellPluginGroup != null) {
-			// make sure no one else asks for it while we check load state
-			synchronized (cellPluginGroup) {
-				if (!cellPluginGroup.isLoaded()) {
-					cellPluginGroup.load(in);
-				}
-			}
-
-			return cellPluginGroup;
-		}
-		return null;
-	}
-
-	@Override
-	public PluginRecord getInteriorCELL(int formID) throws IOException, PluginException {
-		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
-		if (cellPluginGroup != null) {
-			// make sure no one else asks for it while we check load state
-			synchronized (cellPluginGroup) {
-				if (!cellPluginGroup.isLoaded()) {
-					cellPluginGroup.load(in);
-				}
-			}
-			return cellPluginGroup.createPluginRecord();
-		}
-		return null;
-	}
-
-	@Override
-	public PluginGroup getInteriorCELLChildren(int formID) throws IOException, PluginException {
-		CELLPluginGroup cellPluginGroup = interiorCellsByFormId.get(formID);
-		if (cellPluginGroup != null) {
-			// make sure no one else asks for it while we check load state
-			synchronized (cellPluginGroup) {
-				if (!cellPluginGroup.isLoaded()) {
-					cellPluginGroup.load(in);
-				}
-			}
-			return cellPluginGroup;
-		}
-		return null;
-
-	}
-
-	@Override
-	public PluginGroup getInteriorCELLPersistentChildren(int formID)
-			throws IOException, PluginException {
-		//To my knowledge these don't exist in any real manner
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public List<FormToFilePointer> getAllInteriorCELLFormIds() {
-		ArrayList<FormToFilePointer> ret = new ArrayList<FormToFilePointer>();
-		for (int formId : interiorCellsByFormId.keySet()) {
-			ret.add(new FormToFilePointer(formId, -1));
-		}
-
-		return ret;
-	}
+	
 
 	@Override
 	public int[] getAllWRLDTopGroupFormIds() {
-		return new int[] {wrldFormId};
+		return new int[] {singleWrldFormId};
 	}
 
 	@Override
@@ -338,6 +319,25 @@ public class Master implements IMasterTes3 {
 			else
 				return -1;
 		}
+	}
+	
+	public static void resetFormId() {
+		currentFormId = 0;
+	}
+
+	public static int getNextFormId() {
+		return currentFormId++;
+	}
+	
+
+	@Override
+	public String getName() {
+		return masterHeader.getName();
+	}
+
+	@Override
+	public float getVersion() {
+		return masterHeader.getVersion();
 	}
 
 }

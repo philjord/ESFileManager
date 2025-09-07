@@ -52,7 +52,7 @@ public class WRLDTopGroup extends PluginGroup {
 			int length = ESMByteConvert.extractInt(prefix, 4);
 
 			PluginRecord wrldRecord = new PluginRecord(prefix);
-			wrldRecord.load(in, pos, length);
+			wrldRecord.load(in, pos);
 			pos += length;
 			WRLDByFormId.put(wrldRecord.getFormID(), wrldRecord);
 

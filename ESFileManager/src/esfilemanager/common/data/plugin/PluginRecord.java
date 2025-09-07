@@ -121,32 +121,6 @@ public class PluginRecord extends Record {
 		return "";
 	}
 	
-
-	/**
-	 * Does not touch file pointer at all, no sync on in required
-	 * @param in
-	 * @param position
-	 * @param recordLength
-	 * @throws PluginException
-	 * @throws IOException
-	 * @throws DataFormatException
-	 */
-	
-	//FIXME: why doesn't the method below make this redundant?
-	public void load(FileChannelRAF in, long position, int recordLength)
-			throws PluginException, IOException, DataFormatException {
-		FileChannel ch = in.getChannel();
-		this.filePositionPointer = position;
-		this.recordLength = recordLength;
-		recordData = new byte[this.recordLength];
-						
-		// use this non sync call for speed
-		int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
-		if (count != recordLength)
-			throw new PluginException(" : " + recordType + " record is incomplete");
-	
-	}
-	
 	/**
 	 * Does not touch file pointer at all, no sync on in required
 	 * @param in

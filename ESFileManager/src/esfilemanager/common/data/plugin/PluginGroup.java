@@ -109,7 +109,6 @@ public class PluginGroup extends PluginRecord {
 		return dataSize;
 	}
 
-	@Override
 	public void load(FileChannelRAF in, long pointer, int groupLength)
 			throws IOException, DataFormatException, PluginException {
 		//-1 means load all children groups that exist (only relevant to the "children" of CELLS groups
@@ -143,7 +142,7 @@ public class PluginGroup extends PluginRecord {
 				pos += length;
 			} else {
 				PluginRecord record = new PluginRecord(prefix);
-				record.load(in, pos, length);
+				record.load(in, pos);
 				pos += length;
 				recordList.add(record);
 			}

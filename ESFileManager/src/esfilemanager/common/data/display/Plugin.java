@@ -180,8 +180,7 @@ public abstract class Plugin {
 				throw new PluginException(pluginHeader.getName() + ": Group record prefix is too short");
 
 			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= pluginHeader.getHeaderByteCount();
+			int length = ESMByteConvert.extractInt(prefix, 4);//Notice for TES3 header length not taken off record length			
 
 			PluginRecord record = new esfilemanager.tes3.PluginRecord(-1, prefix);
 			record.load(in, pos);
@@ -211,7 +210,7 @@ public abstract class Plugin {
 		}
 
 		if (loadCount != recordCount) {
-			System.out.println(pluginHeader.getName()	+ ": Load count " + loadCount + " does not match header count "
+			System.out.println(pluginHeader.getName()	+ ": TES3 Load count " + loadCount + " does not match header count "
 								+ recordCount + ", presumably it is only indexed");
 		}		
 	}

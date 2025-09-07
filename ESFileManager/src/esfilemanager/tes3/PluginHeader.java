@@ -46,7 +46,7 @@ public class PluginHeader extends PluginRecord {
 		unknownInt = ESMByteConvert.extractInt(prefix, 8);
 		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
 
-		super.load(in, pos, recordSize);
+		super.load(in, pos);
 		getSubrecords();// force load of subs
 		pluginFileName = fileName;
 		for (Subrecord sub : getSubrecords()) {

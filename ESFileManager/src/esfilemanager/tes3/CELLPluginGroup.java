@@ -166,7 +166,7 @@ public class CELLPluginGroup extends PluginGroup {
 
 			// must have an id too
 			PluginRecord record = new PluginRecord(Master.getNextFormId(), prefix);
-			record.load(in, pos, -1);
+			record.load(in, pos);
 			pos += record.recordSize; 
 			if (record.getRecordType().equals("LAND")) {
 				temps.getRecordList().add(record);
@@ -189,7 +189,7 @@ public class CELLPluginGroup extends PluginGroup {
 
 		// must have an id too
 		PluginRecord record = new PluginRecord(Master.getNextFormId(), prefix);
-		record.load(in, pos, -1);
+		record.load(in, pos);
 		pos += record.recordSize; 
 		if (record.getRecordType().equals("PGRD")) {
 			temps.getRecordList().add(record);
