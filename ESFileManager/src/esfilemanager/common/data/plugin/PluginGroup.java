@@ -278,7 +278,7 @@ public class PluginGroup extends PluginRecord {
 	}
 
 	private static String groupDescriptions[][] = {
-		{"GRUP", "Form Group"}, {"REFR", "Object Reference"}, 
+		{"0HED", "Header"}, {"GRUP", "Form Group"}, {"REFR", "Object Reference"}, 
 		//Oblivion
 		{"ACHR", "Actor Reference"}, // Not in FO4// Not in FO76// Not in SF
 		{"ACTI", "Activators"},	{"ALCH", "Potions"}, {"AMMO", "Ammunition"}, {"ANIO", "Animated Object"},
@@ -409,6 +409,31 @@ public class PluginGroup extends PluginRecord {
 		{"SFTR", "Surface Tree"}, {"SPCH", "Speech Challenge"}, {"STBH", "STBH?"},   
 		{"STDT", "Star Data"}, {"SUNP", "Sun Data"},  {"TMLM", "Terminal Menu"}, {"TODD", "More Start Data?"},  
 		{"TRAV", "Traversal (of animaion)"}, {"WBAR", "Gun Data?"}, {"WKMF", "WKMF?"}, {"WTHS", "Weather"},  {"WWED", "Sound Data?"}, 
+		
+		
+		
+		// Tes3 seen in the morrowind esm files, but not in the tree, cos of cell not loading
+		{"BODY", "BODY?"}, {"LAND", "Land"}, {"LEVC", "Leveled Creature"}, {"LEVI", "Leveled Item"}, {"LOCK", "Lock"},
+		{"PGRD", "PGRD"}, {"PROB", "Probe (Lock Picking)"}, {"REPA", "REPA"}, {"SNDG", "SNDG"},
+		{"TES3", "Tes3Header"},
+		
+		// Tes4 Oblivion
+		{"ACRE", "A Creature"},{"ROAD", "A Road"}, {"TES4", "Tes4Header"},
+		
+		//FO3 PGRE
+		{"PGRE", "PGRE"},
+		
+		//Skyrim
+		{"PHZD", "PHZD"},
+		
+		//FO4
+		{"PMIS", "PMIS"},
+		
+		//FO76
+		
+		//SF
+		
+		
 	};
 
 	static {

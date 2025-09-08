@@ -22,6 +22,7 @@ public class PluginGroup extends esfilemanager.common.data.plugin.PluginGroup
 		this.recordType = "GRUP";
 		this.groupType = groupType;
 		groupParentID = -1;
+		groupRecordType = groupLabel;
 		this.groupLabel = groupLabel.getBytes();
 	}
 

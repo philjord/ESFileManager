@@ -86,7 +86,7 @@ public abstract class Plugin {
 		}
 		
 		// fake top group for the header to live in
-		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP);
+		PluginGroup topPG = new esfilemanager.tes3.PluginGroup(PluginGroup.TOP, "0HED");
 		groupList.add(topPG);
 		topPG.getRecordList().add(pluginHeader);
 

@@ -16,7 +16,7 @@ public class PluginHeader extends PluginRecord {
 	
 	private float			pluginVersion	= -1;
 	
-	public static enum GAME{TES3, TES4, FO3, TESV, FO4, UNKNOWN};
+	public static enum GAME{TES3, TES4, FO3, TESV, FO4, FO76, SF, UNKNOWN};
 	private GAME			game			= GAME.UNKNOWN;
 
 	public static enum FILE_FORMAT{TES3, TES4, UNKNOWN};
@@ -114,8 +114,14 @@ public class PluginHeader extends PluginRecord {
 				tesRecordLen = 20; // oblivion				
 			} else  if (new String(tmp,24,4).equals("HEDR")) {
 				game = GAME.UNKNOWN;
-				tesRecordLen = 24; //fallout3, skyrim				
-				//TODO: work out the game?						
+				tesRecordLen = 24; //fallout3, skyrim, fo76, sf			
+				//TODO: work out the game?		
+				
+				//FO3 plugin Version = 0.94 and skyrim
+				//FONV = 1.32
+				//FO4 = 0.95
+				//FO76 = 203.0
+				//SF = 0.96
 			} else {
 				throw new PluginException(pluginFileName + ": HEDR not found");
 			}
@@ -231,16 +237,24 @@ public class PluginHeader extends PluginRecord {
 					throw new PluginException(pluginFileName + ": HEDR subrecord is too small");
 				pluginVersion = Float.intBitsToFloat(ESMByteConvert.extractInt(buffer, 0));
 				recordCount = ESMByteConvert.extractInt(buffer, 4);			
-			} else if (type.equals("CNAM")) {
+			} else if (type.equals("CNAM")) {	
+				//oblivion.esm = "mlipari" 
+				//fo3.esm, fonv.esm string "ipely"
+				//skyrim.esm = "mcarofano"
+				//FO4.esm = "mcarofano"
+				//FO76.esm = "mcarofano"
+				//SF.esm = "Python"
 				if (dataLen > 1)
 					creator = new String(buffer, 0, dataLen - 1);
 			} else if (type.equals("SNAM")) {
+				// oblivion.esm = " "
+				// SF.esm = "Script"
 				if (dataLen > 1)
 					summary = new String(buffer, 0, dataLen - 1);
 			} else if (type.equals("OFST")) {
-				// what is this one?				 
+				//oblivion.esm bunch of pointers to each group type  
 			} else if (type.equals("DELE")) {
-				// what is this one?
+				// in oblivion.esm 8 bytes
 			} else if (type.equals("MAST") && dataLen > 1) {
 				masterList.add(new String(buffer, 0, dataLen - 1));
 				//System.out.println("MAST " + new String(buffer, 0, length - 1));
@@ -249,12 +263,23 @@ public class PluginHeader extends PluginRecord {
 				int masterLength = ESMByteConvert.extractInt64(buffer, 0);
 			} else if (type.equals("ONAM")) {
 				 
-			} 
-			//Fallout4.esm
-			else if (type.equals("TNAM")) {
-			}else if (type.equals("INTV")) {
-			}else if (type.equals("INCC")) {			
-			}else {
+			} else if (type.equals("TNAM")) {
+				//FO4.esm 2 record 3.5k and 1.4k bytes
+				//FO76.esm 2 record 2.9k and 16.6k bytes
+				//SF.esm 2 record 1.0k and 30k bytes
+			} else if (type.equals("INTV")) {
+				//skyrim.esm 4 bytes
+				//FO4.esm 4 bytes
+				//FO76.esm 4 bytes
+			} else if (type.equals("INCC")) {		
+				//fo4.esm 4 bytes
+				//SF.esm 4 bytes
+			} else if (type.equals("MMSB")) {		
+				//FO76.esm 4 bytes
+			} else if (type.equals("CHGL")) {		
+				//SF.esm 4 bytes
+			}
+			else {
 				System.out.println(pluginFileName + ": " + type + " : unregistered subrecord in header");
 			}
 		} while (true);
