@@ -278,45 +278,48 @@ public class PluginGroup extends PluginRecord {
 	}
 
 	private static String groupDescriptions[][] = {
-		{"0HED", "Header"}, {"GRUP", "Form Group"}, {"REFR", "Object Reference"}, 
+		{"0HED", "Header"}, {"GRUP", "Form Group"}, 
+		
+		//Morrowind?
+		
+		
 		//Oblivion
-		{"ACHR", "Actor Reference"}, // Not in FO4// Not in FO76// Not in SF
-		{"ACTI", "Activators"},	{"ALCH", "Potions"}, {"AMMO", "Ammunition"}, {"ANIO", "Animated Object"},
+		{"ACTI", "Activator"},	{"ALCH", "Potion"}, {"AMMO", "Ammunition"}, {"ANIO", "Animated Object"},
 		{"APPA", "Apparatus"}, //Not in FO3// Not in FO4// Not in FO76// Not in SF
-		{"ARMO", "Armor"}, {"BOOK", "Books"}, {"BSGN", "Birthsigns"}, //Not in FO3 , Not in Skyrim// Not in FO4// Not in FO76// Not in SF
-		{"CELL", "Cells"}, {"CLAS", "Classes"}, {"CLOT", "Clothing"}, //Not in FO3 , Not in Skyrim// Not in FO4// Not in FO76// Not in SF
-		{"CLMT", "Climate"}, {"CONT", "Containers"}, {"CREA", "Creatures"}, //Not in Skyrim // Not in FO4// Not in FO76// Not in SF
-		{"CSTY", "Combat Styles"}, {"DIAL", "Dialog"},// Not in FO4// Not in FO76 // no entries SF
-		{"DOOR", "Doors"}, {"EFSH", "Effect Shaders"}, {"ENCH", "Enchantments"}, {"EYES", "Eyes"}, // Not in FO4// Not in FO76// Not in SF
-		{"FACT", "Factions"}, {"FLOR", "Flora"}, //Not in FO3  
-		{"FURN", "Furniture"}, {"GLOB", "Global Variables"}, {"GMST", "Game Settings"}, {"GRAS", "Grass"},
+		{"ARMO", "Armor"}, {"BOOK", "Book"}, {"BSGN", "Birthsign"}, //Not in FO3 , Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"CELL", "Cell"}, {"CLAS", "Class"}, {"CLOT", "Clothing"}, //Not in FO3 , Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"CLMT", "Climate"}, {"CONT", "Container"}, {"CREA", "Creature"}, //Not in Skyrim // Not in FO4// Not in FO76// Not in SF
+		{"CSTY", "Combat Style"}, {"DIAL", "Dialog"},// Not in FO4// Not in FO76 // no entries SF
+		{"DOOR", "Door"}, {"EFSH", "Effect Shader"}, {"ENCH", "Enchantment"}, {"EYES", "Eyes"}, // Not in FO4// Not in FO76// Not in SF
+		{"FACT", "Faction"}, {"FLOR", "Flora"}, //Not in FO3  
+		{"FURN", "Furniture"}, {"GLOB", "Global Variable"}, {"GMST", "Game Setting"}, {"GRAS", "Grass"},
 		{"HAIR", "Hair"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
-		{"IDLE", "Idle Animations"}, {"INGR", "Ingredients"},// Not in SF
-		{"KEYM", "Keys"}, {"LIGH", "Lights"}, {"LSCR", "Load Screens"}, {"LTEX", "Land Textures"}, 
-		{"LVLC", "Leveled Creatures"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
-		{"LVLI", "Leveled Items"}, {"LVSP", "Leveled Spells"}, //Not in FO3 // Not in FO4// Not in FO76// Not in SF
-		{"MGEF", "Magic Effects"}, {"MISC", "Miscellaneous Items"}, {"NPC_", "NPCs"}, {"PACK", "Packages"},
-		{"QUST", "Quests"}, {"RACE", "Races"}, {"REGN", "Regions"}, 
-		{"SBSP", "Subspaces"}, //Not in FO3, Not in Skyrim// Not in FO4// Not in FO76// Not in SF
-		{"SCPT", "Scripts"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
-		{"SGST", "Sigil Stones"}, //Not in FO3, Not in Skyrim // Not in FO4// Not in FO76// Not in SF
-		{"SKIL", "Skills"}, //Not in FO3, Not in Skyrim  // Not in FO4// Not in FO76 // Not in SF
-		{"SLGM", "Soul Gems"}, //Not in FO3 // Not in FO4// Not in FO76// Not in SF
-		{"SOUN", "Sounds"}, {"SPEL", "Spells"}, {"STAT", "Statics"}, {"TREE", "Trees"}, // no entries FO76// Not in SF
-		{"WATR", "Water"}, {"WEAP", "Weapons"}, {"WRLD", "World Spaces"}, {"WTHR", "Weather"},
+		{"IDLE", "Idle Animation"}, {"INGR", "Ingredient"},// Not in SF
+		{"KEYM", "Key"}, {"LIGH", "Light"}, {"LSCR", "Load Screen"}, {"LTEX", "Land Texture"}, 
+		{"LVLC", "Leveled Creature"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"LVLI", "Leveled Item"}, {"LVSP", "Leveled Spell"}, //Not in FO3 // Not in FO4// Not in FO76// Not in SF
+		{"MGEF", "Magic Effect"}, {"MISC", "Miscellaneous Item"}, {"NPC_", "NPC"}, {"PACK", "Package (as in AI)"},
+		{"QUST", "Quest"}, {"RACE", "Race"}, {"REGN", "Region"}, 
+		{"SBSP", "Subspace"}, //Not in FO3, Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"SCPT", "Script"}, // Not in Skyrim// Not in FO4// Not in FO76// Not in SF
+		{"SGST", "Sigil Stone"}, //Not in FO3, Not in Skyrim // Not in FO4// Not in FO76// Not in SF
+		{"SKIL", "Skill"}, //Not in FO3, Not in Skyrim  // Not in FO4// Not in FO76 // Not in SF
+		{"SLGM", "Soul Gem"}, //Not in FO3 // Not in FO4// Not in FO76// Not in SF
+		{"SOUN", "Sounds"}, {"SPEL", "Spell"}, {"STAT", "Static"}, {"TREE", "Tree"}, // no entries FO76// Not in SF
+		{"WATR", "Water"}, {"WEAP", "Weapon"}, {"WRLD", "World Space"}, {"WTHR", "Weather"},
 
 		//new in FO3 
 		{"ADDN", "Addon Node"}, {"ARMA", "Armor Addon"}, {"ASPC", "Acoustic Space"},
-		{"AVIF", "Actor Values (Perk Tree Graphics)"}, {"BPTD", "Body Part Data"}, {"CAMS", "Cameras"},
+		{"AVIF", "Actor Value (Perk Tree Graphics)"}, {"BPTD", "Body Part Data"}, {"CAMS", "Camera"},
 		{"COBJ", "Constructible Object (recipes)"}, {"CPTH", "Camera Path"}, {"DEBR", "Debris"},
 		{"DOBJ", "Default Object Manager"}, {"ECZN", "Encounter Zone"},// Not in FO76 // Not in SF
 		{"EXPL", "Explosion"}, {"FLST", "Form List (non-leveled list)"}, {"HDPT", "Head Part"}, {"IDLM", "Idle Marker"},
 		{"IMAD", "Image Space Modifier"}, {"IMGS", "Image Space"}, {"IPCT", "Impact"}, {"IPDS", "Impact Data Set"},
 		{"LGTM", "Lighting Template"}, {"LVLN", "Leveled Character"}, {"MESG", "Message"}, 
 		{"MICN", "Menu Icon"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
-		{"MSTT", "Movable Static"}, {"MUSC", "Music"}, {"NAVI", "Navigation"}, {"NOTE", "Notes"}, // Not in Skyrim// Not in SF
+		{"MSTT", "Movable Static"}, {"MUSC", "Music"}, {"NAVI", "Navigation"}, {"NOTE", "Note"}, // Not in Skyrim// Not in SF
 		{"PERK", "Perk"}, {"PROJ", "Projectile"}, {"PWAT", "Placeable Water"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
-		{"RADS", "RADS ?"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
+		{"RADS", "RADS?"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
 		{"RGDL", "Ragdoll"}, // Not in Skyrim// Not in FO4// Not in FO76 // Not in SF
 		{"SCOL", "Static Collection"}, // Not in Skyrim
 		{"TACT", "Talking Activator"}, // Not in SF
@@ -326,9 +329,9 @@ public class PluginGroup extends PluginRecord {
 		// Added in Fallout3 NV. Note NONE of these are in Skyrim,FO4 only 1 is in FO76,SF
 		{"ALOC", "Location musCtrl (music?)"},{"AMEF", "Ammo Effect"}, {"CCRD", "Caravan Card"}, {"CDCK", "Caravan Deck"},
 		{"CHAL", "Challenge"}, // IS IN FO76 // IS IN SF
-		{"CHIP", "Poker Chip"}, {"CMNY", "Casino Money"}, {"CSNO", "Casino"}, {"DEHY", "Drinking Effects"},
-		{"HUNG", "Eating Effects"}, {"IMOD", "Gun Mods"}, {"LSCT", "Loading Tip"}, {"MSET", "Music Set?"}, {"RCCT", "Recipe (Menus?)"}, 
-		{"RCPE", "Recipes"}, {"REPU", "Reputation"}, {"SLPD", "Sleeping Effects"}, 
+		{"CHIP", "Poker Chip"}, {"CMNY", "Casino Money"}, {"CSNO", "Casino"}, {"DEHY", "Drinking Effect"},
+		{"HUNG", "Eating Effect"}, {"IMOD", "Gun Mods"}, {"LSCT", "Loading Tip"}, {"MSET", "Music Set?"}, {"RCCT", "Recipe (Menus?)"}, 
+		{"RCPE", "Recipe"}, {"REPU", "Reputation"}, {"SLPD", "Sleeping Effect"}, 
 		
 		// new in Skyrim
 		{"AACT", "Action"},	{"ARTO", "Art Object"},	{"ASTP", "Association Type"}, // Not in SF
@@ -361,26 +364,26 @@ public class PluginGroup extends PluginRecord {
 		{"NOCM", "NOCM?"}, {"OMOD", "Model something?"}, 
 		{"OVIS", "OVIS?"}, {"PKIN", "PackIn?"}, {"RFGP", "RFGP?"}, {"SCCO", "Views?"},// Not in SF
 		{"SCSN", "SCSN?"}, // Not in SF
-		{"STAG", "Character ATS?"},	{"TRNS", "Related to models?"}, {"ZOOM", "Weapon Zooms"},
+		{"STAG", "Character ATS?"},	{"TRNS", "Related to models?"}, {"ZOOM", "Weapon Zoom"},
 			
 		//Added from Fallout 76
-		{"AAMD", "Gun Type Templates"}, {"AAPD", "A Creature (replaces ACHR?) body parts"}, {"ASTM", "deprecated"},// Not in SF
+		{"AAMD", "Gun Type Template"}, {"AAPD", "Creature Body parts?"}, {"ASTM", "deprecated"},// Not in SF
 		{"ATXO", "Entitlements and keywords?"}, // Not in SF
 		{"AUVF", "AUVF?"},// Not in SF
-		{"AVTR", "PlayerIcons"},// Not in SF
+		{"AVTR", "PlayerIcon"},// Not in SF
 		{"CNCY", "Currency"},// Not in SF
 		{"CNDF", "Conditions (for effects/events)"}, {"COEN", "Texture Data (related to icons)"},// Not in SF
-		{"CPRD", "Rewards"}, // Not in SF
+		{"CPRD", "Reward"}, // Not in SF
 		{"CSEN", "CSEN?"}, // Not in SF
 		{"CURV", "Links to json files?"}, {"DCGF", "DCGF?"},// Not in SF
-		{"DIST", "Districts"},// Not in SF
+		{"DIST", "District"},// Not in SF
 		{"ECAT", "Emote Category"},// Not in SF
-		{"EMOT", "Player Emotes"}, // Not in SF
+		{"EMOT", "Player Emote"}, // Not in SF
 		{"ENTM", "Texture Data?"}, // Not in SF
 		{"GCVR", "Ground Cover?"}, {"GMRW", "Challenge Data?"},// Not in SF
-		{"LGDI", "Legendary Items"},
+		{"LGDI", "Legendary Item"},
 		{"LOUT", "Load out"}, // Not in SF
-		{"LVLP", "Leveled Projectile?"}, {"LVPC", "Leveled Cards?"},// Not in SF
+		{"LVLP", "Leveled Projectile?"}, {"LVPC", "Leveled Card?"},// Not in SF
 		{"MDSP", "Animation data?"},// Not in SF
 		{"PACH", "Power Armour data?"},// Not in SF
 		{"PCRD", "Perk Card"}, // Not in SF
@@ -389,7 +392,7 @@ public class PluginGroup extends PluginRecord {
 		{"PPAK", "Perk Card Pack"}, // Not in SF
 		{"QMDL", "Quest Module"},// Not in SF
 		{"RESO", "Resource"},// Not in SF
-		{"SECH", "Markers?"}, {"STHD", "Hunger/Thirst Threshold"},// Not in SF
+		{"SECH", "Marker?"}, {"STHD", "Hunger/Thirst Threshold"},// Not in SF
 		{"STMP", "STMP? model data?"}, {"STND", "Node data?"},// Not in SF
 		{"UTIL", "Atomic Exchange data?"},// Not in SF
 		{"VOLI", "Weather data?"}, {"WAVE", "Wave data (as in wave of enemies?)"}, // Not in SF
@@ -411,14 +414,16 @@ public class PluginGroup extends PluginRecord {
 		{"TRAV", "Traversal (of animaion)"}, {"WBAR", "Gun Data?"}, {"WKMF", "WKMF?"}, {"WTHS", "Weather"},  {"WWED", "Sound Data?"}, 
 		
 		
-		
+		// below are the non EDID type file, seen in CELLs along with REFR
 		// Tes3 seen in the morrowind esm files, but not in the tree, cos of cell not loading
-		{"BODY", "BODY?"}, {"LAND", "Land"}, {"LEVC", "Leveled Creature"}, {"LEVI", "Leveled Item"}, {"LOCK", "Lock"},
-		{"PGRD", "PGRD"}, {"PROB", "Probe (Lock Picking)"}, {"REPA", "REPA"}, {"SNDG", "SNDG"},
+		{"REFR", "Object Ref"}, 
+		{"BODY", "BODY?"}, {"LAND", "Land"}, {"LEVC", "Leveled Creature"}, {"LEVI", "Leveled Item"}, {"LOCK", "Lock Info"},
+		{"PGRD", "PGRD"}, {"PROB", "Probe? (Lock Picking?)"}, {"REPA", "REPA"}, {"SNDG", "SNDG"},
 		{"TES3", "Tes3Header"},
 		
-		// Tes4 Oblivion
-		{"ACRE", "A Creature"},{"ROAD", "A Road"}, {"TES4", "Tes4Header"},
+		// Tes4 Oblivion (or morrowind?)
+		{"ACHR", "Actor Ref"}, // Not in FO4// Not in FO76// Not in SF
+		{"ACRE", "Creature Ref"}, {"ROAD", "A Road"}, {"TES4", "Tes4Header"},
 		
 		//FO3 PGRE
 		{"PGRE", "PGRE"},
@@ -435,12 +440,37 @@ public class PluginGroup extends PluginRecord {
 		
 		
 	};
+	
+	public static Map<String, String>	subRecDesc;
+	// known sub record descriptions 
+	private static String subRecDescriptions[][] = {
+		//Oblivion 
+		{"EDID", "Editor ID, used only by consturction kit, not loaded at runtime"},
+		{"FULL", "Often the Object in game name, not not always"}, 
+		{"MODL", "Model Name of Nif file"}, 
+		{"MODB", "Model Bounds"}, // changed to OBND FO3+
+		{"MODT", "Model Translation (not sure of the contents)"}, 
+		{"ICON", "Icon pointer to a dds file"}, 
+		
+		
+		
+		{"OBND", "Object Bounds"}, 
+		
+		
+		
+	};
 
 	static {
 		if (typeMap == null) {
 			typeMap = new HashMap<String, String>(groupDescriptions.length);
 			for (int i = 0; i < groupDescriptions.length; i++) {
 				typeMap.put(groupDescriptions [i] [0], groupDescriptions [i] [1]);
+			}
+		}
+		if (subRecDesc == null) {
+			subRecDesc = new HashMap<String, String>(subRecDescriptions.length);
+			for (int i = 0; i < subRecDescriptions.length; i++) {
+				subRecDesc.put(subRecDescriptions [i] [0], subRecDescriptions [i] [1]);
 			}
 		}
 	}
