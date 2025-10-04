@@ -10,7 +10,7 @@ public class Record
 
 	protected int recordFlags1;
 
-	protected int recordFlags2;
+	protected int recordFlags2; // this is described as version id in the https://en.uesp.net/wiki/Oblivion_Mod:Mod_File_Format
 
 	protected boolean updated = false;
 

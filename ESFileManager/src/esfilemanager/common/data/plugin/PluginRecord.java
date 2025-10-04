@@ -216,7 +216,8 @@ public class PluginRecord extends Record {
 			// discard the raw data as used now
 			recordData = null;
 		} catch (DataFormatException e) {
-			e.printStackTrace();
+			//FalloutNV has one of this
+			System.err.println("java.util.zip.DataFormatException: incorrect data check");
 		} catch (PluginException e) {
 			e.printStackTrace();
 		}
