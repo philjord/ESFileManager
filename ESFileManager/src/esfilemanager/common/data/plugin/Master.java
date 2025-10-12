@@ -331,11 +331,12 @@ public abstract class Master implements IMaster {
 
 		// now load an index into memory
 		byte prefix[] = new byte[headerByteCount];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		masterID = masterHeader.getMasterList().size();
 		int recordCount = masterHeader.getRecordCount();
 		idToFormMap = new SparseArray<FormInfo>(recordCount / 10);// enough to kick off with, but we aren't loading all of it
 		 
-		count = ch.read(ByteBuffer.wrap(prefix), pos);	
+		count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 		pos += prefix.length;
 		if (count != headerByteCount)
 			throw new PluginException("Record prefix is incomplete");
@@ -374,7 +375,7 @@ public abstract class Master implements IMaster {
 					pos += groupLength;
 				} else {
 					while (groupLength >= headerByteCount) {
-						count = ch.read(ByteBuffer.wrap(prefix), pos);	
+						count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 						pos += prefix.length;
 						if (count != headerByteCount) 
 							throw new PluginException(masterHeader.getName() + ": Group " + groupRecordType + " is incomplete");
@@ -427,7 +428,7 @@ public abstract class Master implements IMaster {
 			}
 
 			// prep for the next loop
-			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 		}
 

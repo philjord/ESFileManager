@@ -35,13 +35,14 @@ public class DIALTopGroup extends PluginGroup {
 		DIALByFormID = new SparseArray<FormToFilePointer>();
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
-
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
+		
 		FormToFilePointer formToFilePointer = null;
 
 		while (dataLength >= headerByteCount) {
 			long filePositionPointer = pos; // grab so it can be used for the pointer below
 
-			int count = ch.read(ByteBuffer.wrap(prefix), pos);			
+			int count = ch.read((ByteBuffer)pbb.rewind(), pos);			
 			if (count != headerByteCount)
 				throw new PluginException("File " + fileName + ": Record prefix is incomplete");
 			

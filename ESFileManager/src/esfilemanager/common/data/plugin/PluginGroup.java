@@ -39,6 +39,8 @@ public class PluginGroup extends PluginRecord {
 	public static final int				CELL_TEMPORARY		= 9;
 
 	public static final int				CELL_DISTANT		= 10;
+	
+	public static final int				FO76_147		= 147;//Fallout76 has this as a child of WRLD
 
 	protected byte						groupLabel[];
 
@@ -78,6 +80,7 @@ public class PluginGroup extends PluginRecord {
 			case CELL_PERSISTENT: // '\b'
 			case CELL_TEMPORARY: // '\t'
 			case CELL_DISTANT: // '\n'
+			case FO76_147: //147
 				groupParentID = ESMByteConvert.extractInt(groupLabel, 0);
 				break;
 		}
@@ -123,11 +126,12 @@ public class PluginGroup extends PluginRecord {
 			throws IOException, DataFormatException, PluginException {
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 
 		FileChannel ch = in.getChannel();
 
 		while (dataLength >= headerByteCount) {
-			int count = ch.read(ByteBuffer.wrap(prefix), pos);
+			int count = ch.read((ByteBuffer)pbb.rewind(), pos);
 			pos += headerByteCount;
 			if (count != headerByteCount)
 				throw new PluginException("Record prefix is incomplete");
@@ -139,6 +143,7 @@ public class PluginGroup extends PluginRecord {
 			if (type.equals("GRUP")) {
 				length -= headerByteCount;
 				PluginGroup pg = new PluginGroup(prefix);
+				
 				if (childGroupType == -1 || pg.getGroupType() == childGroupType) {
 					pg.load(in, pos, length);
 					recordList.add(pg);
@@ -231,7 +236,7 @@ public class PluginGroup extends PluginRecord {
 
 			case EXTERIOR_SUBBLOCK: // '\005'
 			{
-				int x = intValue >>> 16;
+				int x = intValue >>> 16; //TODO: fix me I've got world x,y that are reporting 255 for x but I thinks it should be -1
 				if ((x & 0x8000) != 0)
 					x |= 0xffff0000;
 				int y = intValue & 0xffff;

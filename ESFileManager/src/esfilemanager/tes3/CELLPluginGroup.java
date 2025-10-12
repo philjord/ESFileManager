@@ -155,11 +155,13 @@ public class CELLPluginGroup extends PluginGroup {
 		// have we finished a prior now?
 		if (refr != null)
 			temps.getRecordList().add(refr);
-
+		
+		byte[] prefix = new byte[16];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
+		
 		//If we are an exterior the next record is a LAND!
 		if (isExterior) {
-			byte[] prefix = new byte[16];
-			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 			if (count != 16)
 				throw new PluginException(": record prefix is incomplete");
@@ -181,8 +183,8 @@ public class CELLPluginGroup extends PluginGroup {
 
 		//then the next record should be a PGRD 
 
-		byte[] prefix = new byte[16];
-		count = ch.read(ByteBuffer.wrap(prefix), pos);	
+
+		count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 		pos += prefix.length;
 		if (count != 16)
 			throw new PluginException(": record prefix is incomplete");

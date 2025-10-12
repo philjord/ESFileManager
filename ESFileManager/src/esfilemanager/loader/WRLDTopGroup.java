@@ -40,10 +40,11 @@ public class WRLDTopGroup extends PluginGroup {
 		
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
-
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
+		
 		while (dataLength >= headerByteCount) {
  
-			int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			int count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 			if (count != headerByteCount)
 				throw new PluginException(fileName + ": Record prefix is incomplete");
@@ -61,7 +62,7 @@ public class WRLDTopGroup extends PluginGroup {
 			//Anchorage WRLD 11657 has no children record, so check to see if we are finished here
 			if(dataLength >= headerByteCount) {
 	
-				count = ch.read(ByteBuffer.wrap(prefix), pos);	
+				count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 				pos += prefix.length;
 				if (count != headerByteCount)
 					throw new PluginException(fileName + ": Record prefix is incomplete");
@@ -77,7 +78,16 @@ public class WRLDTopGroup extends PluginGroup {
 					WRLDChildren children = new WRLDChildren(prefix);
 					children.loadAndIndex(in, pos, length);
 					pos += length;
-					WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);
+					WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);					
+				} else if (subGroupType == PluginGroup.FO76_147) {
+					//TODO: this appears to just be the sub of the WRLKD record???
+					System.out.println("umm... Group Type " + subGroupType + " not allowed as child of WRLD id " + wrldRecord.getFormID());
+					
+				
+					//https://forums.nexusmods.com/topic/7181276-made-edits-to-seventysixesm-by-hand-my-experience-so-far/
+					
+					//https://www.nexusmods.com/fallout76/mods/1487
+					
 				} else {
 					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD id " + wrldRecord.getFormID());
 					//not fixable from here, stop trying to load					

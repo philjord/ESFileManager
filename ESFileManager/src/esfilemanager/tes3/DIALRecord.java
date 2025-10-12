@@ -50,12 +50,13 @@ public class DIALRecord extends PluginRecord {
 		
 		FileChannel ch = in.getChannel();
 		infos = new ArrayList<PluginRecord>();
+		byte[] prefix = new byte[16];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 
 		long pos = INFOOffset;
 		while (pos < ch.size()) {
 			// pull the prefix data so we know what sort of record we have
-			byte[] prefix = new byte[16];
-			int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			int count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 			if (count != 16)
 				throw new PluginException(": record prefix is incomplete");

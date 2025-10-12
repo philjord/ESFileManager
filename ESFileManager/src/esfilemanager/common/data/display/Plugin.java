@@ -95,8 +95,9 @@ public abstract class Plugin {
 		formList = new ArrayList<FormInfo>(recordCount);
 		formMap = new HashMap<Integer, FormInfo>(recordCount);
 		byte prefix[] = new byte[pluginHeader.getHeaderByteCount()];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		int loadCount = 0; 
-		count = ch.read(ByteBuffer.wrap(prefix), pos);	
+		count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 		pos += prefix.length;
 		
 		while (count != -1) {
@@ -116,6 +117,11 @@ public abstract class Plugin {
 			group.load(in, pos, length);
 			pos += length;
 			
+			
+			if(group.getGroupRecordType().equals("WRLD") )
+				System.out.println("I think I'm loading a WRLD about now?");
+			
+			
 			// if requested we only index the wrld and cell records, as that is 99% of the file size
 			if (indexCellsOnly
 				&& (group.getGroupRecordType().equals("WRLD") || group.getGroupRecordType().equals("CELL"))) {
@@ -127,7 +133,7 @@ public abstract class Plugin {
 			}
 
 			//prep for the next iter
-			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 		}
 		
@@ -172,8 +178,9 @@ public abstract class Plugin {
 		formList = new ArrayList<FormInfo>(recordCount);
 		formMap = new HashMap<Integer, FormInfo>(recordCount);
 		byte prefix[] = new byte[pluginHeader.getHeaderByteCount()];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		int loadCount = 0;
-		int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+		int count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 		pos += prefix.length;
 		while (count != -1) {
 			if (count != pluginHeader.getHeaderByteCount())
@@ -205,7 +212,7 @@ public abstract class Plugin {
 			}				
 
 			//prep for the next iter
-			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 		}
 

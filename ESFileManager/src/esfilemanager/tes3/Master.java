@@ -239,11 +239,11 @@ public class Master implements IMasterTes3 {
 		idToFormMap.put(wrldRecord.getFormID(),
 				new FormInfo(wrldRecord.getRecordType(), wrldRecord.getFormID(), wrldRecord));
 		byte[] prefix = new byte[16];
-		
+    	ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		while (pos < ch.size()) {
 			// pull the prefix data so we know what sort of record we need to load
 
-			count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 			if (count != 16)
 				throw new PluginException(": record prefix is incomplete");

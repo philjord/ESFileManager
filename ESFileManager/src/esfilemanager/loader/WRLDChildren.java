@@ -66,8 +66,9 @@ public class WRLDChildren extends PluginGroup {
 		FileChannel ch  = in.getChannel();
 		int dataLength = groupLength;
 		byte[] prefix = new byte[headerByteCount];
+		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		while (dataLength >= headerByteCount) {
-			int count = ch.read(ByteBuffer.wrap(prefix), pos);	
+			int count = ch.read((ByteBuffer)pbb.rewind(), pos);	
 			pos += prefix.length;
 			if (count != headerByteCount)
 				throw new PluginException("Record prefix is incomplete");
