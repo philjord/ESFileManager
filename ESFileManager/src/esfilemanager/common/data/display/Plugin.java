@@ -115,11 +115,6 @@ public abstract class Plugin {
 
 			PluginGroup group = new PluginGroup(prefix);
 			
-			if(group.getGroupRecordType().equals("WRLD") ) {
-				System.out.println("I think I'm loading a WRLD about now? ");
-			}
-			
-			
 			group.load(in, pos, length);
 			pos += length;
 			
