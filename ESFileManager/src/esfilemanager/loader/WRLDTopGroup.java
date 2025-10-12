@@ -31,20 +31,19 @@ public class WRLDTopGroup extends PluginGroup {
 
 		return null;
 	}
-	
-	
+
 	public void loadAndIndex(String fileName, FileChannelRAF in, long pos, int groupLength)
 			throws IOException, DataFormatException, PluginException {
 
 		FileChannel ch = in.getChannel();
-		
+
 		int dataLength = groupLength;
 		byte prefix[] = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
-		
+
 		while (dataLength >= headerByteCount) {
- 
-			int count = ch.read((ByteBuffer)pbb.rewind(), pos);	
+
+			int count = ch.read((ByteBuffer)pbb.rewind(), pos);
 			pos += prefix.length;
 			if (count != headerByteCount)
 				throw new PluginException(fileName + ": Record prefix is incomplete");
@@ -58,44 +57,35 @@ public class WRLDTopGroup extends PluginGroup {
 			WRLDByFormId.put(wrldRecord.getFormID(), wrldRecord);
 
 			dataLength -= length;
-			
-			//Anchorage WRLD 11657 has no children record, so check to see if we are finished here
-			if(dataLength >= headerByteCount) {
-	
-				count = ch.read((ByteBuffer)pbb.rewind(), pos);	
+
+			//Anchorage WRLD 11657 has no children group after the WRLD group, so check to see if we are finished here
+			if (dataLength >= headerByteCount) {
+
+				count = ch.read((ByteBuffer)pbb.rewind(), pos);
 				pos += prefix.length;
 				if (count != headerByteCount)
 					throw new PluginException(fileName + ": Record prefix is incomplete");
 				dataLength -= headerByteCount;
 				//type = new String(prefix, 0, 4);
 				length = ESMByteConvert.extractInt(prefix, 4);
-	
+
 				length -= headerByteCount;
-	
-				int subGroupType = prefix [12] & 0xff;
-	
+
+				int subGroupType = prefix[12] & 0xff;
 				if (subGroupType == PluginGroup.WORLDSPACE) {
 					WRLDChildren children = new WRLDChildren(prefix);
 					children.loadAndIndex(in, pos, length);
 					pos += length;
-					WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);					
-				} else if (subGroupType == PluginGroup.FO76_147) {
-					//TODO: this appears to just be the sub of the WRLKD record???
-					System.out.println("umm... Group Type " + subGroupType + " not allowed as child of WRLD id " + wrldRecord.getFormID());
-					
-				
-					//https://forums.nexusmods.com/topic/7181276-made-edits-to-seventysixesm-by-hand-my-experience-so-far/
-					
-					//https://www.nexusmods.com/fallout76/mods/1487
-					
+					WRLDChildrenByFormId.put(wrldRecord.getFormID(), children);
+					dataLength -= length;
 				} else {
-					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD id " + wrldRecord.getFormID());
-					//not fixable from here, stop trying to load					
-					return;
+					// It seem the WRLD 60 for FO76 is NOT followed by a GRUP of it's children? It's just the next WRLD along formId 3987
+					// so the next record can be NOT a GRUP of children
+					// put the channel back to where it was for the next while loop 
+					pos -= prefix.length;
+					dataLength += headerByteCount;
 				}
-				dataLength -= length;
 			}
-
 		}
 
 		if (dataLength != 0) {

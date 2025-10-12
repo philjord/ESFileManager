@@ -40,8 +40,6 @@ public class PluginGroup extends PluginRecord {
 
 	public static final int				CELL_DISTANT		= 10;
 	
-	public static final int				FO76_147		= 147;//Fallout76 has this as a child of WRLD
-
 	protected byte						groupLabel[];
 
 	protected String					groupRecordType		= "UNKW";
@@ -80,7 +78,6 @@ public class PluginGroup extends PluginRecord {
 			case CELL_PERSISTENT: // '\b'
 			case CELL_TEMPORARY: // '\t'
 			case CELL_DISTANT: // '\n'
-			case FO76_147: //147
 				groupParentID = ESMByteConvert.extractInt(groupLabel, 0);
 				break;
 		}
@@ -139,6 +136,7 @@ public class PluginGroup extends PluginRecord {
 			dataLength -= headerByteCount;
 			String type = new String(prefix, 0, 4);
 			int length = ESMByteConvert.extractInt(prefix, 4);
+				
 
 			if (type.equals("GRUP")) {
 				length -= headerByteCount;
@@ -285,6 +283,11 @@ public class PluginGroup extends PluginRecord {
 		}
 		return text;
 	}
+	
+	
+	//Good FO76 utils with source code here
+	//https://forums.nexusmods.com/topic/7181276-made-edits-to-seventysixesm-by-hand-my-experience-so-far/	
+	//https://www.nexusmods.com/fallout76/mods/1487
 
 	private static String				groupDescriptions[][]		= {{"0HED", "Header"}, {"GRUP", "Form Group"},
 

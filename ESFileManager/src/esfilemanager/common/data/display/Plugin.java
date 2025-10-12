@@ -111,16 +111,17 @@ public abstract class Plugin {
 				throw new PluginException(pluginHeader.getName() + ": Top-level group type is not 0");
 
 			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= pluginHeader.getHeaderByteCount();
+			length -= pluginHeader.getHeaderByteCount();			
 
 			PluginGroup group = new PluginGroup(prefix);
+			
+			if(group.getGroupRecordType().equals("WRLD") ) {
+				System.out.println("I think I'm loading a WRLD about now? ");
+			}
+			
+			
 			group.load(in, pos, length);
 			pos += length;
-			
-			
-			if(group.getGroupRecordType().equals("WRLD") )
-				System.out.println("I think I'm loading a WRLD about now?");
-			
 			
 			// if requested we only index the wrld and cell records, as that is 99% of the file size
 			if (indexCellsOnly
