@@ -82,13 +82,13 @@ public class WRLDChildren extends PluginGroup {
 				int subGroupType = prefix [12] & 0xff;
 
 				if (subGroupType == PluginGroup.EXTERIOR_BLOCK) {
-					WRLDExtBlock wrldExtBlock = new WRLDExtBlock(prefix, pos, length);
+					WRLDExtBlock wrldExtBlock = new WRLDExtBlock(prefix, pos, length);//these are badness, nio length
 					WRLDExtBlockChildren.put(new Point(wrldExtBlock.x, wrldExtBlock.y), wrldExtBlock);
 					//we DO NOT index now, later
 					pos += length;
 				} else if (subGroupType == PluginGroup.CELL) {
 					wrldCellChildren = new PluginGroup(prefix);
-					wrldCellChildren.load(in, pos);
+					wrldCellChildren.load(in, pos, length);//these are bad ness
 					pos += length;
 				} else {
 					System.out.println("Group Type " + subGroupType + " not allowed as child of WRLD children group");

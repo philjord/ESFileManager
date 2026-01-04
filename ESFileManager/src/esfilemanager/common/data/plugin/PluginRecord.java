@@ -14,6 +14,24 @@ import esfilemanager.common.data.record.Subrecord;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
+/**
+ * So it turns out there's no comment here, but the file format needs to be here.
+ * 
+ * there is a pathway to get a plugingroup loaded with no length for the cell cheildren.
+ * 
+ * so the system must be changed to have ALL reocd gourp lengths loaded by the pluginrecord or the plugin group
+ *  and then pointer movement in the loader asking for teh length back again
+ *  
+ *  I notice there is that odd prefix minus issue appearing to be goign on about the place,m so be careful
+ *  
+ *  I need to restore my no length change then once allis working properly (test TES3!!) then try clenaing
+ *   right right right up
+ *   Notice the PluginGroup has a complex type tree below it so check them all.
+ *   
+ * 
+ * 
+ */
+
 public class PluginRecord extends Record {
 	
 	protected int		headerByteCount		= -1;
@@ -119,6 +137,31 @@ public class PluginRecord extends Record {
 				return new String(sr.getSubrecordData(), 0, sr.getSubrecordData().length - 1);
 		}
 		return "";
+	}
+	
+	/**
+	 * Does not touch file pointer at all, no sync on in required
+	 * @param in
+	 * @param position
+	 * @param recordLength
+	 * @throws PluginException
+	 * @throws IOException
+	 * @throws DataFormatException
+	 */
+	
+	//FIXME: why doesn't the method below make this redundant?
+	public void load(FileChannelRAF in, long position, int recordLength)
+			throws PluginException, IOException, DataFormatException {
+		FileChannel ch = in.getChannel();
+		this.filePositionPointer = position;
+		this.recordLength = recordLength;
+		recordData = new byte[this.recordLength];
+						
+		// use this non sync call for speed
+		int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
+		if (count != recordLength)
+			throw new PluginException(" : " + recordType + " record is incomplete");
+	
 	}
 	
 	/**

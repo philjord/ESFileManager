@@ -112,7 +112,8 @@ public class PluginGroup extends PluginRecord {
 
 		return dataSize;
 	}
-
+	
+	@Override
 	public void load(FileChannelRAF in, long pointer, int groupLength)
 			throws IOException, DataFormatException, PluginException {
 		//-1 means load all children groups that exist (only relevant to the "children" of CELLS groups
@@ -348,7 +349,7 @@ public class PluginGroup extends PluginRecord {
 		{"RCCT", "Recipe (Menus?)"}, {"RCPE", "Recipe"}, {"REPU", "Reputation"}, {"SLPD", "Sleeping Effect"},
 
 		// new in Skyrim
-		{"AACT", "Action"}, {"ARTO", "Art Object"}, {"ASTP", "Association Type"},																							// Not in SF
+		{"AACT", "Character Action"}, {"ARTO", "Visual FX (Armo?)"}, {"ASTP", "Association Type"},																							// Not in SF
 		{"CLFM", "Color"}, {"COLL", "Collision Layer"}, {"DLVW", "Dialog View"},																							// no entries FO76 // Not in SF
 		{"DLBR", "Dialog Branch"},																																			// TODO: exists in a groutp type 10 in FO4 check these 2 Not in FO76 // no entries SF
 		{"DUAL", "Dual Cast Data"},																																			// (possibly unused)// Not in FO4// Not in FO76// Not in SF
@@ -369,7 +370,7 @@ public class PluginGroup extends PluginRecord {
 
 		//Added from Fallout 4			
 		{"AECH", "Audio Effect Chain"},																																		// Not in SF
-		{"AMDL", "Weapon (AM?)"}, {"AORU", "Rules?"}, {"BNDS", "Cable Spline"}, {"CMPO", "Components (of Recipes)"},														// Not in SF
+		{"AMDL", "Weapon (AM?)"}, {"AORU", "AMbient Animal Rule"}, {"BNDS", "Cable Spline"}, {"CMPO", "Components (of Recipes)"},														// Not in SF
 		{"DFOB", "Interface somethings?"}, {"DMGT", "Damage Type"}, {"GDRY", "Sun Rays"},																					// no entries FO76// Not in SF
 		{"INNR", "Equipping?"}, {"KSSM", "Weapon something?"}, {"LAYR", "Location something?"}, {"LENS", "Lens Flare"},
 		{"MSWP", "Material Swaps"},																																			// Not in SF
@@ -387,7 +388,7 @@ public class PluginGroup extends PluginRecord {
 		{"CNDF", "Conditions (for effects/events)"}, {"COEN", "Texture Data (related to icons)"},																			// Not in SF
 		{"CPRD", "Reward"},																																					// Not in SF
 		{"CSEN", "CSEN?"},																																					// Not in SF
-		{"CURV", "Links to json files?"}, {"DCGF", "DCGF?"},																												// Not in SF
+		{"CURV", "Curves (as in Alphas)"}, {"DCGF", "DCGF?"},																												// Not in SF
 		{"DIST", "District"},																																				// Not in SF
 		{"ECAT", "Emote Category"},																																			// Not in SF
 		{"EMOT", "Player Emote"},																																			// Not in SF
@@ -405,15 +406,15 @@ public class PluginGroup extends PluginRecord {
 		{"SECH", "Marker?"}, {"STHD", "Hunger/Thirst Threshold"},																											// Not in SF
 		{"STMP", "STMP? model data?"}, {"STND", "Node data?"},																												// Not in SF
 		{"UTIL", "Atomic Exchange data?"},																																	// Not in SF
-		{"VOLI", "Weather data?"}, {"WAVE", "Wave data (as in wave of enemies?)"},																							// Not in SF
+		{"VOLI", "Weather data?"}, {"WAVE", "Wave Data (as in wave of enemies?)"},																							// Not in SF
 		{"WSPR", "Permissions?"},																																			// Not in SF
 
 		//Added from Starfield
 		{"AFFE", "Action Choice"}, {"AMBS", "Ambience Set"}, {"AOPF", "Audio Occlusion Primative"},
-		{"AOPS", "Laser Sight?"}, {"ATMO", "Atmosphere"}, {"AVMD", "Locamotion Data?"}, {"BIOM", "Biome"},
-		{"BMMO", "Biome Marker"}, {"BMOD", "Animation Data?"}, {"BODY", "BODY?"}, {"CLDF", "Clouds"},
-		{"CUR3", "Water Transparency"}, {"EFSQ", "Effects data?"}, {"FFKW", "Model Data?"}, {"FOGV", "Fog Data"},
-		{"FORC", "Wind Force"}, {"GBFM", "Ship Templates?"}, {"GBFT", "GBFT?"}, {"IRES", "IRES?"}, {"LMSW", "Swaps?"},
+		{"AOPS", "Optical Sight"}, {"ATMO", "Atmosphere"}, {"AVMD", "AA Animation (Ambient Animal)"}, {"BIOM", "Biome"},
+		{"BMMO", "Biome Marker"}, {"BMOD", "BM Animation"}, {"BODY", "BODY?"}, {"CLDF", "Clouds"},
+		{"CUR3", "Water PBR"}, {"EFSQ", "Effects data?"}, {"FFKW", "Architecture Keywords"}, {"FOGV", "Fog Data"},
+		{"FORC", "Wind Force"}, {"GBFM", "Ship Templates?"}, {"GBFT", "Templates of some sort?"}, {"IRES", "IRES?"}, {"LMSW", "Swaps?"},
 		{"LVLB", "Leveled Ship?"}, {"LVSC", "LVSC?"}, {"MAAM", "Melee Data?"}, {"MRPH", "Morphables Data"},
 		{"MTPT", "Material Data?"}, {"OSWP", "Swap Data?"}, {"PCBN", "PCBN?"}, {"PCCN", "PackIn Data?"},
 		{"PCMT", "PCMT?"}, {"PDCL", "PDCL?"}, {"PNDT", "Planet Data"}, {"PSDC", "PSDC?"}, {"PTST", "Pattern Style"},
