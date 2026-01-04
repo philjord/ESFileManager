@@ -51,8 +51,9 @@ public class CELLPluginGroup extends PluginGroup {
 		// memory saving mechanism  https://www.baeldung.com/java-string-pool
 		recordType = new String(prefix, 0, 4).intern();
 		recordSize = ESMByteConvert.extractInt(prefix, 4);
-		unknownInt = ESMByteConvert.extractInt(prefix, 8);
-		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
+		internalVersion = ESMByteConvert.extractShort(prefix, 8);
+		unknownShort = ESMByteConvert.extractShort(prefix, 10);
+		recordFlags = ESMByteConvert.extractInt(prefix, 12);
 
 		//we don't allocate or read the full record data now, we just need the first 2
 		//recordData = new byte[recordSize];

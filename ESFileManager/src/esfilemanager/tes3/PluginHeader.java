@@ -43,8 +43,9 @@ public class PluginHeader extends PluginRecord {
 		// memory saving mechanism  https://www.baeldung.com/java-string-pool
 		recordType = new String(prefix, 0, 4).intern();
 		recordSize = ESMByteConvert.extractInt(prefix, 4);
-		unknownInt = ESMByteConvert.extractInt(prefix, 8);
-		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
+		internalVersion = ESMByteConvert.extractShort(prefix, 8);
+		unknownShort = ESMByteConvert.extractShort(prefix, 10);
+		recordFlags = ESMByteConvert.extractInt(prefix, 12);
 
 		super.load(in, pos);
 		getSubrecords();// force load of subs

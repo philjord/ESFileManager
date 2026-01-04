@@ -110,13 +110,10 @@ public abstract class Plugin {
 			if (prefix [12] != 0)
 				throw new PluginException(pluginHeader.getName() + ": Top-level group type is not 0");
 
-			int length = ESMByteConvert.extractInt(prefix, 4);
-			length -= pluginHeader.getHeaderByteCount();			
 
-			PluginGroup group = new PluginGroup(prefix);
-			
-			group.load(in, pos, length);
-			pos += length;
+			PluginGroup group = new PluginGroup(prefix);			
+			group.load(in, pos);
+			pos += group.getRecordDataLen();
 			
 			// if requested we only index the wrld and cell records, as that is 99% of the file size
 			if (indexCellsOnly

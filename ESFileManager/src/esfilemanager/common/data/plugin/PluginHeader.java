@@ -154,7 +154,7 @@ public class PluginHeader extends PluginRecord {
 		}
 	
 		// are we dealing with ESM/ESP type files?
-		if(fileFormat == FILE_FORMAT.TES3 || (fileFormat == FILE_FORMAT.TES4 && filePriority != FILE_PRIORITY.SAVE	) ) {		
+		if(fileFormat == FILE_FORMAT.TES3 || (fileFormat == FILE_FORMAT.TES4 && filePriority != FILE_PRIORITY.SAVE)) {		
 			byte[] tesRecordData = new byte[tesRecordLen];
 			count = ch.read(ByteBuffer.wrap(tesRecordData), pos);	
 			pos += tesRecordLen;
@@ -162,16 +162,17 @@ public class PluginHeader extends PluginRecord {
 			recordType = new String(tesRecordData, 0, 4).intern();
 			int headerLength = ESMByteConvert.extractInt(tesRecordData, 4);
 			if(tesRecordLen == 20) {
-				recordFlags1 = ESMByteConvert.extractInt(tesRecordData, 8);
+				recordFlags = ESMByteConvert.extractInt(tesRecordData, 8);
 			} else if(tesRecordLen == 24) {
-				unknownInt = ESMByteConvert.extractInt(tesRecordData, 8);
-				recordFlags1 = ESMByteConvert.extractInt(tesRecordData, 12);
+				internalVersion = ESMByteConvert.extractShort(tesRecordData, 8);
+				unknownShort = ESMByteConvert.extractShort(tesRecordData, 10);
+				recordFlags = ESMByteConvert.extractInt(tesRecordData, 12);
 			}		
 			
 			subrecordList = new ArrayList<Subrecord>();
 			
 			if (fileFormat == FILE_FORMAT.TES4) {			
-				filePriority = (recordFlags1 & 0x01) != 0 ? FILE_PRIORITY.MASTER : FILE_PRIORITY.PLUGIN;
+				filePriority = (recordFlags & 0x01) != 0 ? FILE_PRIORITY.MASTER : FILE_PRIORITY.PLUGIN;
 				
 				count += readTES4(ch, pos, headerLength);
 			} else  if (fileFormat == FILE_FORMAT.TES3) {				

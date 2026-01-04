@@ -28,12 +28,12 @@ public class DIALTopGroup extends PluginGroup {
 			ret.add(DIALByFormID.get(DIALByFormID.keyAt(i)));
 	}
 	
-	public void loadAndIndex(String fileName, FileChannelRAF in, long pos, int groupLength) throws IOException, PluginException {
+	public void loadAndIndex(String fileName, FileChannelRAF in, long pos) throws IOException, PluginException {
 		
 		FileChannel ch = in.getChannel();
 		
 		DIALByFormID = new SparseArray<FormToFilePointer>();
-		int dataLength = groupLength;
+		int dataLength = this.getRecordDataLen();
 		byte prefix[] = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		

@@ -78,34 +78,31 @@ public abstract class Master implements IMaster {
 		return idToFormMap;
 	}
 
-	private PluginRecord getRecordFromFile(long pointer) throws PluginException, IOException, DataFormatException {
+	private PluginRecord getRecordFromFile(long pos) throws PluginException, IOException, DataFormatException {
 		FileChannel ch = in.getChannel();
 		// use this non sync call for speed
 		byte[] prefix = new byte[headerByteCount];
 		ByteBuffer bb = ByteBuffer.wrap(prefix);
-		int count = ch.read(bb, pointer);
+		int count = ch.read(bb, pos);
 		if (count != headerByteCount)
 			throw new PluginException(" : " + this + " record header is incomplete");
 		
 		PluginRecord cellRecord = new PluginRecord(prefix);
-		cellRecord.load(in, pointer + headerByteCount);
+		cellRecord.load(in, pos + headerByteCount);
 
 		return cellRecord;				
 	}
 
-	private PluginGroup getChildrenFromFile(long pointer) throws PluginException, IOException, DataFormatException {
+	private PluginGroup getChildrenFromFile(long pos) throws PluginException, IOException, DataFormatException {
 		FileChannel ch = in.getChannel();
 		// use this non sync call for speed
 		byte[] prefix = new byte[headerByteCount];
-		int count = ch.read(ByteBuffer.wrap(prefix), pointer);	
+		int count = ch.read(ByteBuffer.wrap(prefix), pos);	
 		if (count != headerByteCount)
 			throw new PluginException(" : " + this + " record header is incomplete");
 		
-		int length = ESMByteConvert.extractInt(prefix, 4);
-		length -= headerByteCount;
 		PluginGroup childrenGroup = new PluginGroup(prefix);
-
-		childrenGroup.load(in, pointer + headerByteCount, length, -1);
+		childrenGroup.load(in, pos + headerByteCount, -1);
 
 		return childrenGroup;
 	}
@@ -129,11 +126,8 @@ public abstract class Master implements IMaster {
 		if (count != headerByteCount)
 			throw new PluginException(" : " + this + " record header is incomplete");
 		
-		int length = ESMByteConvert.extractInt(prefix, 4);
-		length -= headerByteCount;
 		PluginGroup childrenGroup = new PluginGroup(prefix);
-
-		childrenGroup.load(in, pos, length, childGroupType);
+		childrenGroup.load(in, pos, childGroupType);
 			 
 		// Now pull out the right type like the persister guy and return it
 		if (childrenGroup.getRecordList() != null) {
@@ -363,15 +357,15 @@ public abstract class Master implements IMaster {
 
 				if (groupRecordType.equals("WRLD")) {
 					wRLDTopGroup = new WRLDTopGroup(prefix);
-					wRLDTopGroup.loadAndIndex(masterHeader.getName(), in, pos, groupLength);
+					wRLDTopGroup.loadAndIndex(masterHeader.getName(), in, pos);
 					pos += groupLength;
 				} else if (groupRecordType.equals("CELL")) {
 					interiorCELLTopGroup = new InteriorCELLTopGroup(prefix);
-					interiorCELLTopGroup.loadAndIndex(masterHeader.getName(), in, pos, groupLength);
+					interiorCELLTopGroup.loadAndIndex(masterHeader.getName(), in, pos);
 					pos += groupLength;
 				} else if (groupRecordType.equals("DIAL")) {
 					dIALTopGroup = new DIALTopGroup(prefix);
-					dIALTopGroup.loadAndIndex(masterHeader.getName(), in, pos, groupLength);
+					dIALTopGroup.loadAndIndex(masterHeader.getName(), in, pos);
 					pos += groupLength;
 				} else {
 					while (groupLength >= headerByteCount) {

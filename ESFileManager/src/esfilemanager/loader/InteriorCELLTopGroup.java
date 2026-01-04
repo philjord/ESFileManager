@@ -66,12 +66,12 @@ public class InteriorCELLTopGroup extends PluginGroup {
 	}
 
 		
-	public void loadAndIndex(String fileName, FileChannelRAF in, long pos, int groupLength) throws IOException, PluginException {
+	public void loadAndIndex(String fileName, FileChannelRAF in, long pos) throws IOException, PluginException {
 
 		this.in = in;
 		FileChannel ch = in.getChannel();
 		
-		int dataLength = groupLength;
+		int dataLength = this.getRecordDataLen();
 		byte prefix[] = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		
@@ -90,7 +90,7 @@ public class InteriorCELLTopGroup extends PluginGroup {
 				int prefixGroupType = prefix [12] & 0xff;
 
 				if (prefixGroupType == PluginGroup.INTERIOR_BLOCK) {
-					InteriorCELLBlock cellBlock = new InteriorCELLBlock(prefix, pos, length);
+					InteriorCELLBlock cellBlock = new InteriorCELLBlock(prefix, pos);
 					interiorCELLBlocks [cellBlock.lastDigit] = cellBlock;
 
 					//children.loadAndIndex(fileName, in, length, interiorCELLByFormId);

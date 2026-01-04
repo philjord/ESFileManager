@@ -15,15 +15,13 @@ import tools.io.FileChannelRAF;
 public class InteriorCELLSubblock extends PluginGroup {
 
 	private long							fileOffset;
-	private int								length;
 	public int								secondLastDigit;
 
 	private SparseArray<FormToFilePointer>	CELLByFormID	= null;
 
-	public InteriorCELLSubblock(byte[] prefix, long fileOffset, int length) {
+	public InteriorCELLSubblock(byte[] prefix, long fileOffset) {
 		super(prefix);
 		this.fileOffset = fileOffset;
-		this.length = length;
 
 		secondLastDigit = ESMByteConvert.extractInt(groupLabel, 0);
 	}
@@ -54,7 +52,7 @@ public class InteriorCELLSubblock extends PluginGroup {
 		filePositionPointer = fileOffset;
 		long pos = filePositionPointer;
 		FileChannel ch = in.getChannel();
-		int dataLength = length;
+		int dataLength = this.getRecordDataLen();
 		byte[] prefix = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		

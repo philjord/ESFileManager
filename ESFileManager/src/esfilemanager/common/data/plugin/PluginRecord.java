@@ -15,7 +15,7 @@ import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
 /**
- * So it turns out there's no comment here, but the file format needs to be here.
+ * https://en.m.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
  * 
  * there is a pathway to get a plugingroup loaded with no length for the cell cheildren.
  * 
@@ -35,8 +35,6 @@ import tools.io.FileChannelRAF;
 public class PluginRecord extends Record {
 	
 	protected int		headerByteCount		= -1;
-
-	protected int		unknownInt;
 
 	protected byte[]	recordData;
 	
@@ -60,12 +58,16 @@ public class PluginRecord extends Record {
 			headerByteCount = prefix.length;
 			// memory saving mechanism  https://www.baeldung.com/java-string-pool
 			recordType = new String(prefix, 0, 4).intern();
-			recordLength = ESMByteConvert.extractInt(prefix, 4);
-			formID = ESMByteConvert.extractInt3(prefix, 12);
-			recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
-			recordFlags2 = ESMByteConvert.extractInt(prefix, 16);
-			if (prefix.length == 24)
-				unknownInt = ESMByteConvert.extractInt(prefix, 20);
+			recordLength = ESMByteConvert.extractInt(prefix, 4);			
+			recordFlags = ESMByteConvert.extractInt(prefix, 8);
+			//byte masterID = ESMByteConvert.extractByte(prefix, 9);
+			formID = ESMByteConvert.extractInt3(prefix, 12);			
+			timeStamp = ESMByteConvert.extractShort(prefix, 16);
+			versionControl = ESMByteConvert.extractShort(prefix, 18);
+			if (prefix.length == 24) {
+				internalVersion = ESMByteConvert.extractShort(prefix, 20);
+				unknownShort = ESMByteConvert.extractShort(prefix, 22);
+			}
 		}
 	}
 	
@@ -99,10 +101,13 @@ public class PluginRecord extends Record {
 				recordType = new String(prefix, 0, 4).intern();
 				recordLength = ESMByteConvert.extractInt(prefix, 4);
 				formID = ESMByteConvert.extractInt3(prefix, 12);
-				recordFlags1 = ESMByteConvert.extractInt(prefix, 8);
-				recordFlags2 = ESMByteConvert.extractInt(prefix, 16);
-				if (prefix.length == 24)
-					unknownInt = ESMByteConvert.extractInt(prefix, 20);
+				recordFlags = ESMByteConvert.extractInt(prefix, 8);
+				timeStamp = ESMByteConvert.extractShort(prefix, 16);
+				versionControl = ESMByteConvert.extractShort(prefix, 18);
+				if (prefix.length == 24) {
+					internalVersion = ESMByteConvert.extractShort(prefix, 20);
+					unknownShort = ESMByteConvert.extractShort(prefix, 22);
+				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -117,18 +122,8 @@ public class PluginRecord extends Record {
 		// memory saving mechanism  https://www.baeldung.com/java-string-pool
 		this.recordType = recordType.intern();
 		this.formID = formID;
-		this.recordFlags1 = 0;
-		this.recordFlags2 = 0;
+		this.recordFlags = 0;
 		subrecordList = new ArrayList<Subrecord>();
-	}
-
-	protected PluginRecord(String recordType, byte prefix[]) {
-		this.recordType = recordType;
-		if (prefix.length != 20 && prefix.length != 24) {
-			throw new IllegalArgumentException("The record prefix is not 20 or 24 bytes as required");
-		} else {
-			headerByteCount = prefix.length;
-		}
 	}
 
 	public String getEditorID() {
@@ -137,31 +132,6 @@ public class PluginRecord extends Record {
 				return new String(sr.getSubrecordData(), 0, sr.getSubrecordData().length - 1);
 		}
 		return "";
-	}
-	
-	/**
-	 * Does not touch file pointer at all, no sync on in required
-	 * @param in
-	 * @param position
-	 * @param recordLength
-	 * @throws PluginException
-	 * @throws IOException
-	 * @throws DataFormatException
-	 */
-	
-	//FIXME: why doesn't the method below make this redundant?
-	public void load(FileChannelRAF in, long position, int recordLength)
-			throws PluginException, IOException, DataFormatException {
-		FileChannel ch = in.getChannel();
-		this.filePositionPointer = position;
-		this.recordLength = recordLength;
-		recordData = new byte[this.recordLength];
-						
-		// use this non sync call for speed
-		int count = ch.read(ByteBuffer.wrap(recordData), filePositionPointer);
-		if (count != recordLength)
-			throw new PluginException(" : " + recordType + " record is incomplete");
-	
 	}
 	
 	/**
@@ -283,9 +253,6 @@ public class PluginRecord extends Record {
 		return filePositionPointer;
 	}
 
-	public int getUnknownInt() {
-		return unknownInt;
-	}
 	
 	public int getRecordDataLen() {
 		return recordLength;

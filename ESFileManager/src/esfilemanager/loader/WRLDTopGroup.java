@@ -32,12 +32,12 @@ public class WRLDTopGroup extends PluginGroup {
 		return null;
 	}
 
-	public void loadAndIndex(String fileName, FileChannelRAF in, long pos, int groupLength)
+	public void loadAndIndex(String fileName, FileChannelRAF in, long pos)
 			throws IOException, DataFormatException, PluginException {
 
 		FileChannel ch = in.getChannel();
 
-		int dataLength = groupLength;
+		int dataLength = this.getRecordDataLen();
 		byte prefix[] = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 

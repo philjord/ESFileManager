@@ -26,8 +26,9 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 		// memory saving mechanism  https://www.baeldung.com/java-string-pool
 		recordType = new String(prefix, 0, 4).intern();
 		recordSize = ESMByteConvert.extractInt(prefix, 4);
-		unknownInt = ESMByteConvert.extractInt(prefix, 8);
-		recordFlags1 = ESMByteConvert.extractInt(prefix, 12);
+		internalVersion = ESMByteConvert.extractShort(prefix, 8);
+		unknownShort = ESMByteConvert.extractShort(prefix, 10);
+		recordFlags = ESMByteConvert.extractInt(prefix, 12);
 	}
 
 	/**
@@ -176,15 +177,6 @@ public class PluginRecord extends esfilemanager.common.data.plugin.PluginRecord 
 	@Override
 	public boolean isCompressed() {
 		return false;
-	}
-
-	/**
-	 * just a dummy flags
-	 * @see esfilemanager.common.data.plugin.PluginRecord#getRecordFlags2()
-	 */
-	@Override
-	public int getRecordFlags2() {
-		return 0;
 	}
 
 	public static String[]			edidRecords			= new String[] {"GMST", "GLOB", "CLAS", "FACT", "RACE", "SOUN",			 

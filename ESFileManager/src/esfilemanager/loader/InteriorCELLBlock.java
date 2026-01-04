@@ -12,15 +12,13 @@ import tools.io.FileChannelRAF;
 
 public class InteriorCELLBlock extends PluginGroup {
 	private long					fileOffset;
-	private int						length;
 	public int						lastDigit;
 
 	private InteriorCELLSubblock[]	interiorCELLSubblocks	= null;
 
-	public InteriorCELLBlock(byte[] prefix, long fileOffset, int length) {
+	public InteriorCELLBlock(byte[] prefix, long fileOffset) {
 		super(prefix);
 		this.fileOffset = fileOffset;
-		this.length = length;
 
 		lastDigit = ESMByteConvert.extractInt(groupLabel, 0);
 	}
@@ -59,7 +57,7 @@ public class InteriorCELLBlock extends PluginGroup {
 		filePositionPointer = fileOffset;
 		long pos = filePositionPointer;
 		FileChannel ch = in.getChannel();
-		int dataLength = length;
+		int dataLength = this.getRecordDataLen();
 		byte[] prefix = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		
@@ -78,7 +76,7 @@ public class InteriorCELLBlock extends PluginGroup {
 				int subGroupType = prefix [12] & 0xff;
 
 				if (subGroupType == PluginGroup.INTERIOR_SUBBLOCK) {
-					InteriorCELLSubblock subblock = new InteriorCELLSubblock(prefix, pos, length);
+					InteriorCELLSubblock subblock = new InteriorCELLSubblock(prefix, pos);
 					interiorCELLSubblocks [subblock.secondLastDigit] = subblock;
 
 					//children.loadAndIndex(fileName, in, length, interiorCELLByFormId);

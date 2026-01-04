@@ -2,153 +2,133 @@ package esfilemanager.common.data.record;
 
 import java.util.List;
 
-public class Record
-{
-	protected String recordType;
+/**
+ * https://en.m.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Groups
+ */
+public class Record {
+	protected String			recordType;
 
-	protected int formID;
+	protected int				formID;
 
-	protected int recordFlags1;
+	protected int				recordFlags;
 
-	protected int recordFlags2; // this is described as version id in the https://en.uesp.net/wiki/Oblivion_Mod:Mod_File_Format
+	// this is described as time stampe and version id in the https://en.uesp.net/wiki/Oblivion_Mod:Mod_File_Format
+	// and https://en.m.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Groups 
+	protected int				timeStamp = 0;
+	protected int				versionControl = 0;
 
-	protected boolean updated = false;
+	//https://en.m.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Groups has it as a 16 of version control, and a 16 of version format
+	protected int				internalVersion	= 0;	// only in 24 byte skyrim+
+	protected int				unknownShort	= 0;
 
-	protected List<Subrecord> subrecordList;
+	protected boolean			updated			= false;
 
-	public Record()
-	{
+	protected List<Subrecord>	subrecordList;
+
+	public Record() {
 	}
 
-	public Record(String recordType, int formID, int cellFormID, int recordFlags1, int recordFlags2)
-	{
-		// memory saving mechanism  https://www.baeldung.com/java-string-pool
-		this.recordType = recordType.intern();
-		this.formID = formID;
-		this.cellFormID = cellFormID;
-		this.recordFlags1 = recordFlags1;
-		this.recordFlags2 = recordFlags2;
+	public boolean isDeleted() {
+		return (recordFlags & 0x20) != 0;
 	}
 
-	public Record(String recordType, int formID, int cellFormID, int recordFlags1, int recordFlags2, List<Subrecord> subs)//, byte[] recordData)
-	{
-		this(recordType, formID, cellFormID, recordFlags1, recordFlags2);
-		subrecordList = subs;
+	public boolean isIgnored() {
+		return (recordFlags & 0x1000) != 0;
 	}
 
-	public boolean isDeleted()
-	{
-		return (recordFlags1 & 0x20) != 0;
+	public boolean isCompressed() {
+		return (recordFlags & 0x40000) != 0;
 	}
 
-	public boolean isIgnored()
-	{
-		return (recordFlags1 & 0x1000) != 0;
-	}
-	
-	public boolean isCompressed()
-	{
-		return (recordFlags1 & 0x40000) != 0;
-	}
-
-	public String getRecordType()
-	{
+	public String getRecordType() {
 		return recordType;
 	}
 
-	public int getFormID()
-	{
+	public int getFormID() {
 		return formID;
 	}
 
 	@Override
-	public String toString()
-	{
-		return recordType + " record: " + formID + " " + (isIgnored() ? "(Ignore) " : "") + (isDeleted() ? "(Deleted) " : "");
+	public String toString() {
+		return recordType	+ " record: " + formID + " " + (isIgnored() ? "(Ignore) " : "")
+				+ (isDeleted() ? "(Deleted) " : "");
 
 	}
 
-	public void displaySubs()
-	{
+	public void displaySubs() {
 		List<Subrecord> subrecords = getSubrecords();
-		for (Subrecord subrec : subrecords)
-		{
+		for (Subrecord subrec : subrecords) {
 			System.out.println("Subrecord " + subrec);
 		}
 	}
 
-	public int getRecordFlags1()
-	{
-		return recordFlags1;
+	public int getRecordFlags() {
+		return recordFlags;
 	}
 
-	public int getRecordFlags2()
-	{
-		return recordFlags2;
+	public int getTimeStamp() {
+		return timeStamp;
 	}
 
-	public List<Subrecord> getSubrecords()
-	{
+	public int geVersionControl() {
+		return versionControl;
+	}
+
+	public int getInternalVersion() {
+		return internalVersion;
+	}
+
+	public List<Subrecord> getSubrecords() {
 		return subrecordList;
 	}
 
-	public void addSubrecord(Subrecord subrecord)
-	{
+	public void addSubrecord(Subrecord subrecord) {
 		subrecordList.add(subrecord);
 		updated = true;
 	}
 
-	public void setFormID(int i)
-	{
+	public void setFormID(int i) {
 		formID = i;
 		updated = true;
 	}
 
-	public void updateFrom(Record record)
-	{
+	public void updateFrom(Record record) {
 		subrecordList.clear();
 		subrecordList.addAll(record.getSubrecords());
 		updated = true;
 	}
 
 	/**
-	 * Currently this only overrides the first matching subrecord type and breaks, for multiple entries
-	 * like CNTOs there needs to be a much better system
+	 * Currently this only overrides the first matching subrecord type and breaks, for multiple entries like CNTOs there
+	 * needs to be a much better system
 	 * @param subrecord
 	 */
-	public void updateSubrecord(Subrecord newSubrecord)
-	{
-		for (int i = 0; i < subrecordList.size(); i++)
-		{
+	public void updateSubrecord(Subrecord newSubrecord) {
+		for (int i = 0; i < subrecordList.size(); i++) {
 			Subrecord sub = subrecordList.get(i);
-			if (sub.getSubrecordType().equals(newSubrecord.getSubrecordType()))
-			{
+			if (sub.getSubrecordType().equals(newSubrecord.getSubrecordType())) {
 				sub.setSubrecordData(newSubrecord.getSubrecordData());
 			}
 		}
 		updated = true;
 	}
 
-	public boolean isUpdated()
-	{
+	public boolean isUpdated() {
 		return updated;
 	}
 
-	public void clearUpdated()
-	{
+	public void clearUpdated() {
 		updated = false;
 	}
 
 	//ONLY for ESMConverter.ConverterFO3
 	private int cellFormID = -1;
 
-	public int getESMConverterCellFormID()
-	{
+	public int getESMConverterCellFormID() {
 		return cellFormID;
 	}
 
-	public void setESMConverterCellFormID(int i)
-	{
+	public void setESMConverterCellFormID(int i) {
 		cellFormID = i;
 	}
 

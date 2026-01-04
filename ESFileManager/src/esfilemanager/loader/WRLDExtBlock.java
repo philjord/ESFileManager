@@ -14,16 +14,15 @@ import tools.io.FileChannelRAF;
 
 public class WRLDExtBlock extends PluginGroup {
 	private long							fileOffset;
-	private int								length;
 	public int								x;
 	public int								y;
 
 	private HashMap<Point, WRLDExtSubblock>	WRLDExtSubblockChildren	= null;
 
-	public WRLDExtBlock(byte[] prefix, long fileOffset, int length) {
+	public WRLDExtBlock(byte[] prefix, long fileOffset) {
 		super(prefix);
 		this.fileOffset = fileOffset;
-		this.length = length;
+
 
 		int intValue = ESMByteConvert.extractInt(groupLabel, 0);
 		x = intValue >>> 16;
@@ -58,7 +57,7 @@ public class WRLDExtBlock extends PluginGroup {
 		filePositionPointer = fileOffset;
 		long pos = filePositionPointer;
 		FileChannel ch = in.getChannel();
-		int dataLength = length;
+		int dataLength = this.getRecordDataLen();
 		byte[] prefix = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 

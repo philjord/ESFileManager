@@ -18,7 +18,6 @@ import tools.io.FileChannelRAF;
 
 public class WRLDExtSubblock extends PluginGroup {
 	public long							fileOffset;
-	public int							length;
 	public int							x;
 	public int							y;
 
@@ -27,7 +26,6 @@ public class WRLDExtSubblock extends PluginGroup {
 	public WRLDExtSubblock(byte[] prefix, long fileOffset, int length) {
 		super(prefix);
 		this.fileOffset = fileOffset;
-		this.length = length;
 
 		int intValue = ESMByteConvert.extractInt(groupLabel, 0);
 		x = intValue >>> 16;
@@ -55,7 +53,7 @@ public class WRLDExtSubblock extends PluginGroup {
 		filePositionPointer = fileOffset;
 		long pos = filePositionPointer;
 		FileChannel ch = in.getChannel();
-		int dataLength = length;
+		int dataLength = this.getRecordDataLen();
 		byte[] prefix = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 		

@@ -16,6 +16,10 @@ import esfilemanager.common.data.record.Record;
 import tools.io.ESMByteConvert;
 import tools.io.FileChannelRAF;
 
+/** https://en.m.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Groups
+ * 
+ * need to make these load without external reference to length
+ */
 public class PluginGroup extends PluginRecord {
 
 	public static final int				TOP					= 0;
@@ -59,8 +63,14 @@ public class PluginGroup extends PluginRecord {
 
 	}
 
-	public PluginGroup(byte prefix[]) {
-		super("GRUP", prefix);
+	public PluginGroup(byte prefix[]) {		
+		if (prefix.length != 20 && prefix.length != 24) {
+			throw new IllegalArgumentException("The record prefix is not 20 or 24 bytes as required");
+		} else {
+			headerByteCount = prefix.length;
+		}
+		this.recordType = "GRUP";
+		recordLength = ESMByteConvert.extractInt(prefix, 4) - headerByteCount; //notice differs from PluginRecord
 		groupLabel = new byte[4];
 		System.arraycopy(prefix, 8, groupLabel, 0, 4);
 		groupType = prefix[12] & 0xff;
@@ -113,16 +123,18 @@ public class PluginGroup extends PluginRecord {
 		return dataSize;
 	}
 	
+
 	@Override
-	public void load(FileChannelRAF in, long pointer, int groupLength)
-			throws IOException, DataFormatException, PluginException {
+	public void load(FileChannelRAF in, long pos)
+			throws IOException, PluginException {
 		//-1 means load all children groups that exist (only relevant to the "children" of CELLS groups
-		load(in, pointer, groupLength, -1);
+		load(in, pos, -1);
 	}
 
-	public void load(FileChannelRAF in, long pos, int groupLength, int childGroupType)
-			throws IOException, DataFormatException, PluginException {
-		int dataLength = groupLength;
+
+	public void load(FileChannelRAF in, long pos, int childGroupType)
+			throws IOException, PluginException {
+		int dataLength = this.getRecordDataLen();
 		byte prefix[] = new byte[headerByteCount];
 		ByteBuffer pbb = ByteBuffer.wrap(prefix); //reused to avoid allocation of object, all bytes of array are refilled or error thrown
 
@@ -136,27 +148,24 @@ public class PluginGroup extends PluginRecord {
 
 			dataLength -= headerByteCount;
 			String type = new String(prefix, 0, 4);
-			int length = ESMByteConvert.extractInt(prefix, 4);
-				
-
+			
+			PluginRecord r;
+			
 			if (type.equals("GRUP")) {
-				length -= headerByteCount;
-				PluginGroup pg = new PluginGroup(prefix);
-				
+				PluginGroup pg = new PluginGroup(prefix);				
 				if (childGroupType == -1 || pg.getGroupType() == childGroupType) {
-					pg.load(in, pos, length);
+					pg.load(in, pos);
 					recordList.add(pg);
 				}
-				// move the pos forward even if we don't load it
-				pos += length;
+				r = pg;				
 			} else {
-				PluginRecord record = new PluginRecord(prefix);
-				record.load(in, pos);
-				pos += length;
-				recordList.add(record);
+				r = new PluginRecord(prefix);
+				r.load(in, pos);
+				recordList.add(r);
 			}
-
-			dataLength -= length;
+			
+			pos += r.getRecordDataLen();
+			dataLength -= r.getRecordDataLen();
 		}
 
 		if (dataLength != 0) {
