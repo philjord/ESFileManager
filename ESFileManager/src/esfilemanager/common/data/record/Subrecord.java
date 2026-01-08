@@ -60,4 +60,12 @@ public class Subrecord
 	{
 		return subrecordType + " subrecord";
 	}
+
+	/** 
+	 * DO NOT USE!! for analyzer only!
+	 * @param type
+	 */
+	public void setSubrecordType(String type) {
+		subrecordType = type;		
+	}
 }

@@ -9,6 +9,7 @@ public class Record {
 	protected String			recordType;
 
 	protected int				formID;
+	protected int				masterID;
 
 	protected int				recordFlags;
 
@@ -65,7 +66,11 @@ public class Record {
 	public int getRecordFlags() {
 		return recordFlags;
 	}
-
+	
+	public int getMasterID() {
+		return masterID;
+	}
+	
 	public int getTimeStamp() {
 		return timeStamp;
 	}
@@ -77,6 +82,11 @@ public class Record {
 	public int getInternalVersion() {
 		return internalVersion;
 	}
+	
+	public int getUnknownShort() {
+		return unknownShort;
+	}
+	
 
 	public List<Subrecord> getSubrecords() {
 		return subrecordList;

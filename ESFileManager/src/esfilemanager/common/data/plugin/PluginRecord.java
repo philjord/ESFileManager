@@ -16,19 +16,11 @@ import tools.io.FileChannelRAF;
 
 /**
  * https://en.m.uesp.net/wiki/Skyrim_Mod:Mod_File_Format#Records
- * 
- * there is a pathway to get a plugingroup loaded with no length for the cell cheildren.
- * 
- * so the system must be changed to have ALL reocd gourp lengths loaded by the pluginrecord or the plugin group
- *  and then pointer movement in the loader asking for teh length back again
  *  
  *  I notice there is that odd prefix minus issue appearing to be goign on about the place,m so be careful
- *  
- *  I need to restore my no length change then once allis working properly (test TES3!!) then try clenaing
- *   right right right up
- *   Notice the PluginGroup has a complex type tree below it so check them all.
- *   
- * 
+ *  lots of obliv and morrwind record sub info here
+ *   https://gitlab.com/OpenMW/openmw/-/blob/master/apps/esmtool/record.cpp
+ * https://gitlab.com/OpenMW/openmw/-/tree/master/components/esm4
  * 
  */
 
@@ -60,8 +52,8 @@ public class PluginRecord extends Record {
 			recordType = new String(prefix, 0, 4).intern();
 			recordLength = ESMByteConvert.extractInt(prefix, 4);			
 			recordFlags = ESMByteConvert.extractInt(prefix, 8);
-			//byte masterID = ESMByteConvert.extractByte(prefix, 9);
-			formID = ESMByteConvert.extractInt3(prefix, 12);			
+			formID = ESMByteConvert.extractInt3(prefix, 12);		
+			masterID = ESMByteConvert.extractByte(prefix, 15);
 			timeStamp = ESMByteConvert.extractShort(prefix, 16);
 			versionControl = ESMByteConvert.extractShort(prefix, 18);
 			if (prefix.length == 24) {
@@ -71,6 +63,7 @@ public class PluginRecord extends Record {
 		}
 	}
 	
+
 	/**
 	 * non sync required load from filechannel
 	 * @param in
@@ -257,5 +250,7 @@ public class PluginRecord extends Record {
 	public int getRecordDataLen() {
 		return recordLength;
 	}
+
+
 
 }

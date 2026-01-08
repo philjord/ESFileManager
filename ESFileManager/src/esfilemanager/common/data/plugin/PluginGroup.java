@@ -447,7 +447,7 @@ public class PluginGroup extends PluginRecord {
 		{"REFR", "Object Ref"}, {"ROAD", "A Road"},																															//Not in FO3,FONV, Skyrim, FO76
 
 		// added FO3
-		{"NAVM", "Navigation Grid?"}, {"PGRE", "PGRE"},
+		{"NAVM", "Navigation Grid?"}, {"PGRE", "Placed Grenade"},
 
 		//Skyrim
 		{"PHZD", "PHZD"},
