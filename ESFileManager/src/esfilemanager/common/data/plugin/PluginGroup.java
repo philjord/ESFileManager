@@ -426,7 +426,9 @@ public class PluginGroup extends PluginRecord {
 		{"FORC", "Wind Force"}, {"GBFM", "Ship Templates?"}, {"GBFT", "Templates of some sort?"}, {"IRES", "IRES?"}, {"LMSW", "Swaps?"},
 		{"LVLB", "Leveled Ship?"}, {"LVSC", "LVSC?"}, {"MAAM", "Melee Data?"}, {"MRPH", "Morphables Data"},
 		{"MTPT", "Material Data?"}, {"OSWP", "Swap Data?"}, {"PCBN", "PCBN?"}, {"PCCN", "PackIn Data?"},
-		{"PCMT", "PCMT?"}, {"PDCL", "PDCL?"}, {"PNDT", "Planet Data"}, {"PSDC", "PSDC?"}, {"PTST", "Pattern Style"},
+		{"PCMT", "PCMT?"}, 
+		{"PDCL", "PDCL?"}, //Heaps of them created from REFRs in starfield, like heaps, so a stat type thing		
+		{"PNDT", "Planet Data"}, {"PSDC", "PSDC?"}, {"PTST", "Pattern Style"},
 		{"RSGD", "RSGD?"}, {"RSPJ", "Research"}, {"SDLT", "SDLT?"}, {"SFBK", "Surface Terrain Data?"},
 		{"SFPC", "Surface Pattern Config"}, {"SFPT", "Surface Pattern Data?"}, {"SFTR", "Surface Tree"},
 		{"SPCH", "Speech Challenge"}, {"STBH", "STBH?"}, {"STDT", "Star Data"}, {"SUNP", "Sun Data"},
