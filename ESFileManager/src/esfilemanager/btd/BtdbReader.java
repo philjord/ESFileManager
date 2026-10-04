@@ -16,7 +16,12 @@ import tools.WeakValueHashMap;
  
 https://github.com/fo76utils/fo76utils/blob/main/src/btdfile.cpp
 
-Presumable Bethesda Terrrain Database format
+Presumably Bethesda Terrain Database format
+
+
+Next step, download f076utils and dump the raw height map for a cell out then compare to my data dump
+sad but faster than playing
+
 */
 public class BtdbReader {
 
@@ -111,7 +116,7 @@ public class BtdbReader {
 	//LOD1: height map, land textures block only
 	//height map, LTEX block format:
 	//  0x0000-0x5FFF: 64 * (64, 128) int16, height map, only the samples
-	//                 not present at lower levels of detail
+	//		not present at lower levels of detail
 	//  0x6000-0xBFFF: 64 * (64, 128) int16, land texture alphas
 	//terrain color block format (LOD3 and LOD2 only):
 	//  0x0000-0x5FFF: 64 * (64, 128) int16
@@ -247,13 +252,13 @@ public class BtdbReader {
 		return gcvrCnt;
 	}
 
-	int getLandTexture(int n) {
+	public int getLandTexture(int n) {
 		if (n >= ltexCnt)
 			return 0;
 		return readUInt32(ltexOffs + (n << 2));
 	}
 
-	int getGroundCover(int n) {
+	public int getGroundCover(int n) {
 		if (n >= gcvrCnt)
 			return 0;
 		return readUInt32(gcvrOffs + (n << 2));
@@ -282,6 +287,24 @@ public class BtdbReader {
 		//System.out.println("getCellHeightMap cellX="	+ cellX + ", cellY=" + cellY + ",lod=" + lod + " filled "
 		//					+ ((n << m) | n) + " shorts");
 
+	}
+
+	/**
+	 * return a float[2] of CellHeightMinMax
+	 * @param buf
+	 * @param cellX
+	 * @param cellY
+	 */
+	public void getCellHeightMinMax(float[] buf, int cellX, int cellY) {
+		//cellHeightMinMaxMapOffs
+		// skipped like this
+		//buf.position(buf.position() + ((nCellsY * nCellsX) << 3)); 4 then double for 2 floats
+		//0x000000D8-0x0004EF5F: 201 * 201 * float[2], min, max height for each cell
+		int x = cellX - cellMinX;
+		int y = cellY - cellMinY;
+
+		buf[0] = readFloat(cellHeightMinMaxMapOffs + (((y * nCellsX) + x) << 3) + 0);
+		buf[1] = readFloat(cellHeightMinMaxMapOffs + (((y * nCellsX) + x) << 3) + 4);
 	}
 
 	/** land texture opacities in pixelFormatA16 format (see filebuf.hpp)
@@ -348,7 +371,7 @@ public class BtdbReader {
 	//https://labex.io/tutorials/java-how-to-perform-bit-rotation-in-java-414101
 	public static byte rotateLeft(byte x, int distance) {
 		//return (byte)((x << distance) | (x >>> -distance));
-		return  (byte)((x << 2) | (x >> (32 - 2)));
+		return (byte)((x << 2) | (x >> (32 - 2)));
 	}
 
 	/** vertex colors in pixelFormatRGBA16 format, l >= 2
@@ -455,65 +478,71 @@ public class BtdbReader {
 	 */
 
 	private static short readUInt16Fast(byte[] src, int srcOff) {
-		return (short)(((src[srcOff + 0] & 0xff) << 8) + (src[srcOff + 1] & 0xff));
+		// as always little endian
+		//bb.order(ByteOrder.LITTLE_ENDIAN); style
+		return (short)(((src[srcOff + 1] & 0xff) << 8) + (src[srcOff + 0] & 0xff));
 	}
 
-	private void loadBlock(TileData tileData, int dataOffs, int n, int lod, int b, byte[] zlibBuf) throws IOException {
+	private void loadBlock(TileData tileData, int dataOffs, int cellId, int lod, boolean otherData, byte[] zlibBuf)
+			throws IOException {
 		if (lod >= 2)
-			n = (n << 1) + b;
-		else if (lod == 0 && b != 0)
-			n = n + (nCellsY * nCellsX);
-		int zlibBlkTableOffs = zlibBlkTableOffsLOD0 + (n << 3);
+			cellId = (cellId << 1) + (otherData ? 1 : 0);
+		else if (lod == 0 && otherData)
+			cellId = cellId + (nCellsY * nCellsX);
+		int zlibBlkTableOffs = zlibBlkTableOffsLOD0 + (cellId * (4 + 4));// each is a pair of ints for offset and size
 		if (lod == 1)
-			zlibBlkTableOffs = zlibBlkTableOffsLOD1 + (n << 3);
+			zlibBlkTableOffs = zlibBlkTableOffsLOD1 + (cellId * (4 + 4));
 		else if (lod == 2)
-			zlibBlkTableOffs = zlibBlkTableOffsLOD2 + (n << 3);
+			zlibBlkTableOffs = zlibBlkTableOffsLOD2 + (cellId * (4 + 4));
 		else if (lod == 3)
-			zlibBlkTableOffs = zlibBlkTableOffsLOD3 + (n << 3);
+			zlibBlkTableOffs = zlibBlkTableOffsLOD3 + (cellId * (4 + 4));
 		int offs = buf.getInt(zlibBlkTableOffs) + zlibBlocksDataOffs;
 		int compressedSize = buf.getInt(zlibBlkTableOffs + 4);
 		if ((offs + compressedSize) > fileChannel.size())
 			throw new IOException("end of input file");
 
 		Inflater inflater = new Inflater();
-		// input if fileBuf offset to offs being buf
 		synchronized (buf) {
-			ByteBuffer input = buf.position(offs).slice();//.order(ByteOrder.LITTLE_ENDIAN);??
+			ByteBuffer input = buf.position(offs).slice();
 			input.limit(compressedSize);
 			inflater.setInput(input);
 		}
 
 		try {
 			int count = inflater.inflate(zlibBuf);
-			if (count != ((lod == 0 && b != 0) ? 16384 : ((lod >= 2 && b != 0) ? 32768 : 49152)))
+			if (count != ((lod == 0 && otherData) ? 16384 : ((lod >= 2 && otherData) ? 32768 : 49152)))
 				System.err.println("Inflate count issue! count = "	+ count + " expected "
-									+ ((lod == 0 && b != 0) ? 16384 : ((lod >= 2 && b != 0) ? 32768 : 49152)));
+									+ ((lod == 0 && otherData) ? 16384 : ((lod >= 2 && otherData) ? 32768 : 49152)));
 		} catch (DataFormatException e) {
 			System.err.println("loadBlock Inflater DataFormatException ");
 		}
 		inflater.reset();
 
 		int pOff = 0;
-		int xd = 1 << (b == 0 || lod == 0 ? lod : (lod - 2));
-		int yd = (b == 0 || lod == 0 ? (1024 - 128) : ((256 - 128) >> 2)) << lod;
-		for (int y = 0; y < 128; y = y + 2) {
-			if (b == 0) { // vertex height   
+		int xd = 1 << (!otherData || lod == 0 ? lod : (lod - 2));
+		int yd = (!otherData || lod == 0 ? (1024 - 128) : ((256 - 128) >> 2)) << lod;
+
+		if (otherData) {
+			for (int y = 0; y < 128; y = y + 2) {
+				if (lod == 0) {// ground cover
+					loadBlockLines_8(tileData.gcvrData, dataOffs + (y << 10), zlibBuf, pOff);
+					pOff = pOff + 256;
+				} else { // vertex color
+					loadBlockLines_16(tileData.vclrData, dataOffs + (y << (lod + 6)), zlibBuf, pOff, xd, yd);
+					pOff = pOff + 384;
+				}
+			}
+		} else {
+			for (int y = 0; y < 128; y = y + 2) {
+				// vertex height  
 				loadBlockLines_16(tileData.hmapData, dataOffs + (y << (lod + 10)), zlibBuf, pOff, xd, yd);
 				pOff = pOff + 384;
-			} else if (lod == 0) {// ground cover
-				loadBlockLines_8(tileData.gcvrData, dataOffs + (y << 10), zlibBuf, pOff);
-				pOff = pOff + 256;
-			} else { // vertex color
-				loadBlockLines_16(tileData.vclrData, dataOffs + (y << (lod + 6)), zlibBuf, pOff, xd, yd);
+			}
+			for (int y = 0; y < 128; y = y + 2) {
+				// landscape textures
+				loadBlockLines_16(tileData.ltexData, dataOffs + (y << (lod + 10)), zlibBuf, pOff, xd, yd);
 				pOff = pOff + 384;
 			}
-		}
-		if (b != 0)
-			return;
-		for (int y = 0; y < 128; y = y + 2) {
-			// landscape textures
-			loadBlockLines_16(tileData.ltexData, dataOffs + (y << (lod + 10)), zlibBuf, pOff, xd, yd);
-			pOff = pOff + 384;
 		}
 	}
 
@@ -526,23 +555,23 @@ public class BtdbReader {
 		byte[] zlibBuf = new byte[0xC000];
 		int t = 0;
 		// LOD3..LOD0
-		for (byte l = 4; l-- > 0;) {
-			for (int yy = 0; yy < (8 >> l); yy++) {
-				int yc = (y >> l) + yy;
-				if (yc >= ((nCellsY + (1 << l) - 1) >> l))
+		for (byte lod = 4; lod-- > 0;) {
+			for (int yy = 0; yy < (8 >> lod); yy++) {
+				int yc = (y >> lod) + yy;
+				if (yc >= ((nCellsY + (1 << lod) - 1) >> lod))
 					break;
-				for (int xx = 0; xx < (8 >> l); xx++) {
-					int xc = (x >> l) + xx;
-					if (xc >= ((nCellsX + (1 << l) - 1) >> l))
+				for (int xx = 0; xx < (8 >> lod); xx++) {
+					int xc = (x >> lod) + xx;
+					if (xc >= ((nCellsX + (1 << lod) - 1) >> lod))
 						break;
 					if (t == threadIndex) {
-						int n = yc * ((nCellsX + (1 << l) - 1) >> l) + xc;
-						if (((blockMask & 0x55) & (1 << (l + l))) != 0)
-							loadBlock(tileData, ((yy << 10) + xx) << (l + 7), n, l, 0, zlibBuf);
-						if (((blockMask & 0xA0) & (1 << (l + l + 1))) != 0)
-							loadBlock(tileData, ((yy << 8) + xx) << (l + 5), n, l, 1, zlibBuf);
-						if (((blockMask & 0x02) & (1 << (l + l + 1))) != 0)
-							loadBlock(tileData, ((yy << 10) + xx) << (l + 7), n, l, 1, zlibBuf);
+						int cellId = yc * ((nCellsX + (1 << lod) - 1) >> lod) + xc;
+						if (((blockMask & 0x55) & (1 << (lod + lod))) != 0)
+							loadBlock(tileData, ((yy << 10) + xx) << (lod + 7), cellId, lod, false, zlibBuf);
+						if (((blockMask & 0xA0) & (1 << (lod + lod + 1))) != 0)
+							loadBlock(tileData, ((yy << 8) + xx) << (lod + 5), cellId, lod, true, zlibBuf);
+						if (((blockMask & 0x02) & (1 << (lod + lod + 1))) != 0)
+							loadBlock(tileData, ((yy << 10) + xx) << (lod + 7), cellId, lod, true, zlibBuf);
 					}
 					if (++t >= threadCnt)
 						t = 0;
@@ -566,7 +595,7 @@ public class BtdbReader {
 
 		Inflater inflater = new Inflater();
 		synchronized (buf) {
-			ByteBuffer input = buf.position(offs).slice();//.order(ByteOrder.LITTLE_ENDIAN);??
+			ByteBuffer input = buf.position(offs).slice();
 			input.limit(compressedSize);
 			inflater.setInput(input);
 		}
@@ -725,6 +754,10 @@ public class BtdbReader {
 
 	private int readUInt32(int offs) {
 		return buf.getInt(offs);
+	}
+
+	private float readFloat(int offs) {
+		return buf.getFloat(offs);
 	}
 
 	private byte readUInt8(int offs) {
