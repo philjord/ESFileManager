@@ -6,6 +6,9 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.DataFormatException;
 import java.util.zip.Inflater;
 
@@ -17,10 +20,6 @@ import tools.WeakValueHashMap;
 https://github.com/fo76utils/fo76utils/blob/main/src/btdfile.cpp
 
 Presumably Bethesda Terrain Database format
-
-
-Next step, download f076utils and dump the raw height map for a cell out then compare to my data dump
-sad but faster than playing
 
 */
 public class BtdbReader {
@@ -43,9 +42,9 @@ public class BtdbReader {
 	int		gcvrCnt;					// number of ground covers
 	int		gcvrOffs;					// table of GCVR form IDs
 	int		gcvrMapOffs;				// 8 x ground cover for each cell quadrant
-	int		heightMapLOD4;				// 1/8 cell resolution
-	int		landTexturesLOD4;			// 1/8 cell resolution
-	int		vertexColorLOD4;			// 1/8 cell resolution
+	int		heightMapLOD4;				// 1/8 cell resolution (LOD4) data offset
+	int		landTexturesLOD4;			// 1/8 cell resolution (LOD4) data offset
+	int		vertexColorLOD4;			// 1/8 cell resolution (LOD4) data offset
 	int		nCompressedBlocks;			// number of ZLib compressed blocks
 	int		zlibBlocksTableOffs;		// table of compressed block offsets and sizes
 	int		zlibBlocksDataOffs;			// ZLib compressed data
@@ -55,22 +54,36 @@ public class BtdbReader {
 	int		zlibBlkTableOffsLOD0;
 
 	public static class TileData {
-		short	x0;
-		short	y0;
+		short					x0;
+		short					y0;
+
+		//FIXME: it appears the block mask nonsense is entirely insdie this file as a cryptic message system
 		// bit 0: LOD0 vertex height and land textures are loaded
+		public static final int	LOD0vertexheightandlandtextures	= 0x01;
 		// bit 1: LOD0 ground cover is loaded
+		public static final int	LOD0groundcover					= 0x02;
 		// bit 2: LOD1 vertex height and land textures are loaded
+		public static final int	LOD1vertexheightandlandtextures	= 0x04;
+		// bit 3: IS MISSING! LOD1 terrain color is loaded but doesn't exist
+		//would be LOD2terraincolors = 0x08; 
 		// bit 4: LOD2 vertex height and land textures are loaded
+		public static final int	LOD2vertexheightandlandtextures	= 0x10;
 		// bit 5: LOD2 terrain color is loaded
+		public static final int	LOD2terraincolor				= 0x20;
 		// bit 6: LOD3 vertex height and land textures are loaded
+		public static final int	LOD3vertexheightandlandtextures	= 0x40;
 		// bit 7: LOD3 terrain color is loaded
+		public static final int	LOD3terraincolor				= 0x80;
 		// bit 8: LOD4 vertex height and land textures are loaded
+		public static final int	LOD4vertexheightandlandtextures	= 0x100;
 		// bit 9: LOD4 terrain color is loaded
-		int		blockMask;
-		short[]	hmapData;	// vertex height, 1024 * 1024
-		short[]	ltexData;	// land textures, 1024 * 1024
-		byte[]	gcvrData;	// ground cover, 1024 * 1024
-		short[]	vclrData;	// terrain color, 256 * 256
+		public static final int	LOD4terraincolor				= 0x200;
+
+		int						blockMask;
+		short[]					hmapData;								// vertex height, 1024 * 1024
+		short[]					ltexData;								// land textures, 1024 * 1024
+		byte[]					gcvrData;								// ground cover, 1024 * 1024
+		short[]					vclrData;								// terrain color, 256 * 256
 	};
 
 	WeakValueHashMap<Integer, TileData>	tileCacheMap	= new WeakValueHashMap<Integer, TileData>();
@@ -91,13 +104,14 @@ public class BtdbReader {
 	//0x00000028-0x0000002B: (int32) 43, number of land textures (LTEX records)
 	//0x0000002C-0x000000D7: 43 * int32, LTEX form IDs
 	//0x000000D8-0x0004EF5F: 201 * 201 * float[2], min, max height for each cell
-	//0x0004EF60-0x0018A97F: 201 * 2 * 201 * 2 * byte[8], cell quadrant land
-	//                       textures (43 - LTEX_table_index, or zero if none)
+	//0x0004EF60-0x0018A97F: 201 * 2 * 201 * 2 * byte[8], cell quadrant land textures 
+	//						 (43 - LTEX_table_index, or zero if none)
 	//0x0018A980-0x0018A983: (int32) 30, number of ground covers (GCVR records)
 	//0x0018A984-0x0018A9FB: 30 * int32, GCVR form IDs
-	//0x0018A9FC-0x002C641B: 201 * 2 * 201 * 2 * byte[8], cell quadrant ground
-	//                       covers (GCVR_table_index, or 0xFF if none)
-	//0x002C641C-0x007B4C9B: 201 * 8 * 201 * 8 * int16, LOD4 height map,
+	//0x0018A9FC-0x002C641B: 201 * 2 * 201 * 2 * byte[8], cell quadrant ground covers 
+	//						 (GCVR_table_index, or 0xFF if none)
+	//0x002C641C-0x007B4C9B: 201 * 8 * 201 * 8 * int16, LOD4 height map, (64x64 heights, each 8 per cell)
+	//						 Notice 64 with 8 inside each is 8 cells covered hence 1/8 the full size
 	//                       0 to 65535 maps to minimum height to maximum height
 	//0x007B4C9C-0x00CA351B: 201 * 8 * 201 * 8 * int16, LOD4 land textures,
 	//                       bits[N * 3 to N * 3 + 2] = texture N alpha (0 to 7),
@@ -107,22 +121,28 @@ public class BtdbReader {
 	//0x01191D9C-0x01250643: 97557 * (int32, int32), pairs of zlib compressed data
 	//                       offset (relative to 0x01250644) and size
 	//0x01250644-EOF:        zlib compressed data blocks
-	//zlib compressed blocks     0 to  1351 (26 * 26 * 2): LOD3, 8x8 cell groups
-	//                        1352 to  6553 (51 * 51 * 2): LOD2, 4x4 cell groups
-	//                        6554 to 16754   (101 * 101): LOD1, 2x2 cell groups
-	//                       16755 to 57155   (201 * 201): LOD0 height map, LTEX
+	//zlib compressed blocks     0 to  1351 (26 * 26 * 2): LOD3, 8x8 cell groups (128x128 heights each 16 per cell)
+	//                        1352 to  6553 (51 * 51 * 2): LOD2, 4x4 cell groups (128x128 heights each 32 per cell)
+	//                        6554 to 16754   (101 * 101): LOD1, 2x2 cell groups (128x128 heights each 64 per cell)
+	//                       16755 to 57155   (201 * 201): LOD0 height map, LTEX (128x128 heights each 128 per cell)
 	//                       57156 to 97556   (201 * 201): LOD0 ground cover mask
 	//LOD3, LOD2: pairs of height map, LTEX and terrain color blocks
 	//LOD1: height map, land textures block only
+	//
 	//height map, LTEX block format:
-	//  0x0000-0x5FFF: 64 * (64, 128) int16, height map, only the samples
-	//		not present at lower levels of detail
-	//  0x6000-0xBFFF: 64 * (64, 128) int16, land texture alphas
+	//  0x0000-0x5FFF: 128 * (64, 128) int16, height map, only the samples (height values) not present at lower levels of detail
+	//  0x6000-0xBFFF: 128 * (64, 128) int16, land texture alphas
+	//
 	//terrain color block format (LOD3 and LOD2 only):
-	//  0x0000-0x5FFF: 64 * (64, 128) int16
+	//  0x0000-0x5FFF: 128 * (64, 128) int16
 	//  0x6000-0x7FFF: unused
+	// 
 	//ground cover block format (LOD0 only):
 	//  0x0000-0x3FFF: 128 * 128 bytes, bit N is set if ground cover N is enabled
+	//
+	// In the above the 128 * (64, 128) represents the fact only the "new detail" is stored for each
+	// decreasing LOD number, so LOD2 has 1 row of 64 values from LOD3 already and hence needs 64 value to make that
+	// 128, but then also need to add a new 128 value row below that as well, giving 4x the detail as LOD3
 	//
 	//In Starfield BTD files, the SW and NE cell coordinates (0x0018-0x0027) are
 	//zero, and terrain color and ground cover data are not present.
@@ -265,15 +285,15 @@ public class BtdbReader {
 	}
 
 	/** N = 128 >> l, buffer size = N * N
-	 height map in pixelFormatGRAY16 format
-	 Or in human readable format lod=4=72shorts, lod=3=272, lod=2=1056 lod=1=4160 ,lod=0=16512		 
+	 height map in pixelFormatGRAY16 format	
 	 * @param buf
 	 * @param cellX
 	 * @param cellY
 	 * @param lod
 	 */
 	public void getCellHeightMap(short[] buf, int cellX, int cellY, int lod) {
-		TileData tileData = loadTile(cellX, cellY, (~0 << (lod + lod)) & 0x0155);
+		TileData tileData = loadTile(cellX, cellY, //
+				(~0 << (lod + lod)) & (0x0155));//0x0155=0b000101010101
 		int x0 = ((cellX - cellMinX) & 7) << 7;
 		int y0 = ((cellY - cellMinY) & 7) << 7;
 		int n = 128 >> lod;
@@ -287,6 +307,65 @@ public class BtdbReader {
 		//System.out.println("getCellHeightMap cellX="	+ cellX + ", cellY=" + cellY + ",lod=" + lod + " filled "
 		//					+ ((n << m) | n) + " shorts");
 
+	}
+
+	/** 
+	 * OK so new news, the LOd4 data is required by every Lod below it, as each only includes new height data
+	 * Anyway... this probably accounts for the 128 x (64 or 128) in the text above as that's reading the missing bits, plus a 
+	 * full new row interleaved (so half the row is in the above LOD and then a new row below that) 
+	 * So.. I probably want a fat LOD4 system and then just the LOD3 down to LOD0 as "per cell"
+	 * If I have 3/4 LOD4 at any given time say (so I'm looking a the 50x50 around at better lods) then I just
+	 * have 2,500 cells around, and later when I feel keen a load can read say 1+3 extra LOD3 to make each 
+	 * scene object cover twice as much, hell 50 is 50x52m = 2.5km of less than LOD4 so possibly too much anyway
+	 * I might start with say 2LOD0 2LOD1 2LOD 2LOD3 = 8 plus center = 9 =  a 9x9 which is only 81, plus the gap fillers  
+	 * 1-3 return is 128x128 across so,
+	 * lod1=2x2 cells, 128x128 values so 64x64 grid
+	 * lod2=4x4 cells, 128x128 values so 32x32 grid
+	 * lod3=8x8 cells, 128x128 values so 16x16 grid
+	 * lod4=8x8 but 64x64 values so only 8 values in each cell
+	 * Returns 64x64 shorts in each, representing 8 values per cell, across 8 cells worth of distance
+	 * height map in pixelFormatGRAY16 format
+	 * 	 
+	 * @param hmapData
+	 * @param ltexData
+	 * @param vclrData
+	 * @param cellX you should call (x % 8 == 0) only so 0,8,16,24,etc up to 200 (25 sets across)
+	 * @param cellY
+	 */
+	public void getLOD4Data(short[] hmapData, short[] vclrData, int cellX, int cellY) {
+
+		int x0 = (cellX - cellMinX); // as a cell from 0 to 21 0 not -100 to 100 in teh lod4 8 grid world
+		int y0 = (cellY - cellMinY);
+
+		// not sure what's what here?
+		if (x0 < 0)
+			x0 = 0;
+		if (x0 > nCellsX - 8)
+			x0 = nCellsX - 8;
+		if (y0 < 0)
+			y0 = 0;
+		if (y0 > nCellsY - 8)
+			y0 = nCellsY - 8;
+
+		//0x002C641C-0x007B4C9B: 201 * 8 * 201 * 8 * int16, LOD4 height map, (64x64 heights, each 8 per cell)
+		//						 Notice 64 with 8 inside each is 8 cells covered hence 1/8 the full size
+		//                       0 to 65535 maps to minimum height to maximum height
+		//0x007B4C9C-0x00CA351B: 201 * 8 * 201 * 8 * int16, LOD4 land textures,
+		//                       bits[N * 3 to N * 3 + 2] = texture N alpha (0 to 7),
+		//                       texture 6 is the base texture
+		//0x00CA351C-0x01191D9B: 201 * 8 * 201 * 8 * int16, LOD4 terrain color
+		//                       type in packed 16-bit format, 5 bits per channel
+		int idx = 0;
+		for (int yy = 0; yy < 64; yy++) {
+			for (int xx = 0; xx < 64; xx++) {
+				int offs = (((y0 * 8) + yy) * (nCellsX * 8)) + ((x0 * 8) + xx);
+				hmapData[idx] = readUInt16(heightMapLOD4 + (offs * 2));
+				//ltex is no use to a lod4
+				//ltexData[idx] = readUInt16(landTexturesLOD4 + (offs * 2));
+				vclrData[idx] = readUInt16(vertexColorLOD4 + (offs * 2));
+				idx++;
+			}
+		}
 	}
 
 	/**
@@ -308,7 +387,7 @@ public class BtdbReader {
 	}
 
 	/** land texture opacities in pixelFormatA16 format (see filebuf.hpp)
-	lod=4=72shorts, lod=3=272, lod=2=1056 lod=1=4160 ,lod=0=16512
+	 * N = 128 >> l, buffer size = N * N
 	 * @param buf
 	 * @param cellX
 	 * @param cellY
@@ -331,8 +410,7 @@ public class BtdbReader {
 	}
 
 	/** ground cover mask in pixelFormatA8 format
-	lod=4=72shorts, lod=3=272, lod=2=1056 lod=1=4160 ,lod=0=16512
-	//FIXME: a ROTL is missing!
+	 * N = 128 >> l, buffer size = N * N
 	 * @param buf
 	 * @param cellX
 	 * @param cellY
@@ -375,7 +453,7 @@ public class BtdbReader {
 	}
 
 	/** vertex colors in pixelFormatRGBA16 format, l >= 2
-	lod=4=72shorts, lod=3=272, lod=2=1056 lod=1=4160 ,lod=0=16512
+	N = 128 >> l, buffer size = N * N
 	 * @param buf
 	 * @param cellX
 	 * @param cellY
@@ -483,7 +561,8 @@ public class BtdbReader {
 		return (short)(((src[srcOff + 1] & 0xff) << 8) + (src[srcOff + 0] & 0xff));
 	}
 
-	private void loadBlock(TileData tileData, int dataOffs, int cellId, int lod, boolean otherData, byte[] zlibBuf)
+	private void loadBlock(	TileData tileData, int dataOffs, int cellId, int lod, boolean otherData, byte[] zlibBuf,
+							Inflater inflater)
 			throws IOException {
 		if (lod >= 2)
 			cellId = (cellId << 1) + (otherData ? 1 : 0);
@@ -501,7 +580,6 @@ public class BtdbReader {
 		if ((offs + compressedSize) > fileChannel.size())
 			throw new IOException("end of input file");
 
-		Inflater inflater = new Inflater();
 		synchronized (buf) {
 			ByteBuffer input = buf.position(offs).slice();
 			input.limit(compressedSize);
@@ -548,10 +626,13 @@ public class BtdbReader {
 
 	private void loadBlocks(TileData tileData, int x, int y, int threadIndex, int threadCnt, int blockMask)
 			throws Exception {
+
 		if (!(vertexColorLOD4 != 0)) {
 			loadBlocks_SF(tileData, x, y, threadIndex, threadCnt, blockMask);
 			return;
 		}
+		// both for reuse below as deburners
+		Inflater inflater = new Inflater();
 		byte[] zlibBuf = new byte[0xC000];
 		int t = 0;
 		// LOD3..LOD0
@@ -567,11 +648,11 @@ public class BtdbReader {
 					if (t == threadIndex) {
 						int cellId = yc * ((nCellsX + (1 << lod) - 1) >> lod) + xc;
 						if (((blockMask & 0x55) & (1 << (lod + lod))) != 0)
-							loadBlock(tileData, ((yy << 10) + xx) << (lod + 7), cellId, lod, false, zlibBuf);
+							loadBlock(tileData, ((yy << 10) + xx) << (lod + 7), cellId, lod, false, zlibBuf, inflater);
 						if (((blockMask & 0xA0) & (1 << (lod + lod + 1))) != 0)
-							loadBlock(tileData, ((yy << 8) + xx) << (lod + 5), cellId, lod, true, zlibBuf);
+							loadBlock(tileData, ((yy << 8) + xx) << (lod + 5), cellId, lod, true, zlibBuf, inflater);
 						if (((blockMask & 0x02) & (1 << (lod + lod + 1))) != 0)
-							loadBlock(tileData, ((yy << 10) + xx) << (lod + 7), cellId, lod, true, zlibBuf);
+							loadBlock(tileData, ((yy << 10) + xx) << (lod + 7), cellId, lod, true, zlibBuf, inflater);
 					}
 					if (++t >= threadCnt)
 						t = 0;
@@ -580,7 +661,8 @@ public class BtdbReader {
 		}
 	}
 
-	private void loadBlock_SF(TileData tileData, int dataOffs, int n, int lod, byte[] zlibBuf) throws IOException {
+	private void loadBlock_SF(TileData tileData, int dataOffs, int n, int lod, byte[] zlibBuf, Inflater inflater)
+			throws IOException {
 		int zlibBlkTableOffs = zlibBlkTableOffsLOD0 + (n << 3);
 		if (lod == 1)
 			zlibBlkTableOffs = zlibBlkTableOffsLOD1 + (n << 3);
@@ -593,7 +675,6 @@ public class BtdbReader {
 		if ((offs + compressedSize) > fileChannel.size())
 			throw new IOException("end of input file");
 
-		Inflater inflater = new Inflater();
 		synchronized (buf) {
 			ByteBuffer input = buf.position(offs).slice();
 			input.limit(compressedSize);
@@ -628,6 +709,7 @@ public class BtdbReader {
 
 	private void loadBlocks_SF(TileData tileData, int x, int y, int threadIndex, int threadCnt, int blockMask)
 			throws IOException {
+		Inflater inflater = new Inflater();
 		byte[] zlibBuf = new byte[0x10000];
 		int t = 0;
 		// LOD0..LOD3
@@ -644,7 +726,7 @@ public class BtdbReader {
 						break;
 					if (t == threadIndex) {
 						int n = yc * ((nCellsX + (1 << l) - 1) >> l) + xc;
-						loadBlock_SF(tileData, ((yy << 10) + xx) << (l + 7), n, l, zlibBuf);
+						loadBlock_SF(tileData, ((yy << 10) + xx) << (l + 7), n, l, zlibBuf, inflater);
 					}
 					if (++t >= threadCnt)
 						t = 0;
@@ -657,99 +739,201 @@ public class BtdbReader {
 	//private static int	cacheHit	= 0;
 	//private static int	cacheMiss	= 0;
 
+	// we must implement our own caching and cut out the CompressedTextureLoader
+	private static Map<Integer, TileData>	loadedTexture		= Collections
+			.synchronizedMap(new WeakValueHashMap<Integer, TileData>());
+
+	// we can't request the same file at the same time, this tell threads to wait for each other
+	// key to mask of loaded data
+	private static Map<Integer, Integer>	loadingTexture		= Collections
+			.synchronizedMap(new HashMap<Integer, Integer>());
+
 	private TileData loadTile(int cellX, int cellY, int blockMask) {
-		int x0 = (cellX - cellMinX) & 0xFFF8;
-		int y0 = (cellY - cellMinY) & 0xFFF8;
-		int cacheKey = (y0 << 16) | x0;
-		TileData t = tileCacheMap.get(cacheKey);
-		if (t == null) {
-			//cacheMiss++;
-			//if(cacheMiss%100==0)
-			//	System.out.println("Btdb cacheMiss " + cacheMiss + " cacheHit " +cacheHit);
-			t = new TileData();
-			tileCacheMap.put(cacheKey, t);
-		} else {
-			//cacheHit++;
-		}
-		TileData tileData = t;
-		blockMask = (blockMask & ~(tileData.blockMask)) & 0x03F7;
-		if (!(blockMask != 0))
-			return tileData;
 
-		if ((blockMask & 0x0155) != 0) {
-			tileData.hmapData = new short[0x00100000];//1,048,576
-			tileData.ltexData = new short[0x00100000];
-		}
-		if ((blockMask & 0x0002) != 0)
-			tileData.gcvrData = new byte[0x00100000];
-		if ((blockMask & 0x02A0) != 0)
-			tileData.vclrData = new short[0x00010000];
-		if (!(vertexColorLOD4 != 0)) {
-			// this looks like if the file has no vcolors but they are asked for hand back white not black			
-			if ((blockMask & 0x02A0) != 0) {
-				//     std::memset(tileData.vclrData.data(), 0xFF, sizeof(std::uint16_t) << 16);
-				for (int i = 0; i < (2 << 16); i++)
-					tileData.vclrData[i] = 0xFF;
-			}
-			blockMask &= 0x0155;
-		}
+		//getCellGroundCover(byte[] buf, int cellX, int cellY, int lod) {
+		//TileData tileData = loadTile(cellX, cellY, 0x0002);
+		//0x0002=0b0010
+		//getCellHeightMap(short[] buf, int cellX, int cellY, int lod) {
+		//TileData tileData = loadTile(cellX, cellY, (~0 << (lod + lod)) & (0x0155));
+		//0x0155=0b0001 0101 0101
+		//getCellLandTexture(short[] buf, int cellX, int cellY, int lod) {
+		//TileData tileData = loadTile(cellX, cellY, (~0 << (lod + lod)) & 0x0155);
+		//again
+		//getCellTerrainColor(short[] buf, int cellX, int cellY, int lod) {
+		//TileData tileData = loadTile(cellX, cellY, (~0 << (lod + lod)) & 0x02A0);
+		//0x02A0=0b0010 1010 0000
 
-		// LOD4
-		if ((blockMask & 0x0300) != 0) {
-			for (int yy = 0; yy < 64; yy++) {
-				if ((cellMinY + ((yy >> 3) + y0)) > cellMaxY)
-					break;
-				for (int xx = 0; xx < 64; xx++) {
-					if ((cellMinX + ((xx >> 3) + x0)) > cellMaxX)
-						break;
-					int offs = (yy + (y0 << 3)) * (nCellsX << 3) + (xx + (x0 << 3));
-					if ((blockMask & 0x0155) != 0) {
-						tileData.hmapData[((yy << 10) + xx) << 4] = readUInt16(heightMapLOD4 + (offs << 1));
-						tileData.ltexData[((yy << 10) + xx) << 4] = readUInt16(landTexturesLOD4 + (offs << 1));
-					}
-					if ((blockMask & 0x02A0) != 0) {
-						tileData.vclrData[((yy << 8) + xx) << 2] = readUInt16(vertexColorLOD4 + (offs << 1));
+		// below the mask is also checked against 0x03F7=0b0011 1111 0111 or all of them
+
+		//FIXME: it appears the block mask nonsense is entirely insdie this file as a cryptic message system
+		/*		// bit 0: LOD0 vertex height and land textures are loaded
+				public static final int	LOD0vertexheightandlandtextures	= 0x01;
+				// bit 1: LOD0 ground cover is loaded
+				public static final int	LOD0groundcover					= 0x02;
+				// bit 2: LOD1 vertex height and land textures are loaded
+				public static final int	LOD1vertexheightandlandtextures	= 0x04;
+				// bit 3: IS MISSING! LOD1 terrain color doesn't exist
+				//would be LOD1terraincolors = 0x08; 
+				// bit 4: LOD2 vertex height and land textures are loaded
+				public static final int	LOD2vertexheightandlandtextures	= 0x10;
+				// bit 5: LOD2 terrain color is loaded
+				public static final int	LOD2terraincolor				= 0x20;
+				// bit 6: LOD3 vertex height and land textures are loaded
+				public static final int	LOD3vertexheightandlandtextures	= 0x40;
+				// bit 7: LOD3 terrain color is loaded
+				public static final int	LOD3terraincolor				= 0x80;
+				// bit 8: LOD4 vertex height and land textures are loaded
+				public static final int	LOD4vertexheightandlandtextures	= 0x100;
+				// bit 9: LOD4 terrain color is loaded
+		*/
+
+		synchronized (tileCacheMap) {
+			int x0 = (cellX - cellMinX) & 0xFFF8;
+			int y0 = (cellY - cellMinY) & 0xFFF8;
+			int cacheKey = (y0 << 16) | x0;
+
+			//physics and visuals and bullet all want this data concurrently, however the weak value might have it or might not
+			// and it the root object exists it might not be fully loaded yet
+
+			//WAIT also something else!! synchronized on this method stil leaves holes, like some lod
+			//level is being ignored for laoding, cause falgs are 
+			// set wrong or something?
+
+			Integer loadingMask = null;
+			// in one go check if it's loaded or loading, and then indicate this thread will load it
+			synchronized (loadedTexture) {
+				TileData t = loadedTexture.get(cacheKey);
+				if (t == null) {
+					loadingMask = loadingTexture.get(cacheKey);
+					if (loadingMask == null) {
+						// no nones loading it so time to load it up and indicate the mask it will finish as
+						loadingTexture.put(cacheKey, blockMask);
+					} else {
+						//otherwise we are happy to wait and return it later
 					}
 				}
+
 			}
-		}
-		// LOD3..LOD0
-		final int threadCnt = 4;
-		ArrayList<Thread> threads = new ArrayList<Thread>(threadCnt);
-		for (int i = 0; i < threadCnt; i++) {
-			try {
-				final int bm = blockMask;
-				final int threadIdx = i;
-				Thread th = new Thread() {
-					@Override
-					public void run() {
-						try {
-							loadBlocks(tileData, x0, y0, threadIdx, threadCnt, bm);
-						} catch (Exception e) {
-							e.printStackTrace();
+
+			if (loadingMask != null) {
+				// just wait until loaded then return it
+				while (true) {
+					try {
+						Thread.sleep(5);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+
+					loadingMask = loadingTexture.get(cacheKey);
+					if (loadingMask != null) {
+						synchronized (loadedTexture) {
+							TileData t = loadedTexture.get(cacheKey);
+							// did it return a TileData mask that fulfills us?
+							blockMask = (blockMask & ~(t.blockMask)) & 0x03F7;
+							// if it won't fulfill our requirements then we will need to load it
+							if (!(blockMask != 0)) {
+								return t;
+							} else {
+								// if it won't fulfill our requirements then we will need to load it
+								loadingTexture.put(cacheKey, blockMask);
+								loadingMask = blockMask;
+								break;
+							}
 						}
 					}
-				};
-				threads.add(th);
-				th.start();
+				}
 
-			} catch (Exception e) {
-				e.printStackTrace();
-				break;
 			}
-		}
-		for (int i = 0; i < threadCnt; i++) {
-			if (threads.get(i) != null) {
-				try {
-					threads.get(i).join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+
+			TileData tileData = new TileData();
+
+			// checks if the mask data I want is loaded into the tile, so it's part of the loading system
+			blockMask = (blockMask & ~(tileData.blockMask)) & 0x03F7;
+			if (!(blockMask != 0))
+				return tileData;
+			
+			if ((blockMask & 0x0155) != 0) {
+				tileData.hmapData = new short[0x00100000];//1,048,576
+				tileData.ltexData = new short[0x00100000];
+			}
+			if ((blockMask & 0x0002) != 0)
+				tileData.gcvrData = new byte[0x00100000];
+			if ((blockMask & 0x02A0) != 0)
+				tileData.vclrData = new short[0x00010000];
+			if (!(vertexColorLOD4 != 0)) {
+				// this looks like if the file has no vcolors but they are asked for hand back white not black			
+				if ((blockMask & 0x02A0) != 0) {
+					//     std::memset(tileData.vclrData.data(), 0xFF, sizeof(std::uint16_t) << 16);
+					for (int i = 0; i < (2 << 16); i++)
+						tileData.vclrData[i] = 0xFF;
+				}
+				blockMask &= 0x0155;
+			}
+
+			// LOD4
+			if ((blockMask & 0x0300) != 0) {
+				for (int yy = 0; yy < 64; yy++) {
+					if ((cellMinY + ((yy >> 3) + y0)) > cellMaxY)
+						break;
+					for (int xx = 0; xx < 64; xx++) {
+						if ((cellMinX + ((xx >> 3) + x0)) > cellMaxX)
+							break;
+						int offs = (yy + (y0 << 3)) * (nCellsX << 3) + (xx + (x0 << 3));
+						if ((blockMask & 0x0155) != 0) {
+							tileData.hmapData[((yy << 10) + xx) << 4] = readUInt16(heightMapLOD4 + (offs << 1));
+							tileData.ltexData[((yy << 10) + xx) << 4] = readUInt16(landTexturesLOD4 + (offs << 1));
+						}
+						if ((blockMask & 0x02A0) != 0) {
+							tileData.vclrData[((yy << 8) + xx) << 2] = readUInt16(vertexColorLOD4 + (offs << 1));
+						}
+					}
 				}
 			}
+			// LOD3..LOD0
+			final int threadCnt = 4;
+			ArrayList<Thread> threads = new ArrayList<Thread>(threadCnt);
+			for (int i = 0; i < threadCnt; i++) {
+				try {
+					final int bm = blockMask;
+					final int threadIdx = i;
+					Thread th = new Thread() {
+						@Override
+						public void run() {
+							try {
+								loadBlocks(tileData, x0, y0, threadIdx, threadCnt, bm);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+					};
+					threads.add(th);
+					th.start();
+
+				} catch (Exception e) {
+					e.printStackTrace();
+					break;
+				}
+			}
+			for (int i = 0; i < threadCnt; i++) {
+				if (threads.get(i) != null) {
+					try {
+						threads.get(i).join();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+
+			tileData.blockMask = tileData.blockMask | blockMask;
+
+			synchronized (loadedTexture) {
+				loadedTexture.put(cacheKey, tileData);
+				loadingTexture.remove(cacheKey);
+			}		
+
+			return tileData;
 		}
 
-		tileData.blockMask = tileData.blockMask | blockMask;
-		return tileData;
 	}
 
 	private int readUInt32(int offs) {
