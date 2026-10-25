@@ -9,10 +9,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
+//import java.util.zip.DataFormatException;
+//import java.util.zip.Inflater;
 
 import tools.WeakValueHashMap;
+import zipBB.Inflater;
+import zipBB.ZlibHeaderTrailerParser;
+import zipBB.Inflater.InflationException;
+import zipBB.ZlibHeaderTrailerParser.ZlibHeader;
 
 /** For desktop to swap File path strings into ByteBuffer or randomaccessfile or io streams
  Android will have the same for SAF Uri starting points
@@ -580,7 +584,7 @@ public class BtdbReader {
 		if ((offs + compressedSize) > fileChannel.size())
 			throw new IOException("end of input file");
 
-		synchronized (buf) {
+	/*	synchronized (buf) {
 			ByteBuffer input = buf.position(offs).slice();
 			input.limit(compressedSize);
 			inflater.setInput(input);
@@ -594,7 +598,42 @@ public class BtdbReader {
 		} catch (DataFormatException e) {
 			System.err.println("loadBlock Inflater DataFormatException ");
 		}
-		inflater.reset();
+		inflater.reset();*/
+		ByteBuffer input = null;
+		synchronized (buf) {
+			input = buf.position(offs).slice();
+		}
+		input.limit(compressedSize);
+
+		ByteBuffer dstBuf = ByteBuffer.wrap(zlibBuf);
+		ZlibHeader header = ZlibHeaderTrailerParser.parseHeader(input);
+		if (header == null) {
+			throw new AssertionError("Expect to read the header in the first try since the buffer is large enough.");
+		}
+		if (header.dictChecksum != 0) {
+			throw new AssertionError("Expect to have no dictionary.");
+		}
+		try {
+			boolean done = false;
+			while (!done) {
+				switch (inflater.inflate(dstBuf, input)) {
+					case NEED_MORE_INPUT:
+						//not sure about this but keep trucking anyway
+						break;
+					case NEED_MORE_OUTPUT:
+						//only does 65k per call just keep going
+						break;
+					case DONE:
+						done = true;
+						break;
+				}
+			}
+
+		} catch (InflationException e) {
+			e.printStackTrace();
+		}
+
+		inflater.reset();		
 
 		int pOff = 0;
 		int xd = 1 << (!otherData || lod == 0 ? lod : (lod - 2));
@@ -675,7 +714,7 @@ public class BtdbReader {
 		if ((offs + compressedSize) > fileChannel.size())
 			throw new IOException("end of input file");
 
-		synchronized (buf) {
+		/*synchronized (buf) {
 			ByteBuffer input = buf.position(offs).slice();
 			input.limit(compressedSize);
 			inflater.setInput(input);
@@ -688,7 +727,47 @@ public class BtdbReader {
 		} catch (DataFormatException e) {
 			System.err.println("loadBlock_SF Inflater DataFormatException ");
 		}
-		inflater.reset();
+		inflater.reset();*/
+		
+		ByteBuffer input = null;
+		synchronized (buf) {
+			input = buf.position(offs).slice();
+		}
+		input.limit(compressedSize);
+
+		ByteBuffer dstBuf = ByteBuffer.wrap(zlibBuf);
+		ZlibHeader header = ZlibHeaderTrailerParser.parseHeader(input);
+		if (header == null) {
+			throw new AssertionError("Expect to read the header in the first try since the buffer is large enough.");
+		}
+		if (header.dictChecksum != 0) {
+			throw new AssertionError("Expect to have no dictionary.");
+		}
+		try {
+			boolean done = false;
+			while (!done) {
+				switch (inflater.inflate(dstBuf, input)) {
+					case NEED_MORE_INPUT:
+						//not sure about this but keep trucking anyway
+						break;
+					case NEED_MORE_OUTPUT:
+						//only does 65k per call just keep going
+						break;
+					case DONE:
+						done = true;
+						break;
+				}
+			}
+
+		} catch (InflationException e) {
+			e.printStackTrace();
+		}
+
+		inflater.reset();		
+		
+		
+		
+		
 
 		int pOff = 0;
 		int xd = 1 << lod;
