@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-//import java.util.zip.DataFormatException;
-//import java.util.zip.Inflater;
+// import java.util.zip.DataFormatException;
+// import java.util.zip.Inflater;
 
 import tools.WeakValueHashMap;
 import zipBB.Inflater;
@@ -18,14 +18,15 @@ import zipBB.ZlibHeaderTrailerParser;
 import zipBB.Inflater.InflationException;
 import zipBB.ZlibHeaderTrailerParser.ZlibHeader;
 
-/** For desktop to swap File path strings into ByteBuffer or randomaccessfile or io streams
- Android will have the same for SAF Uri starting points
- 
-https://github.com/fo76utils/fo76utils/blob/main/src/btdfile.cpp
-
-Presumably Bethesda Terrain Database format
-
-*/
+/**
+ * For desktop to swap File path strings into ByteBuffer or randomaccessfile or io streams Android will have the same
+ * for SAF Uri starting points
+ * 
+ * https://github.com/fo76utils/fo76utils/blob/main/src/btdfile.cpp
+ * 
+ * Presumably Bethesda Terrain Database format
+ * 
+ */
 public class BtdbReader {
 
 	int		heightMapResX;				// landscape total X resolution (nCellsX * 128)
@@ -314,34 +315,43 @@ public class BtdbReader {
 	}
 
 	/** 
-	 * OK so new news, the LOd4 data is required by every Lod below it, as each only includes new height data
-	 * Anyway... this probably accounts for the 128 x (64 or 128) in the text above as that's reading the missing bits, plus a 
+	 * OK so new news, the LOD4 data is required by every Lod below it, as each only includes new height data
+	 * This accounts for the 128 x (64 or 128) in the text above, as that's reading the missing bits, plus a 
 	 * full new row interleaved (so half the row is in the above LOD and then a new row below that) 
-	 * So.. I probably want a fat LOD4 system and then just the LOD3 down to LOD0 as "per cell"
+	 * I now have a fat LOD4 system and then also the LOD3 down to LOD0 as "per cell"
 	 * If I have 3/4 LOD4 at any given time say (so I'm looking a the 50x50 around at better lods) then I just
 	 * have 2,500 cells around, and later when I feel keen a load can read say 1+3 extra LOD3 to make each 
-	 * scene object cover twice as much, hell 50 is 50x52m = 2.5km of less than LOD4 so possibly too much anyway
+	 * scene object cover twice as much, 50 is 50x52m = 2.5km of less than LOD4 so possibly too much anyway
 	 * I might start with say 2LOD0 2LOD1 2LOD 2LOD3 = 8 plus center = 9 =  a 9x9 which is only 81, plus the gap fillers  
 	 * 1-3 return is 128x128 across so,
 	 * lod1=2x2 cells, 128x128 values so 64x64 grid
 	 * lod2=4x4 cells, 128x128 values so 32x32 grid
 	 * lod3=8x8 cells, 128x128 values so 16x16 grid
-	 * lod4=8x8 but 64x64 values so only 8 values in each cell
-	 * Returns 64x64 shorts in each, representing 8 values per cell, across 8 cells worth of distance
+	 * lod4=8x8 cells, but 64x64 values so only 8x8 grid in each cell
+	 * Returns 64x64 shorts in each hmapData and vclrData, representing 8 values per cell, across 8 cells worth of distance
 	 * height map in pixelFormatGRAY16 format
 	 * 	 
 	 * @param hmapData
 	 * @param ltexData
 	 * @param vclrData
 	 * @param cellX you should call (x % 8 == 0) only so 0,8,16,24,etc up to 200 (25 sets across)
+	 * but the issue is you should call that with the 100 offset so please only call -100 to 100 mod 8
+	 * being -100, -92, -86 etc up to 100 
 	 * @param cellY
 	 */
 	public void getLOD4Data(short[] hmapData, short[] vclrData, int cellX, int cellY) {
 
-		int x0 = (cellX - cellMinX); // as a cell from 0 to 21 0 not -100 to 100 in teh lod4 8 grid world
+		int x0 = (cellX - cellMinX); // as a cell from 0 to 201, not -100 to 100, in the lod4 8 grid world
 		int y0 = (cellY - cellMinY);
 
-		// not sure what's what here?
+		if (x0 % 8 != 0)
+			System.out.println("x0%8!=0 " + x0 + " from cellX " + cellX);
+		if (y0 % 8 != 0)
+			System.out.println("y0%8!=0 " + y0 + " from cellY " + cellY);
+
+		// don't go below 0 nor close than 8 to the max side
+		//TODO: a call to cell 200 won't return what the user wants, as that call only has 2 cells left 200 and 201
+		// so instead of this fix I should just limit the yy and xx to 16 in that case
 		if (x0 < 0)
 			x0 = 0;
 		if (x0 > nCellsX - 8)
@@ -379,8 +389,7 @@ public class BtdbReader {
 	 * @param cellY
 	 */
 	public void getCellHeightMinMax(float[] buf, int cellX, int cellY) {
-		//cellHeightMinMaxMapOffs
-		// skipped like this
+		//cellHeightMinMaxMapOffs, skipped like this
 		//buf.position(buf.position() + ((nCellsY * nCellsX) << 3)); 4 then double for 2 floats
 		//0x000000D8-0x0004EF5F: 201 * 201 * float[2], min, max height for each cell
 		int x = cellX - cellMinX;
@@ -449,7 +458,8 @@ public class BtdbReader {
 		}
 	}
 
-	//my version of Integer.rotateLeft(tmp, 4); but for a byte TODO: is this correct?
+	//my version of Integer.rotateLeft(tmp, 4); but for a byte 
+	//TODO: is this correct? I've never loaded ground cover so not ever tested this call
 	//https://labex.io/tutorials/java-how-to-perform-bit-rotation-in-java-414101
 	public static byte rotateLeft(byte x, int distance) {
 		//return (byte)((x << distance) | (x >>> -distance));
@@ -527,14 +537,6 @@ public class BtdbReader {
 		for (i = 0; i < 128; i++)
 			dst[destOff++] = src[srcOff++];
 	}
-	/*
-	 void loadBlockLines_8(unsigned char *dst, const unsigned char *src)	{
-	  for (size_t i = 0; i < 128; i++, dst++, src++)
-	    *dst = *src;
-	  dst = dst + (1024 - 128);
-	  for (size_t i = 0; i < 128; i++, dst++, src++)
-	    *dst = *src;
-	}*/
 
 	private static void loadBlockLines_16(short[] dst, int destOff, byte[] src, int srcOff, int xd, int yd) {
 		for (int i = 0; i < 64; i++, destOff = destOff + xd, srcOff = srcOff + 2) {
@@ -546,18 +548,6 @@ public class BtdbReader {
 			dst[destOff] = readUInt16Fast(src, srcOff);
 		}
 	}
-	/*
-	 void loadBlockLines_16(std::uint16_t *dst, const unsigned char *src, size_t xd, size_t yd)	{
-		  for (size_t i = 0; i < 64; i++, dst = dst + xd, src = src + 2)  {
-		    dst = dst + xd;
-		    *dst = FileBuffer::readUInt16Fast(src);
-		  }
-		  dst = dst + yd;
-		  for (size_t i = 0; i < 128; i++, dst = dst + xd, src = src + 2)
-		    *dst = FileBuffer::readUInt16Fast(src);
-		}
-	
-	 */
 
 	private static short readUInt16Fast(byte[] src, int srcOff) {
 		// as always little endian
@@ -584,21 +574,21 @@ public class BtdbReader {
 		if ((offs + compressedSize) > fileChannel.size())
 			throw new IOException("end of input file");
 
-	/*	synchronized (buf) {
-			ByteBuffer input = buf.position(offs).slice();
-			input.limit(compressedSize);
-			inflater.setInput(input);
-		}
-
-		try {
-			int count = inflater.inflate(zlibBuf);
-			if (count != ((lod == 0 && otherData) ? 16384 : ((lod >= 2 && otherData) ? 32768 : 49152)))
-				System.err.println("Inflate count issue! count = "	+ count + " expected "
-									+ ((lod == 0 && otherData) ? 16384 : ((lod >= 2 && otherData) ? 32768 : 49152)));
-		} catch (DataFormatException e) {
-			System.err.println("loadBlock Inflater DataFormatException ");
-		}
-		inflater.reset();*/
+		/*	synchronized (buf) {
+				ByteBuffer input = buf.position(offs).slice();
+				input.limit(compressedSize);
+				inflater.setInput(input);
+			}
+		
+			try {
+				int count = inflater.inflate(zlibBuf);
+				if (count != ((lod == 0 && otherData) ? 16384 : ((lod >= 2 && otherData) ? 32768 : 49152)))
+					System.err.println("Inflate count issue! count = "	+ count + " expected "
+										+ ((lod == 0 && otherData) ? 16384 : ((lod >= 2 && otherData) ? 32768 : 49152)));
+			} catch (DataFormatException e) {
+				System.err.println("loadBlock Inflater DataFormatException ");
+			}
+			inflater.reset();*/
 		ByteBuffer input = null;
 		synchronized (buf) {
 			input = buf.position(offs).slice();
@@ -633,7 +623,7 @@ public class BtdbReader {
 			e.printStackTrace();
 		}
 
-		inflater.reset();		
+		inflater.reset();
 
 		int pOff = 0;
 		int xd = 1 << (!otherData || lod == 0 ? lod : (lod - 2));
@@ -719,7 +709,7 @@ public class BtdbReader {
 			input.limit(compressedSize);
 			inflater.setInput(input);
 		}
-
+		
 		try {
 			int count = inflater.inflate(zlibBuf);
 			if (count != 65536)
@@ -728,7 +718,7 @@ public class BtdbReader {
 			System.err.println("loadBlock_SF Inflater DataFormatException ");
 		}
 		inflater.reset();*/
-		
+
 		ByteBuffer input = null;
 		synchronized (buf) {
 			input = buf.position(offs).slice();
@@ -763,11 +753,7 @@ public class BtdbReader {
 			e.printStackTrace();
 		}
 
-		inflater.reset();		
-		
-		
-		
-		
+		inflater.reset();
 
 		int pOff = 0;
 		int xd = 1 << lod;
@@ -815,16 +801,13 @@ public class BtdbReader {
 		}
 	}
 
-	//private static int	cacheHit	= 0;
-	//private static int	cacheMiss	= 0;
-
 	// we must implement our own caching and cut out the CompressedTextureLoader
-	private static Map<Integer, TileData>	loadedTexture		= Collections
+	private static Map<Integer, TileData>	loadedTiles		= Collections
 			.synchronizedMap(new WeakValueHashMap<Integer, TileData>());
 
 	// we can't request the same file at the same time, this tell threads to wait for each other
 	// key to mask of loaded data
-	private static Map<Integer, Integer>	loadingTexture		= Collections
+	private static Map<Integer, Integer>	loadingTiles	= Collections
 			.synchronizedMap(new HashMap<Integer, Integer>());
 
 	private TileData loadTile(int cellX, int cellY, int blockMask) {
@@ -844,7 +827,7 @@ public class BtdbReader {
 
 		// below the mask is also checked against 0x03F7=0b0011 1111 0111 or all of them
 
-		//FIXME: it appears the block mask nonsense is entirely insdie this file as a cryptic message system
+		//it appears the block mask nonsense is entirely inside this file 
 		/*		// bit 0: LOD0 vertex height and land textures are loaded
 				public static final int	LOD0vertexheightandlandtextures	= 0x01;
 				// bit 1: LOD0 ground cover is loaded
@@ -874,28 +857,24 @@ public class BtdbReader {
 			//physics and visuals and bullet all want this data concurrently, however the weak value might have it or might not
 			// and it the root object exists it might not be fully loaded yet
 
-			//WAIT also something else!! synchronized on this method stil leaves holes, like some lod
-			//level is being ignored for laoding, cause falgs are 
-			// set wrong or something?
-
 			Integer loadingMask = null;
 			// in one go check if it's loaded or loading, and then indicate this thread will load it
-			synchronized (loadedTexture) {
-				TileData t = loadedTexture.get(cacheKey);
+			synchronized (loadedTiles) {
+				TileData t = loadedTiles.get(cacheKey);
 				if (t == null) {
-					loadingMask = loadingTexture.get(cacheKey);
+					loadingMask = loadingTiles.get(cacheKey);
 					if (loadingMask == null) {
-						// no nones loading it so time to load it up and indicate the mask it will finish as
-						loadingTexture.put(cacheKey, blockMask);
+						// no ones loading it, so time to load it up and indicate the mask it will finish as
+						loadingTiles.put(cacheKey, blockMask);
 					} else {
-						//otherwise we are happy to wait and return it later
+						//otherwise we wait and later check if it got loaded as we want, if not do our load
 					}
 				}
 
 			}
 
 			if (loadingMask != null) {
-				// just wait until loaded then return it
+				// just wait until loaded then check if it fulfils use
 				while (true) {
 					try {
 						Thread.sleep(5);
@@ -903,18 +882,17 @@ public class BtdbReader {
 						e.printStackTrace();
 					}
 
-					loadingMask = loadingTexture.get(cacheKey);
+					loadingMask = loadingTiles.get(cacheKey);
 					if (loadingMask != null) {
-						synchronized (loadedTexture) {
-							TileData t = loadedTexture.get(cacheKey);
+						synchronized (loadedTiles) {
+							TileData t = loadedTiles.get(cacheKey);
 							// did it return a TileData mask that fulfills us?
 							blockMask = (blockMask & ~(t.blockMask)) & 0x03F7;
 							// if it won't fulfill our requirements then we will need to load it
 							if (!(blockMask != 0)) {
 								return t;
 							} else {
-								// if it won't fulfill our requirements then we will need to load it
-								loadingTexture.put(cacheKey, blockMask);
+								loadingTiles.put(cacheKey, blockMask);
 								loadingMask = blockMask;
 								break;
 							}
@@ -926,11 +904,11 @@ public class BtdbReader {
 
 			TileData tileData = new TileData();
 
-			// checks if the mask data I want is loaded into the tile, so it's part of the loading system
+			// checks if the mask data I want is loaded into the tile, it's part of the loading system
 			blockMask = (blockMask & ~(tileData.blockMask)) & 0x03F7;
 			if (!(blockMask != 0))
 				return tileData;
-			
+
 			if ((blockMask & 0x0155) != 0) {
 				tileData.hmapData = new short[0x00100000];//1,048,576
 				tileData.ltexData = new short[0x00100000];
@@ -1005,10 +983,10 @@ public class BtdbReader {
 
 			tileData.blockMask = tileData.blockMask | blockMask;
 
-			synchronized (loadedTexture) {
-				loadedTexture.put(cacheKey, tileData);
-				loadingTexture.remove(cacheKey);
-			}		
+			synchronized (loadedTiles) {
+				loadedTiles.put(cacheKey, tileData);
+				loadingTiles.remove(cacheKey);
+			}
 
 			return tileData;
 		}
